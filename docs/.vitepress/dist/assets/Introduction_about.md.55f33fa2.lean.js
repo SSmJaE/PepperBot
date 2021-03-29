@@ -1,1 +1,0 @@
-import{o as t,c as e,a as o}from"./app.b2483e68.js";const r='{"title":"","description":"","frontmatter":{},"relativePath":"Introduction/about.md","lastUpdated":1617029119255}',a={},n=o("p",null,"一般来说，需要无头qq go-cqhttp",-1);a.render=function(o,r,a,p,d,i){return t(),e("div",null,[n])};export default a;export{r as __pageData};
