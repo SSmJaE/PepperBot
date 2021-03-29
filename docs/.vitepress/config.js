@@ -1,9 +1,10 @@
 module.exports = {
     title: "PepperBot Docs",
     description: "Just playing around.",
-    base: "/",
+    base: "/PepperBot/",
 
     themeConfig: {
+        repo: "SSmJaE/PepperBot",
         nav: [
             { text: "Guide", link: "/", activeMatch: "^/$|^/guide/" },
             {
