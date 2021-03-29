@@ -7,7 +7,7 @@ module.exports = {
         nav: [
             { text: "Guide", link: "/", activeMatch: "^/$|^/guide/" },
             {
-                text: "Api",
+                text: "API",
                 link: "/config/basics",
                 activeMatch: "^/config/",
             },
@@ -17,7 +17,11 @@ module.exports = {
             "/": [
                 {
                     text: "概览",
-                    children: [{ text: "安装", link: "/概览/安装" }],
+                    children: [
+                        { text: "为什么要造轮子？", link: "/概览/动机" },
+                        { text: "相关概念", link: "/概览/相关概念" },
+                        { text: "安装", link: "/概览/安装" },
+                    ],
                 },
                 {
                     text: "响应事件",
