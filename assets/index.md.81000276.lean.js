@@ -1,0 +1,1 @@
+import{o as n,c as s,a}from"./app.23f29900.js";const t='{"title":"注册群事件","description":"","frontmatter":{},"relativePath":"index.md","lastUpdated":1617039083811}',p={},o=a('',3);p.render=function(a,t,p,e,c,u){return n(),s("div",null,[o])};export default p;export{t as __pageData};
