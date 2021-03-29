@@ -1,6 +1,7 @@
 module.exports = {
     title: "PepperBot Docs",
     description: "Just playing around.",
+    base: "/PepperBot/",
 
     themeConfig: {
         nav: [
