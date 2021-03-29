@@ -1,6 +1,6 @@
 <h1 align="center">PepperBot</h1>
 
-<p align="center">a light weight bot logic framework of QQ, for human</p>
+<p align="center">A lightweight QQ bot logic framework, for human</p>
 
 # Features
 - based on OneBot protocol
