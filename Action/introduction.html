@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>
+      ? 异常情况 | PepperBot Docs
+    </title>
+    <meta name="description" content="Just playing around.">
+    <link rel="stylesheet" href="/PepperBot/assets/style.56d02f33.css">
+    <link rel="modulepreload" href="/PepperBot/assets/Home.ada7a731.js">
+    <link rel="modulepreload" href="/PepperBot/assets/app.14b541e2.js">
+    <link rel="modulepreload" href="/PepperBot/assets/Action_introduction.md.a5e559b7.lean.js">
+    <link rel="modulepreload" href="/PepperBot/assets/app.14b541e2.js">
+    
+    
+  </head>
+  <body>
+    <div id="app"><!--[--><div class="theme"><header class="nav-bar" data-v-6e7c0b86><div class="sidebar-button" data-v-6e7c0b86><svg class="icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z" class></path></svg></div><a class="nav-bar-title" href="/PepperBot/" aria-label="PepperBot Docs, back to home" data-v-6e7c0b86 data-v-76c79d52><!----> PepperBot Docs</a><div class="flex-grow" data-v-6e7c0b86></div><div class="nav" data-v-6e7c0b86><nav class="nav-links" data-v-6e7c0b86 data-v-f465d38e><!--[--><div class="item" data-v-f465d38e><div class="nav-link" data-v-f465d38e data-v-99f6c566><a class="item" href="/PepperBot/" data-v-99f6c566>Guide <!----></a></div></div><div class="item" data-v-f465d38e><div class="nav-link" data-v-f465d38e data-v-99f6c566><a class="item" href="/PepperBot/config/basics" data-v-99f6c566>API <!----></a></div></div><!--]--><!----><div class="item" data-v-f465d38e><div class="nav-link" data-v-f465d38e data-v-99f6c566><a class="item isExternal" href="https://github.com/SSmJaE/PepperBot" target="_blank" rel="noopener noreferrer" data-v-99f6c566>GitHub <svg class="icon outbound" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15" data-v-99f6c566><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div></div></nav></div><!--[--><!--]--></header><aside class="sidebar" data-v-58e261f2><nav class="nav-links nav" data-v-58e261f2 data-v-f465d38e><!--[--><div class="item" data-v-f465d38e><div class="nav-link" data-v-f465d38e data-v-99f6c566><a class="item" href="/PepperBot/" data-v-99f6c566>Guide <!----></a></div></div><div class="item" data-v-f465d38e><div class="nav-link" data-v-f465d38e data-v-99f6c566><a class="item" href="/PepperBot/config/basics" data-v-99f6c566>API <!----></a></div></div><!--]--><!----><div class="item" data-v-f465d38e><div class="nav-link" data-v-f465d38e data-v-99f6c566><a class="item isExternal" href="https://github.com/SSmJaE/PepperBot" target="_blank" rel="noopener noreferrer" data-v-99f6c566>GitHub <svg class="icon outbound" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15" data-v-99f6c566><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div></div></nav><!--[--><!--]--><ul class="sidebar-links" data-v-58e261f2><!--[--><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><p class="sidebar-link-item" data-v-58e261f2>概览</p><ul class="sidebar-links" data-v-58e261f2><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Introduction/motivation" data-v-58e261f2>为什么要造轮子？</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Introduction/about" data-v-58e261f2>相关概念</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Introduction/install" data-v-58e261f2>安装</a><!----></li></ul></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><p class="sidebar-link-item" data-v-58e261f2>响应事件</p><ul class="sidebar-links" data-v-58e261f2><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>消息链</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>群消息机器人</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/kwargs" data-v-58e261f2>关键字参数的妙用</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>生命周期</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>上下文</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>类的混入</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>Bot</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>Chain</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>Sender</a><!----></li></ul></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><p class="sidebar-link-item" data-v-58e261f2>指令</p><ul class="sidebar-links" data-v-58e261f2><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Command/introduction" data-v-58e261f2>PepperBot中的指令</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Command/introduction" data-v-58e261f2>指令的上下文</a><!----></li></ul></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><p class="sidebar-link-item" data-v-58e261f2>主动行为</p><ul class="sidebar-links" data-v-58e261f2><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item active" href="/PepperBot/Action/introduction" data-v-58e261f2>行为链</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>成员管理</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>定时任务</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>一次性任务</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>群文件</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>群公告</a><!----></li></ul></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><p class="sidebar-link-item" data-v-58e261f2>插件</p><ul class="sidebar-links" data-v-58e261f2><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>定义插件</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>发布插件</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>安装插件</a><!----></li></ul></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><p class="sidebar-link-item" data-v-58e261f2>部署</p><ul class="sidebar-links" data-v-58e261f2><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>两套配置文件</a><!----></li><li class="sidebar-link" data-v-58e261f2 data-v-58e261f2><a class="sidebar-link-item" href="/PepperBot/Event/notExist" data-v-58e261f2>日志</a><!----></li></ul></li><!--]--></ul><!--[--><!--]--></aside><!-- TODO: make this button accessible --><div class="sidebar-mask"></div><main class="page" data-v-d36a7fda><div class="container" data-v-d36a7fda><!--[--><!--]--><div class="content" data-v-d36a7fda><div data-v-d36a7fda><div class="danger custom-block"><p class="custom-block-title">WARNING</p><p>行为链尚未实现，这里只是展示行为链可能的样子</p></div><div class="language-py"><pre><code><span class="token keyword">async</span> <span class="token keyword">def</span> <span class="token function">do_something</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">await</span> actionBot<span class="token punctuation">.</span>selectGroup<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span><span class="token punctuation">.</span>new_notice<span class="token punctuation">(</span>
+        title<span class="token operator">=</span><span class="token string">&quot;&quot;</span><span class="token punctuation">,</span>
+        body<span class="token operator">=</span><span class="token string">&quot;&quot;</span>
+    <span class="token punctuation">)</span><span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">await</span> <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroups<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">,</span> <span class="token number">2222</span><span class="token punctuation">,</span> <span class="token number">3333</span><span class="token punctuation">,</span> <span class="token number">4444</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;一条跨群消息&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>sleep<span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Face<span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 异常情况</span>
+    <span class="token comment"># 如果机器人不在该群中，会报错，可以try except</span>
+    <span class="token keyword">await</span> <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroup<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>catch<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;一条跨群消息&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token comment"># ? catchHandler的声明</span>
+    <span class="token comment"># 函数是一等对象的概念</span>
+    <span class="token comment"># 为什么不建议使用匿名函数？</span>
+    <span class="token comment"># 不易理解，没有类型提示，不可复用</span>
+
+    <span class="token comment"># 根据catch标记进行分割片段，捕获每一个片段</span>
+    <span class="token comment"># 比较长的行为链+catch的try except等价实现</span>
+    <span class="token keyword">await</span> <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroups<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">,</span> <span class="token number">2222</span><span class="token punctuation">,</span> <span class="token number">3333</span><span class="token punctuation">,</span> <span class="token number">4444</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;4个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>exclude<span class="token punctuation">(</span><span class="token number">111</span><span class="token punctuation">)</span>  <span class="token comment"># 删除不存在的群，不会报错</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;3个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>catch<span class="token punctuation">(</span>catchHandler<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>exclude<span class="token punctuation">(</span><span class="token number">222</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;2个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>exclude<span class="token punctuation">(</span><span class="token number">333</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;1个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 复杂选择操作</span>
+    <span class="token keyword">await</span> <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroups<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">,</span> <span class="token number">2222</span><span class="token punctuation">,</span> <span class="token number">3333</span><span class="token punctuation">,</span> <span class="token number">4444</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;4个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>exclude<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>  <span class="token comment"># 删除不存在的群，不会报错</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;3个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>clear<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;0个群，此时会报错，被catch拦截&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>catch<span class="token punctuation">(</span>catchHandler<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>include<span class="token punctuation">(</span><span class="token number">5555</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;1个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>include<span class="token punctuation">(</span><span class="token number">6666</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;2个群&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 复用选择结果</span>
+    交流群 <span class="token operator">=</span> actionBot<span class="token punctuation">.</span>selectGroup<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 唯一性数据，直接返回</span>
+    交流群<span class="token punctuation">.</span>admins<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    交流群<span class="token punctuation">.</span>info<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 凡是要返回可迭代数据的，全都是异步生成器</span>
+    交流群<span class="token punctuation">.</span>files<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">async</span> <span class="token keyword">for</span> member <span class="token keyword">in</span> 交流群<span class="token punctuation">.</span>members<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        nickname <span class="token operator">=</span> member<span class="token punctuation">.</span>nickname
+
+        <span class="token keyword">if</span> re<span class="token punctuation">.</span>search<span class="token punctuation">(</span><span class="token string">&quot;(网课)|(代刷)|(工作室)|(接单)&quot;</span><span class="token punctuation">,</span> nickname<span class="token punctuation">)</span><span class="token punctuation">:</span>
+            <span class="token keyword">await</span> member<span class="token punctuation">.</span>kickout<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">async</span> <span class="token keyword">for</span> <span class="token builtin">file</span> <span class="token keyword">in</span> 交流群<span class="token punctuation">.</span>files<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token builtin">file</span><span class="token punctuation">.</span>name<span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 不要耦合发送操作(send_message)和获取操作(members)</span>
+    <span class="token comment">#! 不要这样做，错误示例</span>
+    <span class="token comment"># todo 调用members等非run end point时，也在内部执行一次run执行的方法，以适配这种情况</span>
+    getMembersAfterSendMessage <span class="token operator">=</span> <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroup<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;一条跨群消息&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>members<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token keyword">async</span> <span class="token keyword">for</span> member <span class="token keyword">in</span> getMembersAfterSendMessage<span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>member<span class="token punctuation">.</span>nickname<span class="token punctuation">)</span>
+
+    <span class="token comment"># 分两次，代码更易读，最佳实践</span>
+    <span class="token comment"># 可以复用选择结果</span>
+    targetGroup <span class="token operator">=</span> actionBot<span class="token punctuation">.</span>selectGroup<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># 一个action发送消息</span>
+    <span class="token keyword">await</span> targetGroup<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;一条跨群消息&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># 一个action获取群员</span>
+    getMembersIndependently <span class="token operator">=</span> targetGroup<span class="token punctuation">.</span>members<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">async</span> <span class="token keyword">for</span> member <span class="token keyword">in</span> getMembersIndependently<span class="token punctuation">:</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>member<span class="token punctuation">.</span>nickname<span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 对每个群执行同样的操作，通过each或者async_each</span>
+    <span class="token keyword">await</span> <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroups<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">,</span> <span class="token number">2222</span><span class="token punctuation">,</span> <span class="token number">3333</span><span class="token punctuation">,</span> <span class="token number">4444</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>catch<span class="token punctuation">(</span>catchHandler<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>each<span class="token punctuation">(</span>eachGroup<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>async_each<span class="token punctuation">(</span>eachGroup<span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token comment"># ? members，info，files等获取方法上，并没有run方法</span>
+    <span class="token comment"># 这些获取方法和run方法一样，都是行为链的end point</span>
+    <span class="token punctuation">(</span>
+        actionBot
+        <span class="token punctuation">.</span>selectGroup<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span>members<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment"># .run() #! members是end point，无法再调用run方法</span>
+    <span class="token punctuation">)</span>
+
+    <span class="token comment"># ? action分支选择</span>
+    targetUser <span class="token operator">=</span> actionBot<span class="token punctuation">.</span>selectUser<span class="token punctuation">(</span><span class="token number">1111</span><span class="token punctuation">)</span>
+
+    action1 <span class="token operator">=</span> targetUser<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;11&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    action2 <span class="token operator">=</span> targetUser<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Face<span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+    finalAction <span class="token operator">=</span> <span class="token boolean">None</span>
+
+    <span class="token keyword">if</span> <span class="token string">&quot;condition1&quot;</span><span class="token punctuation">:</span>
+        finalAction <span class="token operator">=</span> action1
+    <span class="token keyword">else</span><span class="token punctuation">:</span>
+        finalAction <span class="token operator">=</span> action2
+
+    finalAction<span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># ? 批量运行action</span>
+
+    <span class="token comment"># 可以手动运行</span>
+    <span class="token keyword">await</span> targetUser<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;11&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">await</span> targetUser<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Face<span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>run<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># 也可以使用工具函数</span>
+    action1 <span class="token operator">=</span> targetUser<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Text<span class="token punctuation">(</span><span class="token string">&quot;11&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    action2 <span class="token operator">=</span> targetUser<span class="token punctuation">.</span>send_message<span class="token punctuation">(</span>Face<span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># 只能接受runnable的action，即不能是members，info等为终点的行为链</span>
+    results <span class="token operator">=</span> <span class="token keyword">await</span> ActionRunner<span class="token punctuation">.</span>in_turn<span class="token punctuation">(</span>action1<span class="token punctuation">,</span> action2<span class="token punctuation">)</span>
+    results <span class="token operator">=</span> <span class="token keyword">await</span> ActionRunner<span class="token punctuation">.</span><span class="token builtin">all</span><span class="token punctuation">(</span>action1<span class="token punctuation">,</span> action2<span class="token punctuation">)</span>
+    results <span class="token operator">=</span> <span class="token keyword">await</span> ActionRunner<span class="token punctuation">.</span>all_settled<span class="token punctuation">(</span>action1<span class="token punctuation">,</span> action2<span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">&quot;__main__&quot;</span><span class="token punctuation">:</span>
+    asyncio<span class="token punctuation">.</span>run<span class="token punctuation">(</span>do_something<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+</code></pre></div></div></div><footer class="page-footer" data-v-d36a7fda data-v-5a019cc9><div class="edit" data-v-5a019cc9><div class="edit-link" data-v-5a019cc9 data-v-fb0131f2><a class="link" href="https://github.com/SSmJaE/PepperBot/edit/master/docs/Action/introduction.md" target="_blank" rel="noopener noreferrer" data-v-fb0131f2>帮助我们改进此页面 <svg class="icon outbound icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15" data-v-fb0131f2><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div></div><div class="updated" data-v-5a019cc9><!----></div></footer><div class="next-and-prev-link" data-v-d36a7fda data-v-6683615c><div class="container" data-v-6683615c><div class="prev" data-v-6683615c><a class="link" href="/PepperBot/Command/introduction" data-v-6683615c><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" class="icon icon-prev" data-v-6683615c><path d="M19,11H7.4l5.3-5.3c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-7,7c-0.1,0.1-0.2,0.2-0.2,0.3c-0.1,0.2-0.1,0.5,0,0.8c0.1,0.1,0.1,0.2,0.2,0.3l7,7c0.2,0.2,0.5,0.3,0.7,0.3s0.5-0.1,0.7-0.3c0.4-0.4,0.4-1,0-1.4L7.4,13H19c0.6,0,1-0.4,1-1S19.6,11,19,11z"></path></svg><span class="text" data-v-6683615c>指令的上下文</span></a></div><div class="next" data-v-6683615c><a class="link" href="/PepperBot/Event/notExist" data-v-6683615c><span class="text" data-v-6683615c>成员管理</span><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" class="icon icon-next" data-v-6683615c><path d="M19.9,12.4c0.1-0.2,0.1-0.5,0-0.8c-0.1-0.1-0.1-0.2-0.2-0.3l-7-7c-0.4-0.4-1-0.4-1.4,0s-0.4,1,0,1.4l5.3,5.3H5c-0.6,0-1,0.4-1,1s0.4,1,1,1h11.6l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4c0.2,0.2,0.5,0.3,0.7,0.3s0.5-0.1,0.7-0.3l7-7C19.8,12.6,19.9,12.5,19.9,12.4z"></path></svg></a></div></div></div><!--[--><!--]--></div></main></div><!----><!--]--></div>
+    <script>__VP_HASH_MAP__ = JSON.parse("{\"index.md\":\"4a7678b1\",\"action_introduction.md\":\"a5e559b7\",\"command_introduction.md\":\"6562db82\",\"event_kwargs.md\":\"0c88ad0a\",\"event_lifecycle.md\":\"7b6e2db7\",\"event_mixin.md\":\"5ba66e9b\",\"event_notexist.md\":\"b4a875d7\",\"inaction_sql.md\":\"bc3890e5\",\"inaction_tuning.md\":\"9b62cddb\",\"introduction_about.md\":\"895842ff\",\"introduction_install.md\":\"2ea786c2\",\"introduction_motivation.md\":\"f34ed210\",\"plugin_official.md\":\"f53bc704\"}")</script>
+    <script type="module" async src="/PepperBot/assets/app.14b541e2.js"></script>
+  </body>
+</html>

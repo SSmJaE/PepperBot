@@ -1,1 +1,0 @@
-import{o as n,c as s,a}from"./app.4461c8af.js";const t='{"title":"注册群事件","description":"","frontmatter":{},"relativePath":"index.md","lastUpdated":1617094966949}',p={},o=a('',3);p.render=function(a,t,p,e,c,u){return n(),s("div",null,[o])};export default p;export{t as __pageData};
