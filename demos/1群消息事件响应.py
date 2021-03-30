@@ -35,7 +35,7 @@ class WhateverNameYouWant:
     async def before_group_message(*args):
         print(humanize(get_current_function_name()))
 
-    async def group_message(self, bot: GroupMessageBot, chain: MessageChain, sender: Sender):
+    async def group_message(self, bot: AddGroupBot, chain: MessageChain, sender: Sender):
 
         if "撤回我" == chain.pure_text:
             await chain.withdraw()

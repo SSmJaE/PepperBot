@@ -1,7 +1,7 @@
 from src.utils.Mixins import *
 
 
-class GroupMessageBot(GroupMessageMixin):
+class AddGroupBot(GroupMessageMixin):
     def __init__(self, api, groupId) -> None:
         self.api = api
         self.groupId = groupId

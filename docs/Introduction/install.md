@@ -28,6 +28,9 @@ cd ./backend
 
 ## 配置PepperBot
 > PepperBot尚未发布至pypi，目前暂时通过git获取项目代码
+::: tip
+需要python 3.8及以上版本
+:::
 ### 安装
 
 ```
@@ -55,16 +58,16 @@ pip install sanic inflection
 if __name__ == "__main__":
     run(debug=True, port=53521)
 ```
-- 开启debug，修改demo文件(及demo文件中导入的文件时)，PepperBot将会自动重启服务
+- 开启debug，修改demo文件(及demo文件中导入的文件)时，PepperBot将会自动重启服务
 
 ### 运行
 #### 使用poetry
 ```
-poetry run python ./demo/1.py
+poetry run python ./demos/1.py
 ```
-#### 使用pip
+#### 使用python
 ```
-python ./demo/1.py
+python ./demos/1.py
 ```
 
 ::: warning

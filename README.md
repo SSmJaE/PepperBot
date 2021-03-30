@@ -2,7 +2,11 @@
 
 <p align="center">A lightweight QQ bot logic framework, for human</p>
 
-# Features
+<p align="center">
+<a href="https://ssmjae.github.io/PepperBot/">文档</a>
+</p>
+
+## Features
 - based on OneBot protocol
 - 渐进式
 - 符合直觉，直观，流畅的把想法映射到代码上
@@ -14,6 +18,7 @@
 - 异步，反向ws，性能
 - 支持集中化路由管理
 
+## 示例
 ```py
 # 注册群事件
 @register(groupId=123456789)

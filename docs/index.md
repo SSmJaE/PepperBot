@@ -12,19 +12,19 @@ class WhateverNameYouWant:
     """class名称可以随意设置"""
 
     # 如方法名add_group所示，这是加群请求的事件响应
-    async def add_group(self, bot: GroupRequestBot, comment: str, **kwargs):
+    async def add_group(self, bot: AddGroupBot, comment: str, **kwargs):
         if "加入我" in comment:
             await bot.resolve() # 接受
         else:
             await bot.reject() # 拒绝
 
     # 事件也有生命周期，before，after，可以进行拦截等操作
-    async def before_group_message(**kwargs):
+    async def before_group_message(self, **kwargs):
         pass
 
     # 群聊消息的事件响应
     # 所有参数都有完善的类型提示，不需要记忆，以PascalCase的方法名加上参数名即可
-    # 如GroupMessageBot=group_message + bot
+    # 如 GroupMessageBot = group_message + bot
     async def group_message(self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs):
         # chain即为消息链，pure_text是消息中的纯文本，不包含表情、图片等
         if "撤回我" == chain.pure_text:
@@ -37,7 +37,12 @@ class WhateverNameYouWant:
         if "禁言我" in chain:
             await sender.ban(10) # 可以直接禁言发言群员
 
-        # 与上一条语句等价，判断消息链中，是否包含文本消息"禁言我"
+        # 判断消息链中，是否包含文本消息"禁言我"
+        # 与上一条语句不等价
+        # 如果消息链为Text("请禁言我)，则并不与Text("禁言我")相等
+        # 因为pure_text是所有Text片段join起来的
+        # 如果有Text("文字1")Face(100)Text("文字2")这样一条消息
+        # 则pure_text为"文字1文字2"
         if Text("禁言我") in chain:
             pass
 
@@ -47,6 +52,10 @@ class WhateverNameYouWant:
 
         # 指定了是“笑脸”表情，判断消息链中是否包含笑脸
         if Face(100) in chain:
+            pass
+
+        # chain.has的效果与in一致
+        if chain.has(Image):
             pass
 
         # 一个快捷操作，返回表情存在与否，与最后一个表情

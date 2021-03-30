@@ -179,8 +179,8 @@ def construct_api(ws):
     return api
 
 
-def construct_bot(ws, groupId: int) -> GroupMessageBot:
-    return GroupMessageBot(construct_api(ws), groupId)
+def construct_bot(ws, groupId: int) -> AddGroupBot:
+    return AddGroupBot(construct_api(ws), groupId)
 
 
 def construct_chain(receive: dict, ws, groupId) -> MessageChain:
