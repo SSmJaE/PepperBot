@@ -62,7 +62,7 @@ module.exports = {
                 {
                     text: "主动行为",
                     children: [
-                        { text: "行为链", link: "/Event/notExist" },
+                        { text: "行为链", link: "/Action/introduction" },
                         { text: "成员管理", link: "/Event/notExist" },
                         { text: "定时任务", link: "/Event/notExist" },
                         { text: "一次性任务", link: "/Event/notExist" },
