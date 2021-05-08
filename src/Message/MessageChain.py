@@ -1,37 +1,54 @@
+from inspect import isclass
 import re
 import sys
 from pprint import pprint
-from typing import Iterable, Tuple, Type
+from typing import Iterable, Tuple, Type, TypeVar
 
 from src.Message.MessageSegment import *
 
-TypeOfSegmentClass = Union[
-    Type[At], Type[Music], Type[Audio],
-    Type[Image], Type[Reply], Type[Text], Type[Face]
+SegmentClass_T = Union[
+    Type[At], Type[Music], Type[Audio], Type[Image], Type[Reply], Type[Text], Type[Face]
 ]
-TypeOfSegmentInstance = Union[At, Text, Face, Music, Audio, Image, Reply]
-TypeofSegmentClassOrInstance = Union[TypeOfSegmentClass, TypeOfSegmentInstance]
+SegmentInstance_T = Union[At, Text, Face, Music, Audio, Image, Reply]
+SegmentClassOrInstance_T = Union[SegmentClass_T, SegmentInstance_T]
+TypeofSegmentClassOrInstance_Generic = TypeVar(
+    "TypeofSegmentClassOrInstance_Generic",
+    At,
+    Text,
+    Face,
+    Music,
+    Audio,
+    Image,
+    Reply,
+    Type[At],
+    Type[Music],
+    Type[Audio],
+    Type[Image],
+    Type[Reply],
+    Type[Text],
+    Type[Face],
+)
 
 currentModule = sys.modules[__name__]
 
 
-class MessageChain():
+class MessageChain:
     def __init__(self, event: dict, groupId: int, api) -> None:
-        self.chain: List[TypeOfSegmentInstance] = []
+        self.chain: List[SegmentInstance_T] = []
 
         self.event = event
         self.groupId = groupId
         self.api = api
 
-        self.messageId = event['message_id']
+        self.messageId = event["message_id"]
 
         for key, value in event.items():
             setattr(self, key, value)
 
         originChain: Iterable[dict] = event.get("message", list)
         for segment in originChain:
-            messageType: str = segment['type']
-            data: dict = segment['data']
+            messageType: str = segment["type"]
+            data: dict = segment["data"]
             pprint(data)
 
             segmentClass = getattr(currentModule, messageType.capitalize())
@@ -44,7 +61,7 @@ class MessageChain():
     # def __repr__(self) -> str:
     #     json.dumps
 
-    def __equal(self, segment: 'MessageSegMentBase', other: TypeofSegmentClassOrInstance):
+    def __equal(self, segment: "MessageSegMentBase", other: SegmentClassOrInstance_T):
         # 如果是实例，data是否相等
         if isinstance(other, MessageSegMentBase):
             if segment == other:
@@ -60,30 +77,33 @@ class MessageChain():
     # todo part in raw operator in
     # if
 
-    def has(self, other: TypeofSegmentClassOrInstance):
+    def has(self, other: SegmentClassOrInstance_T):
         for segment in self.chain:
             if self.__equal(segment, other):
                 return True
 
         return False
 
-    def has_and_first(self, other: TypeofSegmentClassOrInstance) -> Tuple[bool, TypeOfSegmentInstance]:
+    def has_and_first(
+        self, other: SegmentClassOrInstance_T
+    ) -> Tuple[bool, SegmentInstance_T]:
         for segment in self.chain:
             if self.__equal(segment, other):
                 return True, segment
 
         # 返回Text只是为了提供更好的类型注解，因为python并不能自动判断union类型的分支情况
         # 即 True => type1 , False => type2
-        return False, Text("1")
+        # generic可以，不过还是直接Text("")最简单
+        return False, Text("")
 
-    def has_and_last(self, other: TypeofSegmentClassOrInstance):
+    def has_and_last(self, other: SegmentClassOrInstance_T):
         for segment in reversed(self.chain):
             if self.__equal(segment, other):
                 return True, segment
 
-        return False, Text("1")
+        return False, Text("")
 
-    def has_and_all(self, other: TypeofSegmentClassOrInstance):
+    def has_and_all(self, other: SegmentClassOrInstance_T):
         results = []
 
         for segment in self.chain:
@@ -92,9 +112,9 @@ class MessageChain():
 
         if len(results):
             return True, results
-        return False, Text("1")
+        return False, Text("")
 
-    def __getItems(self, _type: TypeOfSegmentClass):
+    def __getItems(self, _type: SegmentClass_T):
         results = []
 
         for segment in self.chain:
@@ -128,7 +148,9 @@ class MessageChain():
         return self.__getItems(Music)
 
     @property
-    def text(self,) -> List[Text]:
+    def text(
+        self,
+    ) -> List[Text]:
         return self.__getItems(Text)
 
     @property
@@ -136,7 +158,7 @@ class MessageChain():
         result = ""
 
         for part in self.text:
-            result += part.formatted['data']['text']
+            result += part.formatted["data"]["text"]
 
         return result
 
@@ -175,21 +197,32 @@ class MessageChain():
     def endswith(self, string: str):
         return self.pure_text.endswith(string)
 
-    async def reply(self, *messageChain):
-        await self.api("send_group_msg", **{
-            "group_id": self.groupId,
-            "message": [segment.formatted for segment in [Reply(self.messageId), *messageChain]]
-        })
+    async def reply(self, *messageChain: SegmentInstance_T):
+        await self.api(
+            "send_group_msg",
+            **{
+                "group_id": self.groupId,
+                "message": [
+                    segment.formatted
+                    for segment in [Reply(self.messageId), *messageChain]
+                ],
+            }
+        )
 
-    async def withdraw(self, ):
-        await self.api("delete_msg", **{
-            "message_id": self.messageId,
-        })
+    async def withdraw(
+        self,
+    ):
+        await self.api(
+            "delete_msg",
+            **{
+                "message_id": self.messageId,
+            }
+        )
 
-    def __getitem__(self, index: int) -> Union[TypeOfSegmentInstance]:
+    def __getitem__(self, index: int) -> Union[SegmentInstance_T]:
         return self.chain[index]
 
-    def __contains__(self, item: Union[str, TypeofSegmentClassOrInstance]):
+    def __contains__(self, item: Union[str, SegmentClassOrInstance_T]):
         if isinstance(item, str):
             if item in self.pure_text:
                 return True
@@ -201,20 +234,20 @@ class MessageChain():
 
         return False
 
-    def __eq__(self, other: 'MessageChain') -> bool:
+    def __eq__(self, other: "MessageChain") -> bool:
         return self.messageId == other.messageId
 
     def __len__(self):
         return len(self.chain)
 
-    def only(self, _type: TypeofSegmentClassOrInstance) -> bool:
+    def only(self, _type: SegmentClassOrInstance_T) -> bool:
         for segment in self.chain:
             if not self.__equal(segment, _type):
                 return False
 
         return True
 
-    def only_one(self, _type: TypeofSegmentClassOrInstance) -> bool:
+    def only_one(self, _type: SegmentClassOrInstance_T) -> bool:
         if len(self.chain) != 1:
             return False
 

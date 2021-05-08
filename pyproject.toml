@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pepper"
+name = "pepperbot"
 version = "0.1.0"
 description = ""
 authors = ["SSmJaE <shaoxydd8888@gmail.com>"]
@@ -8,9 +8,14 @@ authors = ["SSmJaE <shaoxydd8888@gmail.com>"]
 python = "^3.8"
 sanic = "^20.12.2"
 inflection = "^0.5.1"
+arrow = "^1.0.3"
+pydantic = "^1.8.1"
+devtools = "^0.6.1"
+httpx = "0.15.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+black = { version = "^21.4b2", allow-prereleases = true }
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -18,3 +23,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 demo = "python ./demo/demo.py"
+
+[tool.poe.tasks]
+demo = "python ./demos/1群消息事件响应.py"
+test = ""

@@ -6,3 +6,5 @@ node_modules
 src2
 demo
 docs/.vitepress/dist
+.venv
+.vscode

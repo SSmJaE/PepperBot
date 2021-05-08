@@ -1,6 +1,12 @@
-class User:
-    def __init__(self, **kwargs) -> None:
-        self.userId = kwargs['user_id']
+from pydantic import BaseModel
 
-    def __eq__(self, o: "User") -> bool:
-        return self.userId == o.userId
+
+class User(BaseModel):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+        # self.userId = kwargs["user_id"]
+        # self.aaa = 123
+
+    # def __eq__(self, o: "User") -> bool:
+    #     return self.userId == o.userId
