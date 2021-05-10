@@ -1,0 +1,1 @@
+import{o as n,c as s,a}from"./app.14b541e2.js";const t='{"title":"? 异常情况","description":"","frontmatter":{},"relativePath":"Action/introduction.md","lastUpdated":1620641730921}',p={},o=a('',2);p.render=function(a,t,p,c,e,u){return n(),s("div",null,[o])};export default p;export{t as __pageData};
