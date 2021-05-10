@@ -17,3 +17,24 @@ class NotRunnableError(PepperBotBaseException):
 
 class CatchException(PepperBotBaseException):
     pass
+
+
+class CommandClassDefineException(PepperBotBaseException):
+    """未按照commandClass规范定义命令类，导致的异常"""
+
+    pass
+
+
+class CommandClassOnFinish(PepperBotBaseException):
+
+    pass
+
+
+class CommandClassOnExit(PepperBotBaseException):
+
+    pass
+
+
+class CommandClassOnTimeout(PepperBotBaseException):
+
+    pass

@@ -76,6 +76,8 @@ class Image(MessageSegMentBase):
     """
 
     def __init__(self, data: Union[dict, str]):
+        # todo overload
+        # todo mode
 
         if isinstance(data, dict):
             url = data.get("file")
@@ -90,6 +92,8 @@ class Image(MessageSegMentBase):
         super().__init__(**{"identifier": url})
 
         self.formatted = {"type": "image", "data": {"file": url}}
+
+    # todo download
 
 
 class Reply(MessageSegMentBase):

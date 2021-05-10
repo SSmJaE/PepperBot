@@ -15,6 +15,7 @@ sys.path.append(BASE_DIR)
 
 
 from src.main import *
+from src.Command import with_command, 全局复读, 查询装备, 模拟, 简单复读, 跨用户复读, 跨群复读
 
 # todo 实现抽象基类，或者模板，或者说ts中的inherit的interface
 # 以实现检测子类是否实现了指定的方法，和实例属性
@@ -44,7 +45,9 @@ def get_random_pic():
     return path.join(basePath, file)
 
 
-@register(groupId=1041902989)
+@with_command(commandClasses=[查询装备, 模拟, 简单复读, 跨群复读, 跨用户复读, 全局复读])
+#
+@register(groupId=[1041902989, 819441084])
 class WhateverNameYouWant:
     async def member_increased(
         self, bot: GroupNoticeBot, member: GroupMember, **kwargs
@@ -77,11 +80,10 @@ class WhateverNameYouWant:
         if chain.regex("请?禁言我?"):
             await sender.ban(10)
 
-        hasFace, face = chain.has_and_last(Face)
-        face = cast(Image, face)
-        if hasFace:
-            await bot.group_msg(face)
-            await bot.group_msg(Image(f"file:///{get_random_pic()}"))
+        # hasFace, face = chain.has_and_last(Face)
+        # if hasFace:
+        #     await bot.group_msg(face)
+        #     await bot.group_msg(Image(f"file:///{get_random_pic()}"))
 
         if chain.regex("有人(在|吗|嘛|在吗).?"):
             await bot.group_msg(Text("没人"))
