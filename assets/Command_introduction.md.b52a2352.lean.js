@@ -1,0 +1,1 @@
+import{o as n,c as s,a}from"./app.14b541e2.js";const t='{"title":"默认的initial，“开启指令“查询装备”的会话”","description":"","frontmatter":{},"relativePath":"Command/introduction.md","lastUpdated":1621245941487}',p={},o=a('',2);p.render=function(a,t,p,e,c,u){return n(),s("div",null,[o])};export default p;export{t as __pageData};
