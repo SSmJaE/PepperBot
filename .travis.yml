@@ -2,16 +2,16 @@ language: node_js
 node_js:
   - lts/*
 install:
-  - npm ci # npm ci
+  - yarn
+branches:
+  only:
+    - master
+cache:
+  yarn: true
+before_install:
+  - cd ./docs
 script:
-  - npm run docs:build # npm run docs:build
-deploy:
-  provider: pages
-  skip_cleanup: true
-  local_dir: docs/.vitepress/dist
-  # A token generated on GitHub allowing Travis to push code on you repository.
-  # Set in the Travis settings page of your repository, as a secure variable.
-  github_token: $GITHUB_TOKEN
-  keep_history: true
-  on:
-    branch: master
+  - git config --global user.name "${GH_NAME}"
+  - git config --global user.email "${GH_EMAIL}"
+  - echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc
+  - yarn && GIT_USER="${GH_NAME}" yarn deploy
