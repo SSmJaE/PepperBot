@@ -10,12 +10,15 @@ import traceback
 from collections import defaultdict
 from functools import wraps
 from inspect import isawaitable, isclass, iscoroutine, isfunction
-from pprint import pprint
+
+# from pprint import pprint
 from typing import Callable, Literal, NewType, Optional, Type, TypeVar, Union
 
 import arrow
-from devtools import debug
+import pretty_errors
+from devtools import Debug, debug, pprint
 from inflection import camelize
+from loguru import logger
 from pydantic import BaseModel
 from sanic import Sanic
 from sanic.websocket import WebSocketProtocol
@@ -29,158 +32,15 @@ from src.Exceptions import (
     CommandClassOnFinish,
     CommandClassOnTimeout,
 )
+from src.globals import *
 from src.Parse import GROUP_EVENTS_T, RELATIONS, GroupEvent
 from src.Parse.figure import figure_out
 from src.User.Sender import Sender
 from src.utils.common import await_or_normal, get_own_methods
 
+logger.debug("That's it, beautiful and simple logging!")
+
 app = Sanic("PepperBot")
-
-CLASS_ID_MAP: Dict[Any, Any] = {}
-
-ClassId_T = Any
-
-
-class CommandClassBase:
-    pass
-
-
-class UserMessage(BaseModel):
-    messageId: int
-    message: List[SegmentInstance_T]
-    createTime: int
-    groupId: int
-    userId: int
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class NormalContext(BaseModel):
-    """
-    默认不收录消息，除非触发了指令，减少内存占用
-    """
-
-    messageQueue: List[UserMessage] = []
-    commandStatus: str = "initial"
-    userContext: Dict = {}
-
-
-class CommandContext(BaseModel):
-    """
-    如果相同的一条指令，需要为某些用户跨群，某些不跨群，应该怎么操作？
-    复制一份，一个全局permission，另一个提供permission方法，实现动态用户黑名单/白名单
-    """
-
-    # todo 如果未提供，使用全局设置
-    # 通过as_command的kwargs指定
-    maxSize: int
-    timeout: int
-
-    """
-    - normal        same user same group
-    - crossUser     cross user same group 
-    - crossGroup    same user cross group
-    - global        cross user cross group
-    """
-    mode: Literal["normal", "crossUser", "crossGroup", "global"] = "normal"
-
-    # 如果是normal指令，需要为一个用户在每个群都保存一个消息队列和指令进度
-    # 第一个key为QQ号，第二个key为群号
-    normalContextMap: Dict[int, Dict[int, NormalContext]] = defaultdict(dict)
-
-    # crossGroup
-    crossGroupMessageQueue: List[UserMessage] = []
-    # key为qq号
-    # 对于当前用户，他的指令执行到哪一步了
-    crossGroupUserStatus: Dict[int, NormalContext] = defaultdict(NormalContext)
-
-    # crossUser
-    crossUserMessageQueue: List[UserMessage] = []
-    # key为群号
-    crossUserCommandStatus: Dict[int, NormalContext] = defaultdict(NormalContext)
-
-    # global
-    globalMessageQueue: List[UserMessage] = []
-    globalCommandStatus: str = "initial"
-    globalContext: Dict = {}
-
-
-# todo 多个命令，一致前缀，都执行？
-class Context(BaseModel):
-    """
-    context主要是为一个用户和各个commandClass的交互服务
-
-    以用户或者commandClass为key都可以，不过用户的数量可能要比命令多得多
-
-    所以以命令类为key
-    """
-
-    # todo 相同commandClass，不同permission的处理
-    cache: Dict[ClassId_T, CommandContext] = {}
-    # 全局默认栈深
-    maxSize: int = 10
-    # 全局默认消息过期时间，单位秒
-    timeout: int = 2 * 60 * 60
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-# todo 提供统一的api，允许用户设置各种全局变量的默认值
-globalContext = Context()
-
-
-class CommandCache(BaseModel):
-    instance: Union[Callable, Any]
-    # key为方法名，value为实例化后的方法
-    methods: Dict[str, Union[Callable, Any]] = {}
-    kwargs: Dict[str, Any]
-    targetMethod: str = "initial"
-
-
-class GroupDecorator(BaseModel):
-    args: List[Any] = []
-    kwargs: Dict[str, Any] = {}
-
-
-class GroupMeta(BaseModel):
-    """
-    收集通过各种装饰器注册的基于class的事件响应handler
-    """
-
-    # class_: Callable
-    decorators: Dict[str, GroupDecorator] = {}
-
-
-class GroupCache(BaseModel):
-    """
-    根据GroupMeta生成缓存，保存实例化的class之类
-    """
-
-    botInstance: BotBase
-    instance: Union[Callable, Any]
-
-    # bounded methods
-    # methods: Dict[GROUP_EVENTS_T, List[Any]] = defaultdict(list)
-    methods: Dict[str, List[Any]] = defaultdict(list)
-    commandClasses: Dict[ClassId_T, CommandCache] = {}
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class ClassHandler(BaseModel):
-    # key为class handler
-    groupMeta: Dict[Callable, GroupMeta] = defaultdict(GroupMeta)
-    # key为群号
-    groupCache: Dict[int, List[GroupCache]] = defaultdict(list)
-
-
-# function handlers
-functionHandlers = defaultdict(list)
-# classHandlers = {"group": defaultdict(list), "groupCache": defaultdict(list)}
-classHandlers = ClassHandler()
 
 
 # EventTypes = TypeVar("EventTypes")
@@ -317,6 +177,7 @@ def __cache(ws):
         decoratorNames.remove("register")
 
         # 除register以外的class级装饰器
+        # todo 同一个commandClass，就实例化一次
         commandClassesBuffer: Dict[ClassId_T, CommandCache] = {}
 
         for decoratorName in decoratorNames:
@@ -392,25 +253,62 @@ def __cache(ws):
             _cache[id].append(groupCache)
 
 
+# myDebug = Debug(highlight=True)
+
+
 def __output_config():
     debug(classHandlers)
     debug(globalContext)
+    # pprint(classHandlers)
+    # pprint(globalContext)
 
 
 async def __check_command_timeout():
+    # todo 超时判断应该每次心跳都判断，而不是接收到该用户消息时
+    # 超时判断，与上一条消息的createTime判断
+    # timeout: Optional[int] = commandCache.kwargs[
+    #     "timeout"
+    # ]
+
+    # if timeout:
+
+    #     prevChain = finalMessageQueue[-2]
+    #     currentChain = finalMessageQueue[-1]
+
+    #     debug(
+    #         prevChain.createTime
+    #         - currentChain.createTime
+    #     )
+    #     debug(timeout)
+
+    #     if (
+    #         prevChain.createTime
+    #         - currentChain.createTime
+    #         >= timeout
+    #     ):
+    #         raise CommandClassOnTimeout()
     pass
 
 
-def is_valid_request(chain: MessageChain, commandClassName: str, kwargs: Dict) -> bool:
+async def is_valid_request(
+    chain: MessageChain, commandClassName: str, kwargs: Dict
+) -> bool:
     """
     通过commandClass的kwargs和messageChain的pure_text，判断是否触发命令的initial
     """
-    # todo 是否需要@机器人
-    # at: bool= commandCache.kwargs["at"]
-    # if at:
-    #     selfId=api.selfInfo
-    #     if not chain.has(At(selfId)):
-    #         continue
+
+    # todo kwargs pydantic化
+    isValidRequest = False
+
+    # 是否需要@机器人
+
+    atFlag = False
+    at: bool = kwargs["at"]
+    if at:
+        selfId = (await api.self_info()).user_id
+
+        if chain.has(At(selfId)):
+            atFlag = True
 
     needPrefix: bool = kwargs["needPrefix"]
     prefixes: List[str] = kwargs["prefix"]
@@ -421,11 +319,11 @@ def is_valid_request(chain: MessageChain, commandClassName: str, kwargs: Dict) -
         if commandClassName not in also:
             also.append(commandClassName)
 
-    debug(commandClassName)
-    debug(prefixes)
-    debug(also)
+    # debug(commandClassName)
+    # debug(prefixes)
+    # debug(also)
 
-    isValidRequest = False
+    keywordFlag = False
     for alias in also:
         if isValidRequest:
             break
@@ -433,10 +331,20 @@ def is_valid_request(chain: MessageChain, commandClassName: str, kwargs: Dict) -
         for prefix in prefixes if needPrefix else [""]:
             finalPrefix = prefix + alias
             if re.search(f"^{finalPrefix}", chain.pure_text):
-                isValidRequest = True
+                keywordFlag = True
+                debug(finalPrefix)
                 break
 
+    debug(keywordFlag, atFlag)
+    if keywordFlag:
+        if at:
+            if atFlag:
+                isValidRequest = True
+        else:
+            isValidRequest = True
+
     debug(isValidRequest)
+
     return isValidRequest
 
 
@@ -452,7 +360,7 @@ def util_factory(
                 groupId
             ].commandStatus = status
         elif commandContext.mode == "crossGroup":
-            globalContext.cache[classId].crossGroupUserStatus[
+            globalContext.cache[classId].crossGroupCommandStatus[
                 userId
             ].commandStatus = status
         elif commandContext.mode == "crossUser":
@@ -476,7 +384,7 @@ def util_factory(
             createTime=round(time.time()),
             message=[*chain.chain],
             groupId=groupId,
-            userId=userId
+            userId=userId,
         )
         messageQueue.append(newMessage)
 
@@ -511,16 +419,19 @@ async def main_entry(request, ws):
             try:
                 finalEvent = figure_out(receive)
             except KeyError:
-                pprint(receive)
+                logger.debug(receive)
 
             if finalEvent:
                 if finalEvent == GroupEvent.MetaEvent:
-                    print(
-                        arrow.get(receive["time"])
-                        .to("Asia/Shanghai")
-                        .format("YYYY-MM-DD HH:mm:ss"),
-                        "心跳",
-                    )
+                    # print(
+                    #     arrow.get(receive["time"])
+                    #     .to("Asia/Shanghai")
+                    #     .format("YYYY-MM-DD HH:mm:ss"),
+                    #     "心跳",
+                    # )
+                    logger.info("心跳事件")
+
+                    __check_command_timeout
 
                     # metaEvent = MetaEvent(**receive)
                     # debug(metaEvent)
@@ -574,6 +485,36 @@ async def main_entry(request, ws):
                                 )
 
                                 debug(member)
+
+                                kwargs = {
+                                    "bot": GroupNoticeBot(
+                                        api=construct_api(ws),
+                                        groupId=groupId,
+                                    ),
+                                    "event": receive,
+                                    "member": member,
+                                }
+
+                            elif finalEvent == GroupEvent.BeenGroupPoked:
+                                member = await api.member(
+                                    groupId=receive["group_id"],
+                                    userId=receive["sender_id"],
+                                )
+
+                                kwargs = {
+                                    "bot": GroupNoticeBot(
+                                        api=construct_api(ws),
+                                        groupId=groupId,
+                                    ),
+                                    "event": receive,
+                                    "sender": member,
+                                }
+
+                            elif finalEvent == GroupEvent.GroupHonorChange:
+                                member = await api.member(
+                                    groupId=receive["group_id"],
+                                    userId=receive["sender_id"],
+                                )
 
                                 kwargs = {
                                     "bot": GroupNoticeBot(
@@ -645,7 +586,9 @@ async def main_entry(request, ws):
                                     finalMessageQueue = normalContext.messageQueue
 
                                 elif commandContext.mode == "crossGroup":
-                                    status = commandContext.crossGroupUserStatus[userId]
+                                    status = commandContext.crossGroupCommandStatus[
+                                        userId
+                                    ]
 
                                     finalContext = status.userContext
                                     finalStatus = status.commandStatus
@@ -668,16 +611,26 @@ async def main_entry(request, ws):
                                         commandContext.globalMessageQueue
                                     )
 
-                                debug(finalContext)
-                                debug(finalStatus)
-                                debug(finalMessageQueue)
+                                debug(
+                                    {
+                                        "className": commandClassName,
+                                        "userId": userId,
+                                        "groupId": groupId,
+                                        "chain": chain.chain,
+                                        "context": finalContext,
+                                        "status": finalStatus,
+                                        "messageQueue": finalMessageQueue,
+                                    }
+                                )
+                                # debug(finalStatus)
+                                # debug(finalMessageQueue)
                                 # debug(globalContext)
 
                                 collectMessageFlag = False
                                 if finalStatus == "initial":
 
                                     # 判断是否触发命令前缀
-                                    isValidRequest = is_valid_request(
+                                    isValidRequest = await is_valid_request(
                                         chain, commandClassName, commandCache.kwargs
                                     )
 
@@ -705,29 +658,6 @@ async def main_entry(request, ws):
                                     # todo 对所有事件的回调，都判断是否awaitable
 
                                     if finalStatus != "initial":
-                                        # todo 超时判断应该每次心跳都判断，而不是接收到该用户消息时
-                                        # 超时判断，与上一条消息的createTime判断
-                                        # timeout: Optional[int] = commandCache.kwargs[
-                                        #     "timeout"
-                                        # ]
-
-                                        # if timeout:
-
-                                        #     prevChain = finalMessageQueue[-2]
-                                        #     currentChain = finalMessageQueue[-1]
-
-                                        #     debug(
-                                        #         prevChain.createTime
-                                        #         - currentChain.createTime
-                                        #     )
-                                        #     debug(timeout)
-
-                                        #     if (
-                                        #         prevChain.createTime
-                                        #         - currentChain.createTime
-                                        #         >= timeout
-                                        #     ):
-                                        #         raise CommandClassOnTimeout()
 
                                         # 退出判断
                                         exitPatterns: List[str] = commandCache.kwargs[
@@ -832,6 +762,7 @@ async def main_entry(request, ws):
 
             else:
                 print("未注册的事件类型")
+                logger.debug(receive)
 
         except Exception as e:
             print(e)

@@ -1,5 +1,5 @@
 import asyncio
-from src.Models.api import get_group_member_info_return
+from src.Models.api import get_group_member_info_return, get_login_info
 
 import httpx
 from src.main import *
@@ -17,7 +17,17 @@ class APICaller:
         self.host = host
         self.port = port
 
-        self.client = httpx.AsyncClient(proxies=proxies)
+        kwargs = {}
+        if proxies:
+            kwargs["proxies"] = proxies
+
+        self.client = httpx.AsyncClient(**kwargs)
+
+        # try:
+        #     self.client = httpx.AsyncClient(proxies=proxies)
+        #     yield None
+        # finally:
+        #     await self.client.aclose()
 
     def __del__(self):
         # todo 销毁时，注销client，似乎有点多此一举？
@@ -69,6 +79,15 @@ class APICaller:
 
         member = get_group_member_info_return(**response.json()).data
         return member
+
+    async def self_info(
+        self,
+    ):
+        response = await self.api(
+            "get_login_info",
+        )
+
+        return get_login_info(**response.json()).data
 
 
 # {

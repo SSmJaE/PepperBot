@@ -6,6 +6,12 @@ from typing import Any, Coroutine, Union, cast
 from devtools import debug
 
 
+class DictNoNone(dict):
+    def __setitem__(self, key, value):
+        if key in self or value is not None:
+            dict.__setitem__(self, key, value)
+
+
 def get_current_function_name():
     return inspect.currentframe().f_back.f_code.co_name
 

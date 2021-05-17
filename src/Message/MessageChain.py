@@ -4,12 +4,25 @@ import sys
 from pprint import pprint
 from typing import Iterable, Tuple, Type, TypeVar
 
+from devtools import debug
+
 from src.Message.MessageSegment import *
 
 SegmentClass_T = Union[
-    Type[At], Type[Music], Type[Audio], Type[Image], Type[Reply], Type[Text], Type[Face]
+    Type[At],
+    Type[Music],
+    Type[Audio],
+    Type[Image],
+    Type[Reply],
+    Type[Text],
+    Type[Face],
+    Type[Video],
+    Type[Poke],
+    Type[Share],
 ]
-SegmentInstance_T = Union[At, Text, Face, Music, Audio, Image, Reply]
+SegmentInstance_T = Union[
+    At, Text, Face, Music, Audio, Image, Reply, Video, Poke, Share
+]
 SegmentClassOrInstance_T = Union[SegmentClass_T, SegmentInstance_T]
 TypeofSegmentClassOrInstance_Generic = TypeVar(
     "TypeofSegmentClassOrInstance_Generic",

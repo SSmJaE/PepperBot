@@ -1,6 +1,34 @@
 from enum import Enum, unique
 from typing import Union
 
+
+# @unique
+class GroupEvent:
+    # 针对群
+    GroupMessage = "GroupMessage"
+    GroupAnonymousMessage = "GroupAnonymousMessage"
+    GroupNotice = "GroupNotice"
+    GroupMessageBeenWithdraw = "GroupMessageBeenWithdraw"
+    GroupHonorChange = "GroupHonorChange"
+    MemberIncreased = "MemberIncreased"
+    MemberDecline = "MemberDecline"
+    UploadNewFIle = "uploadNewFIle"
+    AdminChange = "adminChange"
+    BanChange = "banChange"
+    AddGroup = "AddGroup"
+    # 针对个人，群相关
+    BeenGroupPoked = "BeenGroupPoked"
+    BeenInvited = "BeenInvited"
+    # 针对个人，个人相关
+    BeenAdded = "addFriend"
+    FriendMessage = "FriendMessage"
+    FriendPokeYou = "FriendPokeYou"
+    FriendWithdraw = "FriendWithdraw"
+    TempMessage = "TempMessage"
+    # 其它
+    MetaEvent = "MetaEvent"
+
+
 RELATIONS = {
     "group": {
         "GroupMessage": [
@@ -15,7 +43,8 @@ RELATIONS = {
             "uploadNewFIle",
             "adminChange",
             "banChange",
-            "GroupPokeYou",
+            "BeenGroupPoked",
+            GroupEvent.GroupHonorChange,
         ],
         "GroupRequest": ["AddGroup", "BeenInvited"],
     },
@@ -33,32 +62,6 @@ RELATIONS = {
     ],
     "temp": ["TempMessage"],
 }
-
-
-# @unique
-class GroupEvent:
-    # 针对群
-    GroupMessage = "GroupMessage"
-    GroupAnonymousMessage = "GroupAnonymousMessage"
-    GroupNotice = "GroupNotice"
-    GroupMessageBeenWithdraw = "GroupMessageBeenWithdraw"
-    MemberIncreased = "MemberIncreased"
-    MemberDecline = "MemberDecline"
-    UploadNewFIle = "uploadNewFIle"
-    AdminChange = "adminChange"
-    BanChange = "banChange"
-    AddGroup = "AddGroup"
-    # 针对个人，群相关
-    GroupPokeYou = "GroupPokeYou"
-    BeenInvited = "BeenInvited"
-    # 针对个人，个人相关
-    BeenAdded = "addFriend"
-    FriendMessage = "FriendMessage"
-    FriendPokeYou = "FriendPokeYou"
-    FriendWithdraw = "FriendWithdraw"
-    TempMessage = "TempMessage"
-    # 其它
-    MetaEvent = "MetaEvent"
 
 
 GROUP_EVENTS_T = Union[

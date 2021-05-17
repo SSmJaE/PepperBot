@@ -31,6 +31,15 @@ def figure_out(receive: dict):
             print("新成员入群")
             finalType = GroupEvent.MemberIncreased
 
+        elif notice_type == "notify":
+            if sub_type == "poke":
+                print("机器人在群中被POKE")
+                finalType = GroupEvent.BeenGroupPoked
+
+            if sub_type == "honor":
+                print("群荣誉变更")
+                finalType = GroupEvent.GroupHonorChange
+
     if post_type == "message":
         message_type = receive["message_type"]
         sub_type = receive["sub_type"]

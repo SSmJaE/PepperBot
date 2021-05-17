@@ -12,6 +12,9 @@ arrow = "^1.0.3"
 pydantic = "^1.8.1"
 devtools = "^0.6.1"
 httpx = "0.15.4"
+loguru = "^0.5.3"
+SQLAlchemy = "^1.4.15"
+pretty-errors = "^1.2.20"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
