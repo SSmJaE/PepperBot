@@ -1,1 +1,0 @@
-import{o as t,c as e}from"./app.14b541e2.js";const r='{"title":"","description":"","frontmatter":{},"relativePath":"Event/notExist.md","lastUpdated":1621245941487}',o={};o.render=function(r,o,a,n,i,d){return t(),e("div")};export default o;export{r as __pageData};

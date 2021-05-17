@@ -1,1 +1,0 @@
-import{o as l,c as t,b as e}from"./app.14b541e2.js";const i='{"title":"","description":"","frontmatter":{},"relativePath":"Plugin/official.md","lastUpdated":1621245941487}',n={},r=e("ul",null,[e("li",null,"加群黑名单"),e("li",null,"群聊违禁词")],-1);n.render=function(e,i,n,a,o,u){return l(),t("div",null,[r])};export default n;export{i as __pageData};

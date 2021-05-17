@@ -1,1 +1,0 @@
-import{o as t,c as e,b as l}from"./app.14b541e2.js";const n='{"title":"","description":"","frontmatter":{},"relativePath":"Event/mixin.md","lastUpdated":1621245941487}',r={},a=l("ul",null,[l("li",null,"优先级")],-1);r.render=function(l,n,r,i,o,d){return t(),e("div",null,[a])};export default r;export{n as __pageData};
