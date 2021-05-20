@@ -1,4 +1,4 @@
-from src.Action.main import *
+from pepperbot.Action.main import *
 
 
 # defaultCatchHandler

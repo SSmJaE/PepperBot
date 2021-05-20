@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pepperbot"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["SSmJaE <shaoxydd8888@gmail.com>"]
 
@@ -23,9 +23,6 @@ black = { version = "^21.4b2", allow-prereleases = true }
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.scripts]
-demo = "python ./demo/demo.py"
-
 [tool.poe.tasks]
 demo = "python ./demos/1群消息事件响应.py"
-test = ""
+test = "pytest"

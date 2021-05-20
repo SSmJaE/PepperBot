@@ -8,3 +8,4 @@ demo
 docs/.vitepress/dist
 .venv
 .vscode
+dist

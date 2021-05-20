@@ -1,4 +1,4 @@
-from src.main import *
+from pepperbot.main import *
 import random
 
 welcomeMessage = [

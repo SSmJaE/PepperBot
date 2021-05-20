@@ -7,17 +7,21 @@
 <a href="https://jq.qq.com/?_wv=1027&k=EPhcRRib">交流群</a>
 </p>
 
-## Features
-- QQ基于OneBot协议
+## 特性
+- QQ部分基于OneBot协议
 - 渐进式
 - 符合直觉，直观，流畅的把想法映射到代码上
 - 新手友好，完全的类型提示
-- 易扩展
-- 基于class mixin的扩展
+- 易扩展，基于class mixin的扩展
 - 使用原生import，而不是自己造一套模块轮子
 - 注入参数，无限overload
 - 异步，反向ws，性能
 - 支持集中化路由管理
+
+## 安装
+```bash
+pip install pepperbot
+```
 
 ## 示例
 ```py

@@ -1,4 +1,4 @@
-from src.Action.main import ActionChain
+from pepperbot.Action.main import ActionChain
 
 
 # defaultCatchHandler

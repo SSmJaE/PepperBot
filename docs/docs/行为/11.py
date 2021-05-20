@@ -6,13 +6,13 @@ import base64
 BASE_DIR = path.dirname(path.dirname(path.dirname(path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
-from src.Action.Bot import *
-from src.Action.main import *
+from pepperbot.Action.Bot import *
+from pepperbot.Action.main import *
 
 import requests
 
 
-# from src.Message.PokeTypes import PokeTypes
+# from pepperbot.Message.PokeTypes import PokeTypes
 
 import os
 from os import path

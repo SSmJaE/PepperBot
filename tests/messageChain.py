@@ -5,7 +5,7 @@ BASE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
 
-from src.main import *
+from pepperbot.main import *
 
 mockEvent = {
     "message_id": 12345,
