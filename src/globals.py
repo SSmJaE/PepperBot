@@ -1,18 +1,14 @@
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Literal, Union
 
+from loguru import logger
 from pydantic import BaseModel
 
-from src.Bots.Bots import BotBase
-from src.Message.MessageChain import SegmentInstance_T
+from src.message.chain import SegmentInstance_T
+from src.parse.bots import BotBase
 
-CLASS_ID_MAP: Dict[Any, Any] = {}
-
-ClassId_T = Any
-
-
-class CommandClassBase:
-    pass
+# logger配置
+# logger.debug("That's it, beautiful and simple logging!")
 
 
 class UserMessage(BaseModel):
@@ -87,7 +83,7 @@ class Context(BaseModel):
     """
 
     # todo 相同commandClass，不同permission的处理
-    cache: Dict[ClassId_T, CommandContext] = {}
+    cache: Dict[Callable, CommandContext] = {}
     # 全局默认栈深
     maxSize: int = 10
     # 全局默认消息过期时间，单位秒
@@ -133,8 +129,8 @@ class GroupCache(BaseModel):
 
     # bounded methods
     # methods: Dict[GROUP_EVENTS_T, List[Any]] = defaultdict(list)
-    methods: Dict[str, List[Any]] = defaultdict(list)
-    commandClasses: Dict[ClassId_T, CommandCache] = {}
+    methods: Dict[str, List[Callable]] = defaultdict(list)
+    commandClasses: List[Callable] = []
 
     class Config:
         arbitrary_types_allowed = True
@@ -145,9 +141,13 @@ class ClassHandler(BaseModel):
     groupMeta: Dict[Callable, GroupMeta] = defaultdict(GroupMeta)
     # key为群号
     groupCache: Dict[int, List[GroupCache]] = defaultdict(list)
+    commandCache: Dict[Callable, CommandCache] = {}
 
 
 # function handlers
 functionHandlers = defaultdict(list)
 # classHandlers = {"group": defaultdict(list), "groupCache": defaultdict(list)}
 classHandlers = ClassHandler()
+
+
+# todo 允许用户修改的全局config，基于pydantic

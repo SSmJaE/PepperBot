@@ -38,3 +38,8 @@ class CommandClassOnExit(PepperBotBaseException):
 class CommandClassOnTimeout(PepperBotBaseException):
 
     pass
+
+
+class EventHandlerDefineError(PepperBotBaseException):
+
+    pass

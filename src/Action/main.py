@@ -1,5 +1,5 @@
 from __future__ import annotations
-from src.Models.api import get_group_member_list_return
+from src.models.api import get_group_member_list_return
 
 import sys
 from os import path
@@ -32,7 +32,7 @@ from typing import (
 
 from httpx import Response
 from pydantic import BaseModel
-from src.Action.decorators import (
+from src.action.decorators import (
     BranchableChain,
     ContextItem,
     end_point,
@@ -42,8 +42,8 @@ from src.Action.decorators import (
 )
 
 # from src.main import *
-from src.Models import *
-from src.User import *
+from src.models import *
+from src.models.user import *
 from src.utils.common import get_current_function_name
 
 from .Bot import APICaller
@@ -76,7 +76,7 @@ ACTION_PERMISSION = {
 # @ABC()
 
 
-api = APICaller(port=5700)
+api = globalApi = APICaller(port=5700)
 
 
 class OnlyRunner:

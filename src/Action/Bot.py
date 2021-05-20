@@ -1,10 +1,10 @@
 import asyncio
-from src.Models.api import get_group_member_info_return, get_login_info
+from src.models.api import get_group_member_info_return, get_login_info
 
 import httpx
 from src.main import *
 from typing import Optional
-from src.Message.MessageChain import SegmentInstance_T
+from src.message.chain import SegmentInstance_T
 
 
 class APICaller:

@@ -1,12 +1,13 @@
 from inspect import isclass
 import re
+from src.types import API_Caller_T
 import sys
 from pprint import pprint
 from typing import Iterable, Tuple, Type, TypeVar
 
 from devtools import debug
 
-from src.Message.MessageSegment import *
+from src.message.segment import *
 
 SegmentClass_T = Union[
     Type[At],
@@ -46,12 +47,12 @@ currentModule = sys.modules[__name__]
 
 
 class MessageChain:
-    def __init__(self, event: dict, groupId: int, api) -> None:
+    def __init__(self, event: dict, groupId: int, api: API_Caller_T) -> None:
         self.chain: List[SegmentInstance_T] = []
 
         self.event = event
         self.groupId = groupId
-        self.api = api
+        self.api: API_Caller_T = api
 
         self.messageId = event["message_id"]
 
@@ -62,7 +63,7 @@ class MessageChain:
         for segment in originChain:
             messageType: str = segment["type"]
             data: dict = segment["data"]
-            pprint(data)
+            # pprint(data)
 
             segmentClass = getattr(currentModule, messageType.capitalize())
             segmentInstance = segmentClass(data)

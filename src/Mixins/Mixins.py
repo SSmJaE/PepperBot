@@ -1,11 +1,8 @@
 from typing import Awaitable, Callable, Dict, Protocol, Union
 
-from src.Message.MessageChain import *
+from src.message.chain import *
 
 # protocol可以提供类型检查，但是pylance报错
-
-
-APICaller_T = Callable[[str, Dict[Any, Any]], Awaitable[Any]]
 
 
 class ApiProptocal(Protocol):
@@ -69,23 +66,7 @@ class ActionMixin:
 
 
 class GroupMessageMixin:
-    api: APICaller_T
-    groupId: int
-
-    async def group_msg(self, *chain: SegmentInstance_T):
-        await self.api(
-            "send_group_msg",
-            **{
-                "group_id": self.groupId,
-                "message": [segment.formatted for segment in chain],
-            }
-        )
-
-    def at_all(self):
-        return {"type": "at", "data": {"qq": "all"}}
-
-class GroupNoticeMixin:
-    api: APICaller_T
+    api: API_Caller_T
     groupId: int
 
     async def group_msg(self, *chain: SegmentInstance_T):
@@ -102,7 +83,7 @@ class GroupNoticeMixin:
 
 
 class GroupMemberMixin:
-    api: Any
+    api: API_Caller_T
     event: Dict[str, Any]
 
     async def ban(self, duration: int = 30):
@@ -133,9 +114,9 @@ class GroupMemberMixin:
         )
 
 
-class GroupRequestMixin:
-    api: Any
-    flag: Any
+class AddGroupMixin:
+    api: API_Caller_T
+    flag: str
 
     async def resolve(self):
         await self.api(

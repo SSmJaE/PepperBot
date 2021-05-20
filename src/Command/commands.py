@@ -1,4 +1,7 @@
-from src.Command import *
+from src.command import *
+import random
+from devtools import debug
+import re
 
 
 @as_command(
@@ -18,7 +21,7 @@ class 查询装备:
 
     # 默认的initial，“开启指令“查询装备”的会话”
     async def initial(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text(f"{sender.user_id}"))
         await bot.group_msg(Text("开始执行指令"))
@@ -44,7 +47,7 @@ class 查询装备:
     )
     async def first(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -68,7 +71,7 @@ class 查询装备:
     )
     async def second(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -91,7 +94,7 @@ class 查询装备:
         debug(context)
 
     # @pattern("<rarity:int>", )
-    # async def third( self, bot:GroupMessageBot,chain:MessageChain,sender:Sender,**kwargs):
+    # async def third( self, bot:GroupCommonBot,chain:MessageChain,sender:Sender,**kwargs):
     #         # 可以从指令的context中获取到之前几次对话获取到的参数
     #     armor = self.context['second']['args']['armor']
     #     results = getData(armor, rarity)
@@ -103,13 +106,13 @@ class 查询装备:
     # 用户主动退出
     @pattern("<something?:str>")
     async def exit(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text("用户主动退出"))
 
     # 流程正常退出(在中间的流程return False/None也是正常退出)
     async def finish(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text(f"{sender.user_id}"))
         await bot.group_msg(Text("命令正常执行完毕后退出"))
@@ -123,7 +126,7 @@ class 查询装备:
         #         reply("{argName} {argValue}")
 
     async def timeout(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text("用户超时未回复，结束会话"))
 
@@ -150,7 +153,7 @@ class 模拟:
 
     # 默认的initial，“开启指令“查询装备”的会话”
     async def initial(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg()
         await bot.group_msg(
@@ -165,7 +168,7 @@ class 模拟:
         onFormatError="请按照 /查询装备 游戏名 装备名 的格式输入",
     )
     async def first(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         # game = messages["game"]
         # reply("你选择的是{game}的{character}角色，需要查询他的什么装备呢？")
@@ -205,7 +208,7 @@ class 模拟:
         "<armor:str> <rarity?:int>",
     )
     async def second(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         # if messages['rarity']:
         #     results = getData(armor, rarity)
@@ -221,7 +224,7 @@ class 模拟:
         await bot.group_msg(Text("第二个响应"))
 
     # @pattern("<rarity:int>", )
-    # async def third( self, bot:GroupMessageBot,chain:MessageChain,sender:Sender,**kwargs):
+    # async def third( self, bot:GroupCommonBot,chain:MessageChain,sender:Sender,**kwargs):
     #         # 可以从指令的context中获取到之前几次对话获取到的参数
     #     armor = self.context['second']['args']['armor']
     #     results = getData(armor, rarity)
@@ -233,13 +236,13 @@ class 模拟:
     # 用户主动退出
     @pattern("<something?:str>")
     async def exit(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text("用户主动退出"))
 
     # 流程正常退出(在中间的流程return False/None也是正常退出)
     async def finish(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text(f"{sender.user_id}"))
         await bot.group_msg(Text("命令正常执行完毕后退出"))
@@ -253,7 +256,7 @@ class 模拟:
         #         reply("{argName} {argValue}")
 
     async def timeout(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text("用户超时未回复，结束会话"))
 
@@ -272,7 +275,7 @@ class 简单复读(CommonEndMixin):
     # 默认的initial，“开启指令“查询装备”的会话”
     async def initial(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -292,7 +295,7 @@ class 简单复读(CommonEndMixin):
     )
     async def first(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -334,7 +337,7 @@ class 简单复读(CommonEndMixin):
 class 跨群复读(CommonEndMixin):
     async def initial(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -350,7 +353,7 @@ class 跨群复读(CommonEndMixin):
 
     async def first(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -390,7 +393,7 @@ class 跨群复读(CommonEndMixin):
 class 跨用户复读(CommonEndMixin):
     async def initial(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -406,7 +409,7 @@ class 跨用户复读(CommonEndMixin):
 
     async def first(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -446,7 +449,7 @@ class 跨用户复读(CommonEndMixin):
 class 全局复读(CommonEndMixin):
     async def initial(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -462,7 +465,7 @@ class 全局复读(CommonEndMixin):
 
     async def first(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -502,7 +505,7 @@ class 全局复读(CommonEndMixin):
 class 查询天气(CommonEndMixin):
     async def initial(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,
@@ -541,7 +544,7 @@ class 查询天气(CommonEndMixin):
 class 人工智障(CommonEndMixin):
     async def initial(
         self,
-        bot: GroupMessageBot,
+        bot: GroupCommonBot,
         chain: MessageChain,
         sender: Sender,
         context: Dict,

@@ -1,7 +1,7 @@
 from typing import List, Literal
 
 from pydantic import BaseModel
-from src.User import GroupMember
+from src.models.user import GroupMember
 
 
 class get_group_member_list_return(BaseModel):

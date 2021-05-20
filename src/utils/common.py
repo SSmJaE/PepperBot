@@ -1,7 +1,7 @@
 import inspect
 from inspect import isawaitable, iscoroutine
 from types import FunctionType
-from typing import Any, Coroutine, Union, cast
+from typing import Any, Callable, Coroutine, Dict, Union, cast
 
 from devtools import debug
 
@@ -62,5 +62,32 @@ async def await_or_normal(
     # return result
 
 
-# async def aaa():
-#     await get_current_function_name()
+async def deepawait_or_normal(
+    functionOrCoroutineOrValue: Union[Any, Coroutine, FunctionType], *args, **kwargs
+):
+    """
+    src.parse.kwargs.get_member_info
+
+    双重await，lambda
+    """
+    if callable(functionOrCoroutineOrValue):
+        result = functionOrCoroutineOrValue(*args, **kwargs)
+
+        while iscoroutine(result):
+            result = await result
+
+        return result
+
+    return functionOrCoroutineOrValue
+
+
+def fit_kwargs(method: Callable, kwargs: Dict[str, Any]):
+    validKwargNames = method.__annotations__.keys()
+
+    finalKwargs = {}
+
+    for argName in kwargs.keys():
+        if argName in validKwargNames:
+            finalKwargs[argName] = kwargs[argName]
+
+    return finalKwargs

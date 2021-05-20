@@ -1,18 +1,21 @@
 from functools import wraps
-from inspect import ismethod
-from typing import Any, Callable, Dict, List, TypeVar, Union, cast
+from inspect import isclass, ismethod
+from src.exceptions import EventHandlerDefineError
+from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar, Union, cast
 
+from devtools import debug
 from pydantic import BaseModel
-from src.main import *
-
-F = TypeVar("F", bound=Callable[..., Any])
+from src.globals import *
+from src.message.chain import MessageChain
+from src.message.segment import Text
+from src.models.user import Sender
+from src.parse.bots import GroupCommonBot
+from src.types import CommandClassBase, F
 
 
 class PatternModel:
     pass
 
-
-# todo 多个group handler，相同command的处理(解析所有指令和groupId，重新生成缓存)
 
 # todo command的权限管理
 # todo command的黑白名单，动态黑白名单(提供函数，参数为当前发言用户)
@@ -36,7 +39,7 @@ def with_command(commandClasses: List[CommandClassBase] = [], *args, **kwargs):
 
             # debug(commandClasses[0].kwargs)
         else:
-            print("应为class")
+            raise EventHandlerDefineError("只允许使用with_command装饰器注册class")
 
         return handler
 
@@ -58,10 +61,16 @@ def as_command(
     at: bool = False,
     # 会话超时时间，单位秒,
     timeout: Optional[int] = 30,
+    maxSize: Optional[int] = None,
     mode: Literal["normal", "crossUser", "crossGroup", "global"] = "normal",
     **kwargs,
 ):
     """将一个class注册为指令类，并收集关键字参数"""
+
+    # 使用annanotion自动获取所有kwargs
+    commandKwargs = locals()
+    del commandKwargs["args"]
+    del commandKwargs["kwargs"]
 
     def decorator(commandClass: object):
         initialMethod = getattr(commandClass, "initial")
@@ -71,17 +80,7 @@ def as_command(
         setattr(
             commandClass,
             "kwargs",
-            # todo 使用annanotion自动获取所有kwargs
-            {
-                "needPrefix": needPrefix,
-                "prefix": prefix,
-                "also": also,
-                "includeClassName": includeClassName,
-                "exitPattern": exitPattern,
-                "at": at,
-                "timeout": timeout,
-                "mode": mode,
-            },
+            {**commandKwargs},
         )
 
         return cast(CommandClassBase, commandClass)
@@ -119,18 +118,18 @@ class CommonEndMixin:
     # 用户主动退出
     @pattern("<something?:str>")
     async def exit(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text("用户主动退出"))
 
     # 流程正常退出(在中间的流程return False/None也是正常退出)
     async def finish(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         # todo group_msg内部，自动合并相邻的Text
         await bot.group_msg(Text(f"{sender.user_id}"), Text("命令正常执行完毕后退出"))
 
     async def timeout(
-        self, bot: GroupMessageBot, chain: MessageChain, sender: Sender, **kwargs
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
         await bot.group_msg(Text("用户超时未回复，结束会话"))

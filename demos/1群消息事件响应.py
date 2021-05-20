@@ -15,8 +15,8 @@ sys.path.append(BASE_DIR)
 
 
 from src.main import *
-from src.Command import with_command
-from src.Command.commands import 全局复读, 查询装备, 模拟, 简单复读, 跨用户复读, 跨群复读, 人工智障
+from src.command import with_command
+from src.command.commands import 查询装备, 模拟, 简单复读, 跨用户复读, 跨群复读, 全局复读, 人工智障
 
 # todo 实现抽象基类，或者模板，或者说ts中的inherit的interface
 # 以实现检测子类是否实现了指定的方法，和实例属性
@@ -51,7 +51,9 @@ def get_random_pic():
 @register(groupId=[1041902989, 819441084])
 class WhateverNameYouWant:
     async def member_increased(
-        self, bot: GroupNoticeBot, member: GroupMember, **kwargs
+        self,
+        bot: GroupCommonBot,
+        member: GroupMember,
     ):
         debug(humanize(get_current_function_name()))
 
@@ -63,7 +65,9 @@ class WhateverNameYouWant:
         )
 
     async def been_group_poked(
-        self, bot: GroupNoticeBot, sender: GroupMember, **kwargs
+        self,
+        bot: GroupCommonBot,
+        sender: GroupMember,
     ):
 
         await bot.group_msg(
@@ -71,7 +75,10 @@ class WhateverNameYouWant:
         )
 
     async def group_honor_change(
-        self, bot: GroupNoticeBot, member: GroupMember, event: Dict, **kwargs
+        self,
+        bot: GroupCommonBot,
+        member: GroupMember,
+        event: Dict,
     ):
 
         honorType = event["honor_type"]
@@ -80,11 +87,11 @@ class WhateverNameYouWant:
             Text(f"收到来自{member.user_id}的群荣誉变更"),
         )
 
-    async def before_group_message(self, **kwargs):
+    async def before_group_message(self, event: Dict):
         print(humanize(get_current_function_name()))
 
     async def group_message(
-        self, bot: AddGroupBot, chain: MessageChain, sender: Sender
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender
     ):
 
         if "撤回我" == chain.pure_text:
@@ -133,10 +140,10 @@ class WhateverNameYouWant:
                 Text("不支持自动提交，也不打算开发此功能，因为需要给每种课程都做适配，很耗时间"),
             )
 
-    async def after_group_message(self, **kwargs):
+    async def after_group_message(self):
         print(humanize(get_current_function_name()))
 
-    async def add_group(self, bot: GroupRequestBot, event):
+    async def add_group(self, bot: AddGroupBot, event: Dict[str, Any]):
         print(humanize(get_current_function_name()))
 
         # if "加入我" in event["comment"]:

@@ -7,7 +7,6 @@ authors = ["SSmJaE <shaoxydd8888@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 sanic = "^20.12.2"
-inflection = "^0.5.1"
 arrow = "^1.0.3"
 pydantic = "^1.8.1"
 devtools = "^0.6.1"

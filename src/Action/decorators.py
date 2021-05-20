@@ -14,7 +14,7 @@ from typing import (
 
 from devtools import debug
 from pydantic.main import BaseModel
-from src.Exceptions import EmptySelectionException
+from src.exceptions import EmptySelectionException
 
 
 class ContextItem(BaseModel):
