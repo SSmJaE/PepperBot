@@ -9,7 +9,17 @@ import random
 
 from inflection import humanize
 from pepperbot.command import with_command
-from pepperbot.command.commands import 人工智障, 全局复读, 查询装备, 模拟, 简单复读, 跨用户复读, 跨群复读
+from pepperbot.command.commands import (
+    人工智障,
+    全局复读,
+    查询装备,
+    模拟,
+    简单复读,
+    跨用户复读,
+    跨群复读,
+    Pattern测试,
+    InitialPattern,
+)
 from pepperbot.main import *
 from pepperbot.models.sender import Sender
 
@@ -41,8 +51,9 @@ def get_random_pic():
     return path.join(basePath, file)
 
 
-@with_command(commandClasses=[查询装备, 模拟, 简单复读, 跨群复读, 跨用户复读, 全局复读, 人工智障])
-#
+@with_command(
+    commandClasses=[查询装备, 模拟, 简单复读, 跨群复读, 跨用户复读, 全局复读, 人工智障, Pattern测试, InitialPattern]
+)
 @register(groupId=[1041902989, 819441084])
 class WhateverNameYouWant:
     async def member_increased(

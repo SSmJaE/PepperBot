@@ -55,6 +55,7 @@ class Text(MessageSegMentBase):
         super().__init__(**{"identifier": text})
 
         self.formatted = {"type": "text", "data": {"text": text}}
+        self.content: str = text
 
 
 class Face(MessageSegMentBase):
@@ -107,6 +108,8 @@ class Image(MessageSegMentBase):
         kwargs["type"] = mode
 
         self.formatted = {"type": "image", "data": {**kwargs, "file": url}}
+        self.type = mode
+        self.file = url
 
     def download(self):
         # todo download

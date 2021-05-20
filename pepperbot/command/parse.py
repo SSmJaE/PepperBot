@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
 from pepperbot.action.chain import globalApi
 from pepperbot.globals import CommandContext, UserMessage, globalContext
@@ -51,6 +51,33 @@ def util_factory(
     return update_command_status, process_messageQueue
 
 
+def is_meet_prefix(
+    chain: MessageChain, commandClassName: str, kwargs: Dict
+) -> Tuple[bool, str]:
+    needPrefix: bool = kwargs["needPrefix"]
+    prefixes: List[str] = kwargs["prefix"]
+
+    also: List[str] = kwargs["also"]
+    includeClassName: bool = kwargs["includeClassName"]
+    if includeClassName:
+        if commandClassName not in also:
+            also.append(commandClassName)
+
+    # debug(commandClassName)
+    # debug(prefixes)
+    # debug(also)
+
+    for alias in also:
+
+        for prefix in prefixes if needPrefix else [""]:
+            finalPrefix = prefix + alias
+            if re.search(f"^{finalPrefix}", chain.pure_text):
+                # debug(finalPrefix)
+                return True, finalPrefix
+
+    return False, ""
+
+
 async def is_valid_request(
     chain: MessageChain, commandClassName: str, kwargs: Dict
 ) -> bool:
@@ -71,39 +98,12 @@ async def is_valid_request(
         if chain.has(At(selfId)):
             atFlag = True
 
-    needPrefix: bool = kwargs["needPrefix"]
-    prefixes: List[str] = kwargs["prefix"]
-
-    also: List[str] = kwargs["also"]
-    includeClassName: bool = kwargs["includeClassName"]
-    if includeClassName:
-        if commandClassName not in also:
-            also.append(commandClassName)
-
-    # debug(commandClassName)
-    # debug(prefixes)
-    # debug(also)
-
-    keywordFlag = False
-    for alias in also:
-        if isValidRequest:
-            break
-
-        for prefix in prefixes if needPrefix else [""]:
-            finalPrefix = prefix + alias
-            if re.search(f"^{finalPrefix}", chain.pure_text):
-                keywordFlag = True
-                # debug(finalPrefix)
-                break
-
     # debug(keywordFlag, atFlag)
-    if keywordFlag:
+    if is_meet_prefix(chain, commandClassName, kwargs)[0]:
         if at:
             if atFlag:
                 isValidRequest = True
         else:
             isValidRequest = True
-
-    # debug(isValidRequest)
 
     return isValidRequest

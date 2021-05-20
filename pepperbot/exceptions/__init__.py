@@ -24,6 +24,9 @@ class CommandClassDefineException(PepperBotBaseException):
 
     pass
 
+class PatternFormotError(PepperBotBaseException):
+    pass
+
 
 class CommandClassOnFinish(PepperBotBaseException):
 

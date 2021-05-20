@@ -1,3 +1,4 @@
+from pepperbot.message.segment import Face
 from pepperbot.command import *
 import random
 from devtools import debug
@@ -14,10 +15,6 @@ import re
     timeout=None,  # 会话超时时间，单位秒
 )
 class 查询装备:
-
-    # todo context注入
-    # 全局context，应该是实时同步的
-    context: dict
 
     # 默认的initial，“开启指令“查询装备”的会话”
     async def initial(
@@ -39,12 +36,11 @@ class 查询装备:
     # 所以方法的参数的顺序可以随意，但是参数名称必须和pattern中的名称一致
     # 参数的类型由框架保证
     # pattern <something:123> 中的123并不是有效的python类型
-    @pattern(
-        # 不提供类型，默认全部str
-        "<game:str> <character:str>",
-        # todo 类似pydantic，具体指出哪个参数出错
-        onFormatError="请按照 /查询装备 游戏名 装备名 的格式输入",
-    )
+    # @pattern(
+    #     # 不提供类型，默认全部str
+    #     # todo 类似pydantic，具体指出哪个参数出错
+    #     onFormatError="请按照 /查询装备 游戏名 装备名 的格式输入",
+    # )
     async def first(
         self,
         bot: GroupCommonBot,
@@ -66,9 +62,6 @@ class 查询装备:
     # ?:表示可选
     # 进入对话指令context，此时用户不再需要输入/查询装备
     # return True继续命令执行，return False触发中断
-    @pattern(
-        "<armor:str> <rarity?:int>",
-    )
     async def second(
         self,
         bot: GroupCommonBot,
@@ -104,7 +97,6 @@ class 查询装备:
     #     # 显式return None，或者不return，都会结束会话，触发finish生命周期
 
     # 用户主动退出
-    @pattern("<something?:str>")
     async def exit(
         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
@@ -136,6 +128,129 @@ class 查询装备:
     #     reply(f"{error.trace}")
 
 
+class TestModel(BaseModel):
+    游戏名: str
+    装备名: str
+    表情: Face
+    另一个字符: str
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+@as_command(
+    needPrefix=False,
+    prefix=["/", "#", "dan "],  # 都是正则，自动加上^
+    also=["查询", "测试"],  # 都是正则
+    includeClassName=True,  # 类名本身不作为指令
+    exitPattern=["^/exit", "^退出", "我?退出(对话)?"],  # 都是正则
+    at=False,  # 是否需要at机器人
+    timeout=None,  # 会话超时时间，单位秒
+)
+class Pattern测试:
+
+    # 默认的initial，“开启指令“查询装备”的会话”
+    async def initial(
+        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
+    ):
+        await bot.group_msg(Text(f"{sender.user_id}"))
+        await bot.group_msg(Text("开始执行指令"))
+        # await bot.group_msg(Text("请按照 /查询装备 游戏名 装备名 的格式输入"))
+
+        return self.first
+
+    # onFormatError默认按照pattern自动组合输出
+    # 请按照 /查询装备 game character 的格式输入
+    # first和之后的FormatError格式应该有点区别
+    # 输入参数无效，character应为文字， 数字
+    # <:face> <:image>
+    # pattern间的空格，表示至少1个空白字符
+    # 参数全部以关键字参数的形式传入，
+    # 所以方法的参数的顺序可以随意，但是参数名称必须和pattern中的名称一致
+    # 参数的类型由框架保证
+    # pattern <something:123> 中的123并不是有效的python类型
+    @pattern(
+        TestModel,
+    )
+    async def first(
+        self,
+        bot: GroupCommonBot,
+        chain: MessageChain,
+        sender: Sender,
+        context: Dict,
+        **kwargs,
+    ):
+        # game = messages["game"]
+        # reply("你选择的是{game}的{character}角色，需要查询他的什么装备呢？")
+        # await bot.group_msg(Text(f"{sender.user_id}"))
+        # await bot.group_msg(Text("第一个响应"))
+        # number = random.random()
+        patternResults: List[Dict[str, SegmentInstance_T]] = context["patternResults"]
+
+        buffer = []
+        for argName, segment in patternResults[-1].items():
+            buffer.append(Text(f"\n{argName} "))
+            buffer.append(segment)
+
+        await bot.group_msg(*buffer)
+
+        return self.first
+
+    async def second(
+        self,
+        bot: GroupCommonBot,
+        chain: MessageChain,
+        sender: Sender,
+        context: Dict,
+        **kwargs,
+    ):
+        # if messages['rarity']:
+        #     results = getData(armor, rarity)
+        #     reply("查询到以下装备{results}")
+
+        #     return None
+        # else:
+        #     reply("armor有如下稀有度{1 2 3 4 5}")
+        #     reply("你要查询的是哪一个呢？")
+
+        #     return self.third
+        await bot.group_msg(Text(f"{sender.user_id}"))
+        await bot.group_msg(Text("第二个响应"))
+        await bot.group_msg(Text(f"从context中获取到{context['test']}"))
+
+        debug(context)
+
+
+@as_command(
+    needPrefix=False,
+    prefix=["/", "#", "dan "],  # 都是正则，自动加上^
+    also=[],  # 都是正则
+    includeClassName=True,  # 类名本身不作为指令
+    exitPattern=["^/exit", "^退出", "我?退出(对话)?"],  # 都是正则
+    at=False,  # 是否需要at机器人
+    timeout=None,  # 会话超时时间，单位秒
+)
+class InitialPattern:
+    @pattern(TestModel)
+    async def initial(
+        self,
+        bot: GroupCommonBot,
+        chain: MessageChain,
+        sender: Sender,
+        context: Dict,
+    ):
+        patternResults: List[Dict[str, SegmentInstance_T]] = context["patternResults"]
+
+        buffer = []
+        for argName, segment in patternResults[-1].items():
+            buffer.append(Text(f"\n{argName} "))
+            buffer.append(segment)
+
+        await bot.group_msg(*buffer)
+
+        return self.initial
+
+
 @as_command(
     needPrefix=False,
     prefix=[],
@@ -145,7 +260,7 @@ class 查询装备:
     at=False,
     timeout=30,
 )
-class 模拟:
+class 模拟(CommonEndMixin):
 
     # todo context注入
     # 全局context，应该是实时同步的
@@ -162,11 +277,6 @@ class 模拟:
 
         return self.first
 
-    @pattern(
-        # 不提供类型，默认全部str
-        "<game:str> <character:str>",
-        onFormatError="请按照 /查询装备 游戏名 装备名 的格式输入",
-    )
     async def first(
         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
@@ -201,12 +311,6 @@ class 模拟:
 
         # return self.second
 
-    # ?:表示可选
-    # 进入对话指令context，此时用户不再需要输入/查询装备
-    # return True继续命令执行，return False触发中断
-    @pattern(
-        "<armor:str> <rarity?:int>",
-    )
     async def second(
         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
@@ -232,33 +336,6 @@ class 模拟:
 
     #     return None
     #     # 显式return None，或者不return，都会结束会话，触发finish生命周期
-
-    # 用户主动退出
-    @pattern("<something?:str>")
-    async def exit(
-        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
-    ):
-        await bot.group_msg(Text("用户主动退出"))
-
-    # 流程正常退出(在中间的流程return False/None也是正常退出)
-    async def finish(
-        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
-    ):
-        await bot.group_msg(Text(f"{sender.user_id}"))
-        await bot.group_msg(Text("命令正常执行完毕后退出"))
-
-        # reply("以下为对话历史")
-        # for order, info in self.context:
-        #     reply("第{order}次对话")
-        #     reply("用户输入{info["message"]}")
-        #     reply("解析出如下参数")
-        #     for argName, argValue in info['args']:
-        #         reply("{argName} {argValue}")
-
-    async def timeout(
-        self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
-    ):
-        await bot.group_msg(Text("用户超时未回复，结束会话"))
 
 
 @as_command(
@@ -288,11 +365,6 @@ class 简单复读(CommonEndMixin):
 
         return self.first
 
-    @pattern(
-        # 不提供类型，默认全部str
-        "<game:str> <character:str>",
-        onFormatError="请按照 /查询装备 游戏名 装备名 的格式输入",
-    )
     async def first(
         self,
         bot: GroupCommonBot,
@@ -320,8 +392,6 @@ class 简单复读(CommonEndMixin):
             return True
         else:
             return self.first
-
-        # return self.second
 
 
 @as_command(
