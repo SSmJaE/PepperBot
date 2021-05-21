@@ -163,6 +163,7 @@ def pattern(
             # todo pydantic有没有原生的功能
             # todo 解析str为int, float, bool
             # 尝试解析，解析失败，报错
+            # todo List(展开), Any, Union, List[Union/Any]
 
             formotHint = "请按照 "
             for argName, field in commandPattern.__fields__.items():
@@ -210,7 +211,7 @@ def pattern(
                 # 对initial应用pattern的情况，支持prefix
                 if f.__name__ == "initial":
                     if not isinstance(compressedChain[0], Text):
-                        return None
+                        return f
                     else:
                         meetPrefix, prefix = is_meet_prefix(
                             chain, commandClassName, commandKwargs
@@ -274,6 +275,7 @@ def pattern(
 
             else:
 
+                # todo patternResults的maxSize
                 # 满足pattern时，提供解析好的字典
                 if not context.get("patternResults"):
                     context["patternResults"] = []

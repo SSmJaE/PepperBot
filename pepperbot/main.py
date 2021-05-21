@@ -34,24 +34,6 @@ pretty_errors.configure(
 app = Sanic("PepperBot")
 
 
-# GroupIdInstanceMap = {}
-
-
-# def get_instance(groupId):
-#     instance = GroupIdInstanceMap.get(groupId)
-#     if instance:
-#         return instance
-#     else:
-#         pass
-
-
-# groupHandler可能有多个装饰器，比如register, withCommand
-# 先解析为与装饰器名称相关的缓存至groupMeta，
-# 解析完所有装饰器之后，再生成classHandlers.groupCache中的缓存
-# 生成缓存时，确保register的存在，不然报错(withCommand也可以向group中推送meta信息)
-# 这才是真正的meta，全局保存class和对应的meta，而不是绑定到class上，可能会涉及到bound和unbound的问题
-
-
 def register(groupId: Union[int, str, List[Union[int, str]]], *args, **kwargs):
     def decorator(handler: Callable):
         if isclass(handler):
@@ -93,12 +75,16 @@ def __output_config():
         buffer = []
         for groupCache in groupCacheList:
             buffer2 = []
+
+            # todo 应该反过来，根据事件，列出订阅的classHandler，也要提升至group等级
             buffer2.append(
                 DisplayTree(
                     name=f"事件",
                     node=[method for method in groupCache.methods.keys()],
                 ),
             )
+
+            # todo 提升至group等级，uniqueCommand
             buffer2.append(
                 DisplayTree(
                     name=f"指令",

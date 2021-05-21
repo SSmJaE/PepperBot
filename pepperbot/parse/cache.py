@@ -18,6 +18,11 @@ from pepperbot.utils.common import get_own_methods
 
 
 def cache():
+    # groupHandler可能有多个装饰器，比如register, withCommand
+    # 先解析为与装饰器名称相关的缓存至groupMeta，
+    # 解析完所有装饰器之后，再生成classHandlers.groupCache中的缓存
+    # 生成缓存时，确保register的存在，不然报错(withCommand也可以向group中推送meta信息)
+    # 这才是真正的meta，全局保存class和对应的meta，而不是绑定到class上，可能会涉及到bound和unbound的问题
     _cache = classHandlers.groupCache
 
     # 多个group handler，相同command的处理(解析所有指令和groupId，重新生成缓存)

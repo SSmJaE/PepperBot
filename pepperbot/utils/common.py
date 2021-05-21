@@ -104,8 +104,8 @@ DisplayTree.update_forward_refs()
 
 def print_tree(tree: DisplayTree, indent=0, prefixes=[]):
     space = "    "
-    branch = "│   "
     tee = "├── "
+    branch = "│   "
     lastBranch = "└── "
 
     if indent == 0:

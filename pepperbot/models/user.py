@@ -53,6 +53,9 @@ class Friend(UserBase):
 # ---------------------------------------------------------------------------
 
 
+# todo GroupMemberMixin
+
+
 class GroupMember(User):
     age: int
     area: str
