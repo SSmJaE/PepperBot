@@ -25,7 +25,9 @@ async def test():
     group = chain.select_group(1041902989)
 
     await group.send_message(
-        Share(f"https://www.zhihu.com/", title="分享", content="123"),
+        # Share(f"https://www.zhihu.com/", title="分享", content="123"),
+        # Music(id="001LuLtP1LqITK", source="qq"),
+        Music(id="1807708605", source="163")
     )
 
 

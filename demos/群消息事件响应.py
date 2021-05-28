@@ -257,5 +257,5 @@ class 交流群:
             )
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     run(debug=True, port=14323)
