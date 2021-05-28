@@ -7,6 +7,9 @@ from pepperbot.utils.common import DictNoNone
 
 
 class MessageSegMentBase:
+    formatted: Dict[str, Any]
+    identifier: Any
+
     def __init__(self, identifier: Any):
         self.identifier = identifier
 
@@ -24,54 +27,96 @@ class MessageSegMentBase:
 
 
 class At(MessageSegMentBase):
-    def __init__(self, data: Union[dict, int]):
+    @overload
+    def __init__(self, userId: int):
+        ...
 
+    @overload
+    def __init__(self, userId: Dict):
+        ...
+
+    def __init__(self, userId: Union[dict, int]):
+
+        data = userId
+
+        # todo pydantic pydantic
+        # 这个str和int不一致，判断has的时候，排查了半天
         if isinstance(data, dict):
-            # todo pydantic pydantic
-            # 这个str和int不一致，判断has的时候，排查了半天
-            userId = int(data["qq"])
+            identifier = int(data["data"]["qq"])
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            userId = data
+            identifier = data
 
-        super().__init__(**{"identifier": userId})
+            self.qq = data
 
-        self.formatted = {"type": "at", "data": {"qq": userId}}
+            self.formatted = {"type": "at", "data": {"qq": data}}
+
+        super().__init__(**{"identifier": identifier})
 
 
 class Text(MessageSegMentBase):
-    def __init__(self, data: Union[dict, str]):
+    @overload
+    def __init__(self, content: str):
+        ...
+
+    @overload
+    def __init__(self, content: Dict):
+        ...
+
+    def __init__(self, content: Union[dict, str]):
+
+        data = content
 
         if isinstance(data, dict):
-            text = data["text"]
+            identifier = data["data"]["text"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
+
         else:
-            text = data
+            identifier = data
 
-        super().__init__(**{"identifier": text})
+            self.text: str = data
 
-        self.formatted = {"type": "text", "data": {"text": text}}
-        self.content: str = text
+            self.formatted = {"type": "text", "data": {"text": data}}
+
+        super().__init__(**{"identifier": identifier})
 
 
 class Face(MessageSegMentBase):
-    def __init__(self, data: Union[dict, int]):
+    @overload
+    def __init__(self, id: int):
+        ...
+
+    @overload
+    def __init__(self, id: Dict):
+        ...
+
+    def __init__(self, id: Union[dict, int]):
+
+        data = id
 
         if isinstance(data, dict):
-            id = data["id"]
+            identifier = data["data"]["id"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
+
         else:
-            id = data
+            identifier = data
 
-        super().__init__(**{"identifier": id})
+            self.id = data
+            self.formatted = {"type": "face", "data": {"id": id}}
 
-        self.formatted = {"type": "face", "data": {"id": id}}
+        super().__init__(**{"identifier": identifier})
 
 
 class Image(MessageSegMentBase):
@@ -83,33 +128,37 @@ class Image(MessageSegMentBase):
     """
 
     @overload
-    def __init__(self, data: Dict):
+    def __init__(self, path: str, mode: Optional[Literal["flash"]] = None):
         ...
 
     @overload
-    def __init__(self, data: str, mode: Optional[Literal["flash"]] = None):
+    def __init__(self, path: Dict):
         ...
 
-    def __init__(self, data: Union[Dict, str], mode: Optional[Literal["flash"]] = None):
+    def __init__(self, path: Union[Dict, str], mode: Optional[Literal["flash"]] = None):
+
+        data = path
 
         if isinstance(data, dict):
-            url = data.get("file")
-            if not url:
+            identifier = data["data"].get("file")
+            if not identifier:
                 raise Exception("无法解析图片地址")
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            url = data
+            identifier = data
 
-        super().__init__(**{"identifier": url})
+            self.type = mode
+            self.file = data
 
-        kwargs = DictNoNone()
-        kwargs["type"] = mode
+            kwargs = DictNoNone()
+            kwargs["type"] = mode
+            self.formatted = {"type": "image", "data": {**kwargs, "file": data}}
 
-        self.formatted = {"type": "image", "data": {**kwargs, "file": url}}
-        self.type = mode
-        self.file = url
+        super().__init__(**{"identifier": identifier})
 
     def download(self):
         # todo download
@@ -118,55 +167,59 @@ class Image(MessageSegMentBase):
 
 class Share(MessageSegMentBase):
     @overload
-    def __init__(self, data: Dict):
-        ...
-
-    @overload
     def __init__(
         self,
-        data: str,
+        url: str,
         title: str,
         content: Optional[str] = None,
         imageUrl: Optional[str] = None,
     ):
         ...
 
+    @overload
+    def __init__(self, url: Dict):
+        ...
+
     def __init__(
         self,
-        data: Union[Dict, str],
+        url: Union[Dict, str],
         title: str = "",
         content: Optional[str] = None,
         imageUrl: Optional[str] = None,
     ):
 
+        data = url
+
         if isinstance(data, dict):
-            url = data["url"]
+            identifier = data["data"]["url"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            url = data
+            identifier = data
 
-        super().__init__(**{"identifier": url})
+            kwargs = DictNoNone()
+            kwargs["title"] = title
+            kwargs["content"] = content
+            kwargs["image"] = imageUrl
 
-        kwargs = DictNoNone()
-        kwargs["title"] = title
-        kwargs["content"] = content
-        kwargs["image"] = imageUrl
+            self.formatted = {"type": "share", "data": {**kwargs, "file": url}}
 
-        self.formatted = {"type": "share", "data": {**kwargs, "file": url}}
+        super().__init__(**{"identifier": identifier})
 
 
 class Poke(MessageSegMentBase):
-    @overload
-    def __init__(self, qq: Dict):
-        ...
-
     @overload
     def __init__(
         self,
         qq: int,
     ):
+        ...
+
+    @overload
+    def __init__(self, qq: Dict):
         ...
 
     def __init__(
@@ -177,22 +230,21 @@ class Poke(MessageSegMentBase):
         data = qq
 
         if isinstance(data, dict):
-            identifier = data["url"]
+            identifier = data["data"]["url"]
 
             for key, value in data.items():
                 setattr(self, key, value)
-        else:
-            if not (data or id):
-                raise Exception("必须提供mode和id")
 
+            self.formatted = {**data}
+        else:
             identifier = data
 
-        super().__init__(**{"identifier": identifier})
+            self.formatted = {
+                "type": "poke",
+                "data": {"qq": qq},
+            }
 
-        self.formatted = {
-            "type": "poke",
-            "data": {"qq": qq},
-        }
+        super().__init__(**{"identifier": identifier})
 
 
 # class Poke(MessageSegMentBase):
@@ -240,68 +292,121 @@ class Poke(MessageSegMentBase):
 
 
 class Reply(MessageSegMentBase):
-    def __init__(self, data: Union[dict, int]):
+    @overload
+    def __init__(
+        self,
+        messageId: int,
+    ):
+        ...
+
+    @overload
+    def __init__(self, messageId: Dict):
+        ...
+
+    def __init__(self, messageId: Union[dict, int]):
+
+        data = messageId
 
         if isinstance(data, dict):
-            messageId = data["id"]
+            identifier = data["data"]["id"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            messageId = data
+            identifier = data
 
-        super().__init__(**{"identifier": messageId})
+            self.formatted = {"type": "reply", "data": {"id": f"{data}"}}
 
-        self.formatted = {"type": "reply", "data": {"id": f"{messageId}"}}
+        super().__init__(**{"identifier": identifier})
 
 
 class Audio(MessageSegMentBase):
-    def __init__(self, data: Union[dict, str]):
+    @overload
+    def __init__(
+        self,
+        path: str,
+    ):
+        ...
+
+    @overload
+    def __init__(self, path: Dict):
+        ...
+
+    def __init__(self, path: Union[dict, str]):
+
+        data = path
 
         if isinstance(data, dict):
-            url = data["file"]
+            identifier = data["data"]["file"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            url = data
+            identifier = data
 
-        super().__init__(**{"identifier": url})
+            self.formatted = {"type": "record", "data": {"file": data}}
 
-        self.formatted = {"type": "record", "data": {"file": url}}
+        super().__init__(**{"identifier": identifier})
 
 
 class Video(MessageSegMentBase):
-    def __init__(self, data: Union[dict, str]):
+    @overload
+    def __init__(
+        self,
+        path: str,
+    ):
+        ...
+
+    @overload
+    def __init__(self, path: Dict):
+        ...
+
+    def __init__(self, path: Union[dict, str]):
+
+        data = path
 
         if isinstance(data, dict):
-            url = data["file"]
+            identifier = data["data"]["file"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            url = data
+            identifier = data
 
-        super().__init__(**{"identifier": url})
+            self.formatted = {"type": "video", "data": {"file": data}}
 
-        self.formatted = {"type": "video", "data": {"file": url}}
+        super().__init__(**{"identifier": identifier})
 
 
 class Music(MessageSegMentBase):
-    def __init__(
-        self, data: Union[dict, str], source: Literal["qq", "163", "xm"] = "qq"
-    ):
+    @overload
+    def __init__(self, id: str, source: Literal["qq", "163", "xm"] = "qq"):
+        ...
+
+    @overload
+    def __init__(self, id: Dict):
+        ...
+
+    def __init__(self, id: Union[dict, str], source: Literal["qq", "163", "xm"] = "qq"):
+
+        data = id
 
         if isinstance(data, dict):
-            id = data["id"]
-            source = data["type"]
+            identifier = data["data"]["id"] + data["data"]["type"]
 
             for key, value in data.items():
                 setattr(self, key, value)
+
+            self.formatted = {**data}
         else:
-            id = data
-            source = source
+            identifier = data + source
 
-        super().__init__(**{"identifier": id})
+            self.formatted = {"type": "music", "data": {"type": source, "id": id}}
 
-        self.formatted = {"type": "music", "data": {"type": source, "id": id}}
+        super().__init__(**{"identifier": identifier})

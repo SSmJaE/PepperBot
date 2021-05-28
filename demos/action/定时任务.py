@@ -1,33 +1,26 @@
 import asyncio
-import sys
-from os import path
+import time
 
-BASE_DIR = path.dirname(path.dirname(path.dirname(path.abspath(__file__))))
-sys.path.append(BASE_DIR)
-
-from pepperbot.Action.Bot import *
-from pepperbot.Action.main import *
+from pepperbot.action import *
+from pepperbot.action.chain import *
 
 
 async def test():
 
     chain = ActionChain()
-    # group = chain.select_group(1057809143)
+
     group = chain.select_group(1041902989)
-    # group = chain.select_group(819441084)
 
-    for i in range(10):
-        await group.send_message(Text(f"第{100+i}个表情"), Face(100 + i)).sleep(1)
-        # await asyncio.sleep(1)
-    # with open("members.json", encoding="utf8", mode="a") as f:
+    lastTime = time.time()
 
-    #     f.write("[")
-    # async for member in group.members():
-    #         debug(member)
-    #         f.write(json.dumps(member.dict(), ensure_ascii=False) + ",")
-    #         member.action_test()
-    #     f.write("]")
-    # await group.info()
+    while True:
+        currentTime = time.time()
+        if currentTime - lastTime > 10:
+            await group.send_message(
+                Text(f"每10秒发送一次"),
+            )
+            await asyncio.sleep(10)
+            lastTime = currentTime
 
 
 asyncio.run(test())

@@ -4,7 +4,16 @@ module.exports = {
             type: "category",
             label: "概览",
             collapsed: false,
-            items: ["概览/动机", "概览/关于", "概览/安装"],
+            items: [
+                "概览/动机",
+                "概览/关于",
+                {
+                    type: "category",
+                    label: "安装",
+                    collapsed: false,
+                    items: ["概览/配置go-cqhttp", "概览/配置pepperbot"],
+                },
+            ],
         },
         {
             type: "category",

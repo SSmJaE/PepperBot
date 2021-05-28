@@ -1,11 +1,10 @@
-from pepperbot.main import *
+import asyncio
 import random
 
-welcomeMessage = [
-    Text("欢迎"),
-    Face(150),
-    Image("url")
-]
+from pepperbot.action import *
+from pepperbot.action.chain import *
+from pepperbot.main import *
+from pepperbot.models.sender import Sender
 
 
 def randomMessage():
@@ -16,10 +15,28 @@ def randomMessage():
     ]
 
 
-@register(groupId=12223331)
-class WhateverNameYouWant:
+welcomeMessage = [Text("欢迎"), Face(150), Image("url")]
 
-    async def group_message(self, bot: GroupMessageBot, chain: MessageChain, sender: Sender):
 
-        await bot.group_msg(*welcomeMessage)
-        await bot.group_msg(*randomMessage())
+async def test():
+
+    chain = ActionChain()
+
+    group = chain.select_group(1041902989)
+
+    await group.send_message(
+        Share(f"https://www.zhihu.com/", title="分享", content="123"),
+    )
+
+
+asyncio.run(test())
+
+
+# @register(groupId=1041902989)
+# class WhateverNameYouWant:
+#     async def group_message(
+#         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender
+#     ):
+
+#         await bot.group_msg(*welcomeMessage)
+#         await bot.group_msg(*randomMessage())

@@ -1,15 +1,13 @@
-import sys
-from os import path
-
-BASE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
-sys.path.append(BASE_DIR)
-
 import inspect
+import os
 import random
+from os import path
 
 from inflection import humanize
 from pepperbot.command import with_command
 from pepperbot.command.commands import (
+    InitialPattern,
+    Pattern测试,
     人工智障,
     全局复读,
     查询装备,
@@ -17,10 +15,9 @@ from pepperbot.command.commands import (
     简单复读,
     跨用户复读,
     跨群复读,
-    Pattern测试,
-    InitialPattern,
 )
 from pepperbot.main import *
+from pepperbot.message.utils import is_flash
 from pepperbot.models.sender import Sender
 
 # todo 实现抽象基类，或者模板，或者说ts中的inherit的interface
@@ -31,16 +28,8 @@ def get_current_function_name():
     return inspect.currentframe().f_back.f_code.co_name
 
 
-def is_command():
-    pass
-
-
 # todo 指令模块，作为与事件监听和出发模块完全解耦的一个工具函数
 # 可以放在utils里面，其实就是对字符串的处理
-
-import os
-import random
-from os import path
 
 
 def get_random_pic():
@@ -99,6 +88,14 @@ class WhateverNameYouWant:
     async def group_message(
         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender
     ):
+
+        for image in chain.images:
+            debug(image.formatted)
+
+            if is_flash(image):
+                await bot.group_msg(Text("是闪照"))
+            else:
+                await bot.group_msg(Text("不是闪照"))
 
         if "撤回我" == chain.pure_text:
             await chain.withdraw()

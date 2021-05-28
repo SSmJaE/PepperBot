@@ -62,11 +62,11 @@ class MessageChain:
         originChain: Iterable[dict] = event.get("message", list)
         for segment in originChain:
             messageType: str = segment["type"]
-            data: dict = segment["data"]
-            # pprint(data)
+            # data: dict = segment["data"]
+            # pprint(segment)
 
             segmentClass = getattr(currentModule, messageType.capitalize())
-            segmentInstance = segmentClass(data)
+            segmentInstance = segmentClass(segment)
 
             self.chain.append(segmentInstance)
 

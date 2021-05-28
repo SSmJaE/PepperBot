@@ -105,7 +105,7 @@ module.exports = {
                 docs: {
                     sidebarPath: require.resolve("./sidebars.js"),
                     // Please change this to your repo.
-                    editUrl: "https://github.com/SSmJaE/PepperBot/edit/master/",
+                    editUrl: "https://github.com/SSmJaE/PepperBot/edit/master/docs/",
                     showLastUpdateAuthor: true,
                     showLastUpdateTime: true,
                 },

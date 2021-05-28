@@ -113,14 +113,26 @@ class ActionMixin:
 
 class GroupMessageMixin:
     api: API_Caller_T
-    groupId: int
+    groupId: Optional[int]
 
-    async def group_msg(self, *chain: SegmentInstance_T):
+    async def group_msg(
+        self, targetGroupId: Union[int, SegmentInstance_T], *chain: SegmentInstance_T
+    ):
+        if isinstance(targetGroupId, int):
+            groupId = targetGroupId
+            message = [segment.formatted for segment in chain]
+        else:
+            groupId = self.groupId
+            message = [
+                targetGroupId.formatted,
+                *[segment.formatted for segment in chain],
+            ]
+
         await self.api(
             "send_group_msg",
             **{
-                "group_id": self.groupId,
-                "message": [segment.formatted for segment in chain],
+                "group_id": groupId,
+                "message": message,
             },
         )
 
