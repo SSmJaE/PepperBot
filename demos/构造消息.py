@@ -18,6 +18,14 @@ def randomMessage():
 welcomeMessage = [Text("欢迎"), Face(150), Image("url")]
 
 
+proxies = {
+    "http://": "http://localhost:8086",
+    "https://": "http://localhost:8086",
+}
+
+# api = globalApi = APICaller(port=5700)
+
+
 async def test():
 
     chain = ActionChain()
@@ -26,8 +34,8 @@ async def test():
 
     await group.send_message(
         # Share(f"https://www.zhihu.com/", title="分享", content="123"),
-        # Music(id="001LuLtP1LqITK", source="qq"),
-        Music(id="1807708605", source="163")
+        Music(id="0047dvgY1FdvCL", source="qq"),
+        # Music(id="1807708605", source="163")
     )
 
 

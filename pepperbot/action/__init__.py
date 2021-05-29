@@ -10,7 +10,7 @@ class APICaller(GroupMessageMixin, ActionMixin):
         self,
         host: str = "localhost",
         port: int = 8080,
-        proxies: Optional[httpx.Proxy] = None,
+        proxies: Optional[Any] = None,
     ):
         self.host = host
         self.port = port
@@ -19,25 +19,16 @@ class APICaller(GroupMessageMixin, ActionMixin):
         if proxies:
             kwargs["proxies"] = proxies
 
-        self.client = httpx.AsyncClient(**kwargs)
-
-        # try:
-        #     self.client = httpx.AsyncClient(proxies=proxies)
-        #     yield None
-        # finally:
-        #     await self.client.aclose()
+        self.client = httpx.Client(**kwargs)
+        # self.client = httpx.AsyncClient(**kwargs)
 
     def __del__(self):
-        # todo 销毁时，注销client，似乎有点多此一举？
-        # try:
-        #     loop = asyncio.get_event_loop()
-        #     loop.run_until_complete(self.client.aclose())
-        # except:
-        #     pass
-        # asyncio.run(self.client.aclose())
-        pass
+        # 注销client
+
+        self.client.close()
+
+        # todo 没有找到在del中调用AsyncClient.aclose的方法
+        # self.client.aclose().__await__()
 
     async def api(self, action: str, **kwargs):
-        return await self.client.post(
-            f"http://{self.host}:{self.port}/{action}", json=kwargs
-        )
+        return self.client.post(f"http://{self.host}:{self.port}/{action}", json=kwargs)

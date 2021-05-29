@@ -151,3 +151,6 @@ classHandlers = ClassHandler()
 
 
 # todo 允许用户修改的全局config，基于pydantic
+
+
+GLOBAL_CONFIG = {"TEST_MODE": False}

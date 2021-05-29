@@ -31,87 +31,90 @@ def cache():
     for handlerClass, classMeta in classHandlers.groupMeta.items():
 
         # 检查事件响应的参数
-        for method in get_own_methods(handlerClass):
-            if is_valid_group_method(method.__name__):
-                # before和after钩子的参数和正常响应相同
-                handlerName: str = re.sub(r"^before_", "", method.__name__)
-                handlerName = re.sub(r"^after_", "", method.__name__)
-                handlerName = cast(GROUP_EVENTS_T, handlerName)
+        if not GLOBAL_CONFIG["TEST_MODE"]:
+            for method in get_own_methods(handlerClass):
+                if is_valid_group_method(method.__name__):
+                    # before和after钩子的参数和正常响应相同
+                    handlerName: str = re.sub(r"^before_", "", method.__name__)
+                    handlerName = re.sub(r"^after_", "", method.__name__)
+                    handlerName = cast(GROUP_EVENTS_T, handlerName)
 
-                kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(
-                    handlerName, DEFAULT_KWARGS
-                )
-                kwargList.append(
-                    HandlerKwarg(
-                        name="event", type=Union[dict, Dict, Dict[str, Any]], value=None
+                    kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(
+                        handlerName, DEFAULT_KWARGS
                     )
-                )
-
-                kwargNameTypeMap = {}
-                for kwarg in kwargList:
-                    kwargNameTypeMap[kwarg.name] = kwarg.type
-
-                kwargNames = kwargNameTypeMap.keys()
-
-                # debug(method.__name__)
-                [args, varargs, varkw] = inspect.getargs(method.__code__)
-
-                usableKwargsHint = "\n可用的参数及类型有"
-                kwargsLength = len(kwargNameTypeMap)
-                for index, (kwargName, kwargType) in enumerate(
-                    kwargNameTypeMap.items(), start=1
-                ):
-                    usableKwargsHint += f"{kwargName}: {kwargType}"
-
-                    if index != kwargsLength:
-                        usableKwargsHint += ", "
-
-                for argName in args[1:]:
-                    if argName not in kwargNames:
-                        raise EventHandlerDefineError(
-                            f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
-                            f"{method.__name__}事件不存在参数{argName}" + usableKwargsHint
+                    kwargList.append(
+                        HandlerKwarg(
+                            name="event",
+                            type=Union[dict, Dict, Dict[str, Any]],
+                            value=None,
                         )
+                    )
 
-                    if argName not in method.__annotations__.keys():
+                    kwargNameTypeMap = {}
+                    for kwarg in kwargList:
+                        kwargNameTypeMap[kwarg.name] = kwarg.type
+
+                    kwargNames = kwargNameTypeMap.keys()
+
+                    # debug(method.__name__)
+                    [args, varargs, varkw] = inspect.getargs(method.__code__)
+
+                    usableKwargsHint = "\n可用的参数及类型有"
+                    kwargsLength = len(kwargNameTypeMap)
+                    for index, (kwargName, kwargType) in enumerate(
+                        kwargNameTypeMap.items(), start=1
+                    ):
+                        usableKwargsHint += f"{kwargName}: {kwargType}"
+
+                        if index != kwargsLength:
+                            usableKwargsHint += ", "
+
+                    for argName in args[1:]:
+                        if argName not in kwargNames:
+                            raise EventHandlerDefineError(
+                                f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
+                                f"{method.__name__}事件不存在参数{argName}" + usableKwargsHint
+                            )
+
+                        if argName not in method.__annotations__.keys():
+                            raise EventHandlerDefineError(
+                                f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
+                                f"{method.__name__}事件的参数{argName}未提供类型注解，其类型为{kwargNameTypeMap[argName]}"
+                                + usableKwargsHint
+                            )
+
+                    if varargs or varkw:
                         raise EventHandlerDefineError(
                             f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
-                            f"{method.__name__}事件的参数{argName}未提供类型注解，其类型为{kwargNameTypeMap[argName]}"
+                            f"{method.__name__}事件不需要提供*或者**参数，PepperBot会自动根据声明的参数以及类型注入"
                             + usableKwargsHint
                         )
 
-                if varargs or varkw:
-                    raise EventHandlerDefineError(
-                        f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
-                        f"{method.__name__}事件不需要提供*或者**参数，PepperBot会自动根据声明的参数以及类型注入"
-                        + usableKwargsHint
-                    )
+                    # debug(method.__annotations__)
 
-                # debug(method.__annotations__)
+                    for argName, argType in method.__annotations__.items():
+                        if argName not in kwargNames:
+                            raise EventHandlerDefineError(
+                                f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
+                                f"{method.__name__}事件不存在参数{argName}" + usableKwargsHint
+                            )
 
-                for argName, argType in method.__annotations__.items():
-                    if argName not in kwargNames:
-                        raise EventHandlerDefineError(
-                            f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的"
-                            f"{method.__name__}事件不存在参数{argName}" + usableKwargsHint
-                        )
+                        kwargType = kwargNameTypeMap[argName]
 
-                    kwargType = kwargNameTypeMap[argName]
+                        wrongTypeFlag = True
+                        if get_origin(kwargType) is Union:
+                            for _type in get_args(kwargType):
+                                if _type == argType:
+                                    wrongTypeFlag = False
 
-                    wrongTypeFlag = True
-                    if get_origin(kwargType) is Union:
-                        for _type in get_args(kwargType):
-                            if _type == argType:
-                                wrongTypeFlag = False
+                        if kwargType == argType:
+                            wrongTypeFlag = False
 
-                    if kwargType == argType:
-                        wrongTypeFlag = False
-
-                    if wrongTypeFlag:
-                        raise EventHandlerDefineError(
-                            f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的\n"
-                            + f"{method.__name__}事件的参数{argName}的类型应该为{kwargType}，而不是{argType}"
-                        )
+                        if wrongTypeFlag:
+                            raise EventHandlerDefineError(
+                                f"{inspect.getsourcefile(handlerClass)}中的类响应器{handlerClass.__name__}的\n"
+                                + f"{method.__name__}事件的参数{argName}的类型应该为{kwargType}，而不是{argType}"
+                            )
 
         #  不要每次都创建实例，on/register监听器新增时建立一次保存起来即可
         _instance = handlerClass()
