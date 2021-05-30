@@ -2,9 +2,10 @@ from typing import Dict
 
 from pepperbot.action.chain import *
 from pepperbot.message.chain import MessageChain
+from pepperbot.models.friend import Friend
 from pepperbot.models.sender import Sender
 from pepperbot.parse import GROUP_EVENTS_T, GroupEvent
-from pepperbot.parse.bots import AddGroupBot, GroupCommonBot
+from pepperbot.parse.bots import AddGroupBot, FriendBot, GroupCommonBot
 from pepperbot.types import HandlerValue_T
 
 
@@ -32,6 +33,13 @@ def construct_AddGroupBot(event: Dict[str, Any], **kwargs) -> AddGroupBot:
     )
 
 
+def construct_FriendBot(event: Dict[str, Any], **kwargs):
+    return FriendBot(
+        event,
+        globalApi.api,
+    )
+
+
 # 双重awaitable，因为不支持async lambda
 async def get_member_info(event: Dict[str, Any], userId: int):
     return await globalApi.member(
@@ -52,6 +60,10 @@ def construct_chain(event: Dict[str, Any], groupId) -> MessageChain:
 
 def construct_sender(event: Dict[str, Any]):
     return Sender(event=event, api=globalApi.api)
+
+
+def construct_friend(event: Dict[str, Any]):
+    return Friend(event=event, api=globalApi.api)
 
 
 DEFAULT_KWARGS = [
@@ -86,6 +98,19 @@ HANDLER_KWARGS_MAP: Dict[GROUP_EVENTS_T, List[HandlerKwarg]] = {
             value=lambda event, **kwargs: construct_chain(
                 event, groupId=event["group_id"]
             ),
+        ),
+    ],
+    GroupEvent.friend_message: [
+        HandlerKwarg(name="bot", type=FriendBot, value=construct_FriendBot),
+        HandlerKwarg(
+            name="friend",
+            type=Friend,
+            value=lambda event, **kwargs: construct_friend(event),
+        ),
+        HandlerKwarg(
+            name="chain",
+            type=MessageChain,
+            value=lambda event, **kwargs: construct_chain(event, groupId=None),
         ),
     ],
     GroupEvent.member_increased: [

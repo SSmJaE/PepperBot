@@ -343,8 +343,6 @@ def merge(*chains: BranchableChain) -> BranchableChain:
     return instance
 
 
-# todo 用@overload写MessageSegment的__init__？
-
 # middleware1 = MultiGroupAction().sleep(1)
 # middleware2 = MultiGroupAction().send_message(Text("11"))
 # middleware3 = MultiGroupAction().send_message(Face(111))

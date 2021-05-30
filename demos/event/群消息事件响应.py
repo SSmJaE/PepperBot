@@ -1,5 +1,6 @@
 import inspect
 import os
+from pepperbot.models.friend import Friend
 import random
 from os import path
 
@@ -45,6 +46,9 @@ def get_random_pic():
 )
 @register(groupId=[1041902989, 819441084])
 class WhateverNameYouWant:
+    async def friend_message(self, bot: FriendBot, chain: MessageChain, friend: Friend):
+        await bot.private_msg(Text("收到消息了"))
+
     async def member_increased(
         self,
         bot: GroupCommonBot,
@@ -256,6 +260,5 @@ class 交流群:
                 Text("如果发现需要充值，你可能下错脚本了，在使用文档中下载最新版本即可"),
             )
 
-
-# if __name__ == "__main__":
+    # if __name__ == "__main__":
     run(debug=True, port=14323)

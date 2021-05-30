@@ -38,15 +38,8 @@ async def test():
         # Music(id="1807708605", source="163")
     )
 
+    # await bot.group_msg(*welcomeMessage)
+    # await bot.group_msg(*randomMessage())
+
 
 asyncio.run(test())
-
-
-# @register(groupId=1041902989)
-# class WhateverNameYouWant:
-#     async def group_message(
-#         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender
-#     ):
-
-#         await bot.group_msg(*welcomeMessage)
-#         await bot.group_msg(*randomMessage())

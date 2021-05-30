@@ -52,18 +52,16 @@ RELATIONS = {
         ],
         "GroupRequest": [GroupEvent.add_group, GroupEvent.been_invited],
     },
-    "friend": [
-        {
-            "FriendMessage": [
-                GroupEvent.friend_message,
-            ],
-            "FriendRequest": [GroupEvent.been_added],
-            "FriendNotice": [
-                GroupEvent.been_friend_poked,
-                GroupEvent.friend_message_been_withdraw,
-            ],
-        }
-    ],
+    "friend": {
+        "FriendMessage": [
+            GroupEvent.friend_message,
+        ],
+        "FriendRequest": [GroupEvent.been_added],
+        "FriendNotice": [
+            GroupEvent.been_friend_poked,
+            GroupEvent.friend_message_been_withdraw,
+        ],
+    },
     "temp": [GroupEvent.temp_message],
 }
 
@@ -116,3 +114,22 @@ def is_group_event(event: str) -> bool:
 
 def is_valid_group_method(methodName: str):
     return methodName in GROUP_EVENTS_WITH_LIFECYCLE
+
+
+FRIEND_EVENTS: List[str] = []
+
+for _, subTypes in RELATIONS["friend"].items():
+    FRIEND_EVENTS.extend(subTypes)
+
+FRIEND_EVENTS_WITH_LIFECYCLE = [*FRIEND_EVENTS]
+for event in GROUP_EVENTS:
+    FRIEND_EVENTS_WITH_LIFECYCLE.append("before_" + event)
+    FRIEND_EVENTS_WITH_LIFECYCLE.append("after_" + event)
+
+
+def is_friend_event(event: str) -> bool:
+    return event in FRIEND_EVENTS
+
+
+def is_valid_friend_method(methodName: str):
+    return methodName in FRIEND_EVENTS_WITH_LIFECYCLE

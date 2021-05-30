@@ -136,12 +136,28 @@ class GroupCache(BaseModel):
         arbitrary_types_allowed = True
 
 
+class FriendCache(BaseModel):
+    # botInstance: BotBase
+    instance: Union[Callable, Any]
+
+    # bounded methods
+    # methods: Dict[GROUP_EVENTS_T, List[Any]] = defaultdict(list)
+    methods: Dict[str, List[Callable]] = defaultdict(list)
+    commandClasses: List[Callable] = []
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class ClassHandler(BaseModel):
     # key为class handler
     groupMeta: Dict[Callable, GroupMeta] = defaultdict(GroupMeta)
     # key为群号
     groupCache: Dict[int, List[GroupCache]] = defaultdict(list)
     commandCache: Dict[Callable, CommandCache] = {}
+
+    friendCache: List[FriendCache] = []
+    friendPermission = {}
 
 
 # function handlers
@@ -153,4 +169,12 @@ classHandlers = ClassHandler()
 # todo 允许用户修改的全局config，基于pydantic
 
 
-GLOBAL_CONFIG = {"TEST_MODE": False}
+class QQBackend:
+    go_cqhttp = "go_cqhttp"
+
+
+GLOBAL_CONFIG = {
+    "TEST_MODE": False,
+    "HTTP_PORT": 5700,
+    "QQ_BACKEND": QQBackend.go_cqhttp,
+}

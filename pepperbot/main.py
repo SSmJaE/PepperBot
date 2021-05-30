@@ -13,7 +13,7 @@ from pepperbot.action.chain import *
 from pepperbot.command.handle import handle_command
 from pepperbot.exceptions import EventHandlerDefineError
 from pepperbot.globals import *
-from pepperbot.parse import GROUP_EVENTS_T, GroupEvent, is_group_event
+from pepperbot.parse import GROUP_EVENTS_T, GroupEvent, is_friend_event, is_group_event
 from pepperbot.parse.bots import *
 from pepperbot.parse.cache import cache
 from pepperbot.parse.figure import figure_out
@@ -34,11 +34,19 @@ pretty_errors.configure(
 app = Sanic("PepperBot")
 
 
-def register(groupId: Union[int, str, List[Union[int, str]]], *args, **kwargs):
+def register(
+    groupId: Union[int, str, List[Union[int, str]]] = [],
+    friendId="all",
+    *args,
+    **kwargs,
+):
     def decorator(handler: Callable):
         if isclass(handler):
             decoratorMeta = GroupDecorator(
-                **{"args": [*args], "kwargs": {**kwargs, "groupId": groupId}}
+                **{
+                    "args": [*args],
+                    "kwargs": {**kwargs, "groupId": groupId, "friendId": friendId},
+                }
             )
 
             classHandlers.groupMeta[handler].decorators["register"] = decoratorMeta
@@ -67,7 +75,7 @@ async def handle(*args):
 
 def __output_config():
 
-    # debug(classHandlers)
+    debug(classHandlers)
     # debug(globalContext)
 
     result = []
@@ -189,6 +197,28 @@ async def handle_qq_event(receive: Dict[str, Any], eventName: GROUP_EVENTS_T):
             for method in handler.methods["after_" + eventName]:
                 await await_or_normal(method, **fit_kwargs(method, kwargs))
 
+    elif is_friend_event(eventName):
+        kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(
+            eventName, DEFAULT_KWARGS
+        )
+
+        kwargs: Dict[str, Any] = {}
+        for kwarg in kwargList:
+            kwargs[kwarg.name] = await deepawait_or_normal(kwarg.value, event=receive)
+
+        for handler in classHandlers.friendCache:
+            for method in handler.methods["before_" + eventName]:
+                await await_or_normal(method, **fit_kwargs(method, kwargs))
+
+            for method in handler.methods[eventName]:
+                await await_or_normal(method, **fit_kwargs(method, kwargs))
+
+            # if eventName == GroupEvent.group_message:
+            #     await handle_command(receive, kwargs, groupId, handler)
+
+            for method in handler.methods["after_" + eventName]:
+                await await_or_normal(method, **fit_kwargs(method, kwargs))
+
 
 hasInitial = False
 hasSkipBuffer = False
@@ -253,4 +283,7 @@ async def main_entry(request, ws):
 
 
 def run(host: str = "0.0.0.0", port: int = 8080, debug: bool = False):
-    app.run(host, port, protocol=WebSocketProtocol, debug=debug)
+    try:
+        app.run(host, port, protocol=WebSocketProtocol, debug=debug)
+    except (KeyboardInterrupt, SystemExit):
+        pass

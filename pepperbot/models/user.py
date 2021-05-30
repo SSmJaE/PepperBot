@@ -46,10 +46,6 @@ class Stranger(UserBase):
     qid: str
 
 
-class Friend(UserBase):
-    pass
-
-
 # ---------------------------------------------------------------------------
 
 

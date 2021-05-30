@@ -12,6 +12,12 @@ class GroupCommonBot(BotBase, GroupMessageMixin, GroupMemberMixin):
         self.groupId = event["group_id"]
 
 
+class FriendBot(BotBase, FriendMixin):
+    def __init__(self, event: Dict[str, Any], api: API_Caller_T) -> None:
+        self.api: API_Caller_T = api
+        self.targetId = event["user_id"]
+
+
 class AddGroupBot(GroupCommonBot, AddGroupMixin):
     def __init__(self, event: Dict[str, Any], api: API_Caller_T) -> None:
         self.api: API_Caller_T = api

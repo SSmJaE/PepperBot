@@ -270,7 +270,6 @@ class 模拟(CommonEndMixin):
     async def initial(
         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
     ):
-        await bot.group_msg()
         await bot.group_msg(
             Text(f"{sender.user_id}"), Text("开始执行指令"), Text("请按照 游戏名 装备名 的格式输入")
         )

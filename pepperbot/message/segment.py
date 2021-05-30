@@ -164,6 +164,17 @@ class Image(MessageSegMentBase):
         # todo download
         pass
 
+    def flash(self):
+        self.formatted["data"]["type"] = "flash"
+
+        return self
+
+    def un_flash(self):
+        if self.formatted["data"].get("type"):
+            del self.formatted["data"]["type"]
+
+        return self
+
 
 class Share(MessageSegMentBase):
     @overload

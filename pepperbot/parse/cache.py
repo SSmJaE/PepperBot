@@ -6,7 +6,12 @@ from typing import Set, cast, get_args, get_origin
 from devtools import debug
 from pepperbot.exceptions import EventHandlerDefineError
 from pepperbot.globals import *
-from pepperbot.parse import GROUP_EVENTS, GROUP_EVENTS_T, is_valid_group_method
+from pepperbot.parse import (
+    GROUP_EVENTS,
+    GROUP_EVENTS_T,
+    is_valid_friend_method,
+    is_valid_group_method,
+)
 from pepperbot.parse.bots import *
 from pepperbot.parse.kwargs import (
     DEFAULT_KWARGS,
@@ -179,6 +184,21 @@ def cache():
                     debug(method)
 
             _cache[id].append(groupCache)
+
+        for method in get_own_methods(_instance):
+            if is_valid_friend_method(method.__name__):
+
+                friendCache = FriendCache(
+                    instance=_instance,
+                    # commandClasses=currentCommandClasses,
+                )
+
+                friendCache.methods[method.__name__].append(method)
+                classHandlers.friendCache.append(friendCache)
+
+            else:
+                print("无效的hook")
+                debug(method)
 
     # 在提取所有可能的with_command装饰器之后执行
     # 同一个commandClass，就实例化一次

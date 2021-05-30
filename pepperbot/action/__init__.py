@@ -32,3 +32,6 @@ class APICaller(GroupMessageMixin, ActionMixin):
 
     async def api(self, action: str, **kwargs):
         return self.client.post(f"http://{self.host}:{self.port}/{action}", json=kwargs)
+
+        # todo 直接返回.data
+        # 可以手动指定后端是go-cqhttp，方便与其它后端兼容

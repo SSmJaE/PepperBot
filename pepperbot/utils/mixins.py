@@ -172,6 +172,39 @@ class GroupMemberMixin:
         )
 
 
+class PrivateMessageMixin:
+    api: API_Caller_T
+    event: Dict[str, Any]
+    targetId: int
+
+    async def private_msg(self, *chain: SegmentInstance_T):
+        await self.api(
+            "send_msg",
+            **{
+                "message_type": "private",
+                "user_id": self.targetId,
+                "message": [segment.formatted for segment in chain],
+            },
+        )
+
+
+class TempMixin(PrivateMessageMixin):
+    pass
+
+
+class FriendMixin(PrivateMessageMixin):
+    api: API_Caller_T
+    event: Dict[str, Any]
+
+    async def delete(self):
+        await self.api(
+            "delete_friend",
+            **{
+                "friend_id": self.targetId,
+            },
+        )
+
+
 class AddGroupMixin:
     api: API_Caller_T
     flag: str
