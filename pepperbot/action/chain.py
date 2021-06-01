@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+from pepperbot.globals import GLOBAL_CONFIG
 from pepperbot.models.UserInfo import UserInfo
 import random
 from abc import abstractmethod
@@ -69,7 +70,7 @@ ACTION_PERMISSION = {
 # @ABC()
 
 
-api = globalApi = APICaller(port=5700)
+api = globalApi = APICaller(port=5700, proxies=GLOBAL_CONFIG.get("HTTP_PROXY") or None)
 
 
 class OnlyRunner:

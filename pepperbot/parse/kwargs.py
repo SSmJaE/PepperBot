@@ -4,8 +4,15 @@ from pepperbot.action.chain import *
 from pepperbot.message.chain import MessageChain
 from pepperbot.models.friend import Friend
 from pepperbot.models.sender import Sender
+from pepperbot.models.stranger import Stranger
 from pepperbot.parse import GROUP_EVENTS_T, GroupEvent
-from pepperbot.parse.bots import AddGroupBot, FriendBot, GroupCommonBot
+from pepperbot.parse.bots import (
+    AddGroupBot,
+    BeenAddedBot,
+    FriendMessageBot,
+    GroupCommonBot,
+    TempMessageBot,
+)
 from pepperbot.types import HandlerValue_T
 
 
@@ -26,15 +33,29 @@ def construct_GroupCommonBot(event: Dict[str, Any], bot: GroupCommonBot, **kwarg
     )
 
 
-def construct_AddGroupBot(event: Dict[str, Any], **kwargs) -> AddGroupBot:
+def construct_AddGroupBot(event: Dict[str, Any], **kwargs):
     return AddGroupBot(
         event,
         globalApi.api,
     )
 
 
-def construct_FriendBot(event: Dict[str, Any], **kwargs):
-    return FriendBot(
+def construct_BeenAddedBot(event: Dict[str, Any], **kwargs):
+    return BeenAddedBot(
+        event,
+        globalApi.api,
+    )
+
+
+def construct_FriendMessageBot(event: Dict[str, Any], **kwargs):
+    return FriendMessageBot(
+        event,
+        globalApi.api,
+    )
+
+
+def construct_TempMessageBot(event: Dict[str, Any], **kwargs):
+    return TempMessageBot(
         event,
         globalApi.api,
     )
@@ -64,6 +85,10 @@ def construct_sender(event: Dict[str, Any]):
 
 def construct_friend(event: Dict[str, Any]):
     return Friend(event=event, api=globalApi.api)
+
+
+def construct_stranger(event: Dict[str, Any]):
+    return Stranger(event=event, api=globalApi.api)
 
 
 DEFAULT_KWARGS = [
@@ -101,7 +126,9 @@ HANDLER_KWARGS_MAP: Dict[GROUP_EVENTS_T, List[HandlerKwarg]] = {
         ),
     ],
     GroupEvent.friend_message: [
-        HandlerKwarg(name="bot", type=FriendBot, value=construct_FriendBot),
+        HandlerKwarg(
+            name="bot", type=FriendMessageBot, value=construct_FriendMessageBot
+        ),
         HandlerKwarg(
             name="friend",
             type=Friend,
@@ -111,6 +138,24 @@ HANDLER_KWARGS_MAP: Dict[GROUP_EVENTS_T, List[HandlerKwarg]] = {
             name="chain",
             type=MessageChain,
             value=lambda event, **kwargs: construct_chain(event, groupId=None),
+        ),
+    ],
+    GroupEvent.temp_message: [
+        HandlerKwarg(name="bot", type=TempMessageBot, value=construct_TempMessageBot),
+        HandlerKwarg(
+            name="chain",
+            type=MessageChain,
+            value=lambda event, **kwargs: construct_chain(event, groupId=None),
+        ),
+        HandlerKwarg(
+            name="stranger",
+            type=Stranger,
+            value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        ),
+        HandlerKwarg(
+            name="groupId",
+            type=int,
+            value=lambda event, **_: event["sender"]["group_id"],
         ),
     ],
     GroupEvent.member_increased: [
@@ -136,6 +181,17 @@ HANDLER_KWARGS_MAP: Dict[GROUP_EVENTS_T, List[HandlerKwarg]] = {
             name="stranger",
             type=Stranger,
             value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        ),
+    ],
+    GroupEvent.been_added: [
+        HandlerKwarg(name="bot", type=BeenAddedBot, value=construct_AddGroupBot),
+        HandlerKwarg(
+            name="stranger",
+            type=Stranger,
+            value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        ),
+        HandlerKwarg(
+            name="comment", type=str, value=lambda event, **kwargs: event["comment"]
         ),
     ],
 }

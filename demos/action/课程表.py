@@ -22,12 +22,13 @@ CONFIG = {
 }
 
 
-class MyBaseModel(BaseModel):
+class HashableBaseModel(BaseModel):
     def __hash__(self):
-        return hash((type(self),) + tuple(self.__dict__.values()))
+        # hashable basemodel by id
+        return hash((type(self),) + (id(self),))
 
 
-class Course(MyBaseModel):
+class Course(HashableBaseModel):
     name: str
     weekday: int  # 从1开始
     classroom: str
@@ -62,13 +63,22 @@ courses: List[Course] = [
     ),
     Course(
         name="诊断学Ⅱ实验",
-        classroom=" ",
+        classroom="院系楼四楼第四实验室",
         weekday=1,
         startHour=15,
         startMinute=00,
         endHour=18,
         endMinute=10,
         weeks=[13, 14, 15, 16],
+    ),
+    Course(
+        name="外科学总论",
+        classroom="3303",
+        weekday=2,
+        startHour=8,
+        startMinute=0,
+        endHour=9,
+        endMinute=20,
     ),
 ]
 
@@ -84,8 +94,8 @@ async def main():
     today = datetime.now()
 
     currentWeek = today.isocalendar()[1] - CONFIG["zeroWeek"]
-    # weekday = today.weekday() + 1
-    weekday = 1
+    weekday = today.weekday() + 1
+    # weekday = 1
 
     for course in courses:
         if isinstance(course.weeks, list):
@@ -107,8 +117,8 @@ async def main():
                     continue
 
         if course.weekday == weekday:
-            # currentMinutes = today.hour * 60 + today.minute
-            currentMinutes = 7 * 60 + 50
+            currentMinutes = today.hour * 60 + today.minute
+            # currentMinutes = 7 * 60 + 50
 
             courseStartMinutes = course.startHour * 60 + course.startMinute
 
@@ -116,7 +126,7 @@ async def main():
                 flags[course] = False
 
             if not flags[course]:
-                if courseStartMinutes - currentMinutes < 30:
+                if courseStartMinutes - currentMinutes < 50:
                     await group.send_message(
                         Text(
                             f"{course.name}将于{course.startHour:02}:{course.startMinute:02}至"

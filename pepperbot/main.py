@@ -144,6 +144,16 @@ async def __check_command_timeout():
     pass
 
 
+async def get_kwargs(eventName: GROUP_EVENTS_T, *_, **injectedKwargs):
+    kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(eventName, DEFAULT_KWARGS)
+
+    kwargs: Dict[str, Any] = {}
+    for kwarg in kwargList:
+        kwargs[kwarg.name] = await deepawait_or_normal(kwarg.value, **injectedKwargs)
+
+    return kwargs
+
+
 async def handle_qq_event(receive: Dict[str, Any], eventName: GROUP_EVENTS_T):
 
     if eventName == GroupEvent.meta_event:
@@ -172,15 +182,7 @@ async def handle_qq_event(receive: Dict[str, Any], eventName: GROUP_EVENTS_T):
 
         for handler in classHandlers.groupCache[groupId]:
 
-            kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(
-                eventName, DEFAULT_KWARGS
-            )
-
-            kwargs: Dict[str, Any] = {}
-            for kwarg in kwargList:
-                kwargs[kwarg.name] = await deepawait_or_normal(
-                    kwarg.value, event=receive, bot=handler.botInstance
-                )
+            kwargs = await get_kwargs(eventName, event=receive, bot=handler.botInstance)
 
             # debug(kwargs)
 
@@ -198,15 +200,27 @@ async def handle_qq_event(receive: Dict[str, Any], eventName: GROUP_EVENTS_T):
                 await await_or_normal(method, **fit_kwargs(method, kwargs))
 
     elif is_friend_event(eventName):
-        kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(
-            eventName, DEFAULT_KWARGS
-        )
 
-        kwargs: Dict[str, Any] = {}
-        for kwarg in kwargList:
-            kwargs[kwarg.name] = await deepawait_or_normal(kwarg.value, event=receive)
+        kwargs = await get_kwargs(eventName, event=receive)
 
         for handler in classHandlers.friendCache:
+            for method in handler.methods["before_" + eventName]:
+                await await_or_normal(method, **fit_kwargs(method, kwargs))
+
+            for method in handler.methods[eventName]:
+                await await_or_normal(method, **fit_kwargs(method, kwargs))
+
+            # if eventName == GroupEvent.group_message:
+            #     await handle_command(receive, kwargs, groupId, handler)
+
+            for method in handler.methods["after_" + eventName]:
+                await await_or_normal(method, **fit_kwargs(method, kwargs))
+
+    elif eventName == GroupEvent.temp_message:
+
+        kwargs = await get_kwargs(eventName, event=receive)
+
+        for handler in classHandlers.tempCache:
             for method in handler.methods["before_" + eventName]:
                 await await_or_normal(method, **fit_kwargs(method, kwargs))
 
@@ -285,5 +299,6 @@ async def main_entry(request, ws):
 def run(host: str = "0.0.0.0", port: int = 8080, debug: bool = False):
     try:
         app.run(host, port, protocol=WebSocketProtocol, debug=debug)
+        print(123)
     except (KeyboardInterrupt, SystemExit):
         pass

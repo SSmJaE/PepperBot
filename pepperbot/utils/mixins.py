@@ -1,7 +1,8 @@
 from typing import Awaitable, Callable, Dict, Protocol, Union
 
 from pepperbot.message.chain import *
-from pepperbot.models.api import *
+
+# from pepperbot.models.api import *
 
 
 # protocol可以提供类型检查，但是pylance报错
@@ -57,58 +58,33 @@ class GroupInfoMixin:
     pass
 
 
-class ActionMixin:
-    """
-    主动行为的聚合，方便action使用
-    """
-
+# todo 自动返回.data，适配器模式
+class GroupFileMixin:
     api: API_Caller_T
+    groupId: Optional[int]
 
-    async def members(
-        self,
-        groupId: int,
-    ):
-        return await self.api(
-            "get_group_member_list",
-            **{
-                "group_id": groupId,
-            },
-        )
+    async def upload_file(self, path: str, displayName: str, folderId: str = None):
+        return (
+            await self.api(
+                "upload_group_file",
+                **{
+                    "group_id": self.groupId,
+                    "file": path,
+                    "name": displayName,
+                    "folder": folderId,
+                },
+            )
+        ).json()["data"]
 
-    async def member(
-        self,
-        groupId: int,
-        userId: int,
-    ):
-        response = await self.api(
-            "get_group_member_info",
-            **{
-                "group_id": groupId,
-                "user_id": userId,
-            },
-        )
-
-        member = get_group_member_info_return(**response.json()).data
-        return member
-
-    async def stranger(
-        self,
-        userId: int,
-    ):
-        response = await self.api(
-            "get_stranger_info",
-            **{"user_id": userId, "no_cache": False},
-        )
-
-        member = get_stranger_info_return(**response.json()).data
-        return member
-
-    async def self_info(
-        self,
-    ):
-        response = await self.api("get_login_info")
-
-        return get_login_info(**response.json()).data
+    async def get_all_files(self):
+        return (
+            await self.api(
+                "get_group_root_files",
+                **{
+                    "group_id": self.groupId,
+                },
+            )
+        ).json()["data"]
 
 
 class GroupMessageMixin:
@@ -193,9 +169,6 @@ class TempMixin(PrivateMessageMixin):
 
 
 class FriendMixin(PrivateMessageMixin):
-    api: API_Caller_T
-    event: Dict[str, Any]
-
     async def delete(self):
         await self.api(
             "delete_friend",
@@ -219,4 +192,21 @@ class AddGroupMixin:
         await self.api(
             "set_group_add_request",
             **{"flag": self.flag, "type": "add", "approve": False, "reason": reason},
+        )
+
+
+class BeenAddedMixin:
+    api: API_Caller_T
+    flag: str
+
+    async def resolve(self):
+        await self.api(
+            "set_friend_add_request",
+            **{"flag": self.flag, "approve": True},
+        )
+
+    async def reject(self, reason: str = ""):
+        await self.api(
+            "set_friend_add_request",
+            **{"flag": self.flag, "approve": False},
         )

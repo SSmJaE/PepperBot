@@ -38,14 +38,6 @@ class User(UserBase):
     user_id: Optional[int]
 
 
-class Stranger(UserBase):
-    user_id: int
-    nickname: str
-    sex: Literal["male", "female", "unknown"]
-    age: int
-    qid: str
-
-
 # ---------------------------------------------------------------------------
 
 

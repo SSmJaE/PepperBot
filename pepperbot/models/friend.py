@@ -6,6 +6,7 @@ from .user import User
 from .UserInfo import *
 
 
+# todo 在pydantic实例化时，挂载event，怎么做？init似乎不行
 class Friend(User, FriendMixin):
     api: Optional[Any] = None
     event: Optional[Any] = None

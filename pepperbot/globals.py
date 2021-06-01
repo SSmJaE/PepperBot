@@ -158,6 +158,7 @@ class ClassHandler(BaseModel):
 
     friendCache: List[FriendCache] = []
     friendPermission = {}
+    tempCache: List[FriendCache] = []
 
 
 # function handlers
@@ -176,5 +177,10 @@ class QQBackend:
 GLOBAL_CONFIG = {
     "TEST_MODE": False,
     "HTTP_PORT": 5700,
+    "HTTP_PROXY": False,
+    # "HTTP_PROXY": {
+    #     "http://": "http://localhost:8866",
+    #     "https://": "http://localhost:8866",
+    # },
     "QQ_BACKEND": QQBackend.go_cqhttp,
 }

@@ -1,6 +1,5 @@
 import inspect
 import os
-from pepperbot.models.friend import Friend
 import random
 from os import path
 
@@ -19,7 +18,9 @@ from pepperbot.command.commands import (
 )
 from pepperbot.main import *
 from pepperbot.message.utils import is_flash
+from pepperbot.models.friend import Friend
 from pepperbot.models.sender import Sender
+from pepperbot.models.stranger import Stranger
 
 # todo 实现抽象基类，或者模板，或者说ts中的inherit的interface
 # 以实现检测子类是否实现了指定的方法，和实例属性
@@ -46,7 +47,20 @@ def get_random_pic():
 )
 @register(groupId=[1041902989, 819441084])
 class WhateverNameYouWant:
-    async def friend_message(self, bot: FriendBot, chain: MessageChain, friend: Friend):
+    async def temp_message(
+        self, bot: TempMessageBot, chain: MessageChain, stranger: Stranger, groupId: int
+    ):
+        await bot.private_msg(Text(f"收到了来自{groupId}的{stranger.user_id}的消息"))
+
+    async def been_added(self, bot: BeenAddedBot, stranger: Stranger, comment: str):
+        logger.success(f"接收到了{stranger.user_id}的好友请求{comment}")
+
+        if comment:
+            await bot.resolve()
+
+    async def friend_message(
+        self, bot: FriendMessageBot, chain: MessageChain, friend: Friend
+    ):
         await bot.private_msg(Text("收到消息了"))
 
     async def member_increased(
@@ -106,6 +120,14 @@ class WhateverNameYouWant:
 
         if "踢出我" == chain.pure_text:
             await sender.kickout()
+
+        if "所有文件" == chain.pure_text:
+            files = await bot.get_all_files()
+            debug(files)
+
+        if "上传文件" == chain.pure_text:
+            filePath = os.path.abspath(r"docs\static\img\1.png")
+            await bot.upload_file(path=filePath, displayName="文件上传测试.png")
 
         # if "禁言我" == chain.pure_text:
         #     await sender.ban(10)

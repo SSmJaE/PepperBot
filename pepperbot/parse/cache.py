@@ -9,6 +9,7 @@ from pepperbot.globals import *
 from pepperbot.parse import (
     GROUP_EVENTS,
     GROUP_EVENTS_T,
+    GroupEvent,
     is_valid_friend_method,
     is_valid_group_method,
 )
@@ -195,6 +196,15 @@ def cache():
 
                 friendCache.methods[method.__name__].append(method)
                 classHandlers.friendCache.append(friendCache)
+
+            elif GroupEvent.temp_message == method.__name__:
+
+                tempCache = FriendCache(
+                    instance=_instance,
+                )
+
+                tempCache.methods[method.__name__].append(method)
+                classHandlers.tempCache.append(tempCache)
 
             else:
                 print("无效的hook")
