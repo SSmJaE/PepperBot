@@ -23,8 +23,9 @@
 pip install pepperbot
 ```
 ## 食用
-[https://github.com/SSmJaE/PepperBot/wiki](Go to wiki)
-[https://ssmjae.github.io/PepperBot/](Go to Docs)
+ [Go to wiki](https://github.com/SSmJaE/PepperBot/wiki)
+
+ [Go to Docs](https://ssmjae.github.io/PepperBot/)
 
 ## 示例
 ```py
