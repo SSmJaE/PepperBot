@@ -22,14 +22,16 @@
 ```bash
 pip install pepperbot
 ```
+## 食用
+参照wiki
 
 ## 示例
 ```py
 # 注册群事件
-@register(groupId=123456789)
+@register(groupId=819441084)
 class WhateverNameYouWant:
     
-    async def group_message(self, bot: GroupMessageBot, chain: MessageChain, sender: Sender):
+    async def group_message(self, bot: GroupCommonBot, chain: MessageChain, sender: Sender):
         # chain即为消息链，pure_text是消息中的纯文本，不包含表情、图片等
         if "撤回我" == chain.pure_text:
             await chain.withdraw() # 可以直接“撤回消息”，符合直觉
