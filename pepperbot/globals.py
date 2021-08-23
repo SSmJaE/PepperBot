@@ -1,5 +1,6 @@
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Literal, Union
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from loguru import logger
 from pydantic import BaseModel
@@ -166,6 +167,8 @@ functionHandlers = defaultdict(list)
 # classHandlers = {"group": defaultdict(list), "groupCache": defaultdict(list)}
 classHandlers = ClassHandler()
 
+
+asyncScheduler = AsyncIOScheduler()
 
 # todo 允许用户修改的全局config，基于pydantic
 

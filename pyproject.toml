@@ -13,6 +13,7 @@ devtools = "^0.6.1"
 httpx = "0.15.4"
 loguru = "^0.5.3"
 pretty-errors = "^1.2.20"
+APScheduler = "^3.7.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

@@ -3,6 +3,7 @@ import os
 import random
 from os import path
 
+from apscheduler.triggers.interval import IntervalTrigger
 from inflection import humanize
 from pepperbot.command import with_command
 from pepperbot.command.commands import (
@@ -16,6 +17,7 @@ from pepperbot.command.commands import (
     跨用户复读,
     跨群复读,
 )
+from pepperbot.globals import asyncScheduler
 from pepperbot.main import *
 from pepperbot.message.utils import is_flash
 from pepperbot.models.friend import Friend
@@ -282,5 +284,12 @@ class 交流群:
                 Text("如果发现需要充值，你可能下错脚本了，在使用文档中下载最新版本即可"),
             )
 
-    # if __name__ == "__main__":
-    run(debug=True, port=14323)
+
+async def test():
+    logger.success("定时异步任务")
+
+
+asyncScheduler.add_job(test, IntervalTrigger(seconds=10))
+
+# if __name__ == "__main__":
+run(debug=True, port=14323)

@@ -7,8 +7,7 @@ import datetime as dt
 import logging
 from datetime import datetime
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+
 from pepperbot.action import *
 from pepperbot.action.chain import *
 from pydantic import BaseModel
@@ -141,12 +140,15 @@ async def main():
                 del flags[course]
 
 
-scheduler = AsyncIOScheduler()
-scheduler.add_job(main, IntervalTrigger(seconds=10))
-scheduler.start()
+if __name__ == "__main__":
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.interval import IntervalTrigger
 
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(main, IntervalTrigger(seconds=10))
+    scheduler.start()
 
-try:
-    asyncio.get_event_loop().run_forever()
-except (KeyboardInterrupt, SystemExit):
-    pass
+    try:
+        asyncio.get_event_loop().run_forever()
+    except (KeyboardInterrupt, SystemExit):
+        pass

@@ -13,6 +13,7 @@ module.exports = {
                     collapsed: false,
                     items: ["概览/配置go-cqhttp", "概览/配置pepperbot"],
                 },
+                "概览/如何使用本文档",
             ],
         },
         {
@@ -38,7 +39,7 @@ module.exports = {
                 "指令/使用指令",
                 "指令/指令的上下文",
                 "指令/指令的作用范围",
-                "指令/cli式指令",
+                "指令/CLI式指令",
             ],
         },
         {

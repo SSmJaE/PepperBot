@@ -8,7 +8,6 @@ import pretty_errors
 from devtools import debug, pprint
 from sanic import Sanic
 from sanic.websocket import WebSocketProtocol
-
 from pepperbot.action.chain import *
 from pepperbot.command.handle import handle_command
 from pepperbot.exceptions import EventHandlerDefineError
@@ -296,9 +295,13 @@ async def main_entry(request, ws):
             print(traceback.format_exc())
 
 
+@app.listener("before_server_start")
+async def initialize_scheduler(app, loop):
+    asyncScheduler.start()
+
+
 def run(host: str = "0.0.0.0", port: int = 8080, debug: bool = False):
     try:
         app.run(host, port, protocol=WebSocketProtocol, debug=debug)
-        print(123)
     except (KeyboardInterrupt, SystemExit):
         pass

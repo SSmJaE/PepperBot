@@ -10,18 +10,18 @@ const features = [
     {
         title: "易于使用",
         imageUrl: "img/undraw_docusaurus_mountain.svg",
-        description: <>图形化配置界面，多安装渠道</>,
+        description: <>易于上手使用的事件响应机制，api符合语意</>,
     },
-    {
-        title: "专注问题",
-        imageUrl: "img/undraw_docusaurus_tree.svg",
-        description: <>解放生产力，专注于真正能提高能力的练习上</>,
-    },
-    {
-        title: "Powered by Vue & Typescript",
-        imageUrl: "img/undraw_docusaurus_react.svg",
-        description: <>基于Typescript，确保脚本的稳健</>,
-    },
+    // {
+    //     title: "专注问题",
+    //     imageUrl: "img/undraw_docusaurus_tree.svg",
+    //     description: <>解放生产力，专注于真正能提高能力的练习上</>,
+    // },
+    // {
+    //     title: "完全的类型提示",
+    //     imageUrl: "img/undraw_docusaurus_react.svg",
+    //     description: <>易于使用，符合直觉的api；cli；文档完善</>,
+    // },
 ];
 
 function Feature({ imageUrl, title, description }) {
