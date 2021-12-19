@@ -1,7 +1,7 @@
 __pycache__
 private
 .pytest_cache
-adapter
+.adapter
 node_modules
 src2
 demo

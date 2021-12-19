@@ -36,6 +36,10 @@ def figure_out(receive: dict):
             logger.info("新成员入群")
             finalType = GroupEvent.member_increased
 
+        elif notice_type == "group_decrease":
+            logger.info("群成员减少")
+            finalType = GroupEvent.member_declined
+
         elif notice_type == "notify":
             if sub_type == "poke":
                 logger.info("群POKE事件")

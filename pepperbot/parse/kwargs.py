@@ -166,6 +166,14 @@ HANDLER_KWARGS_MAP: Dict[GROUP_EVENTS_T, List[HandlerKwarg]] = {
             value=lambda event, **kwargs: get_member_info(event, event["user_id"]),
         ),
     ],
+    GroupEvent.member_declined: [
+        HandlerKwarg(name="bot", type=GroupCommonBot, value=construct_GroupCommonBot),
+        HandlerKwarg(
+            name="member",
+            type=GroupMember,
+            value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        ),
+    ],
     GroupEvent.group_honor_change: [
         HandlerKwarg(name="bot", type=GroupCommonBot, value=construct_GroupCommonBot),
         HandlerKwarg(

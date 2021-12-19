@@ -2,10 +2,11 @@ import inspect
 import os
 import random
 from os import path
+from textwrap import dedent
 
 from apscheduler.triggers.interval import IntervalTrigger
 from inflection import humanize
-from pepperbot.command import with_command
+from pepperbot.command import as_command, pattern, with_command
 from pepperbot.command.commands import (
     InitialPattern,
     Pattern测试,
@@ -29,7 +30,7 @@ from pepperbot.models.stranger import Stranger
 
 
 def get_current_function_name():
-    return inspect.currentframe().f_back.f_code.co_name
+    return inspect.currentframe().f_back.f_code.co_name # type:ignore
 
 
 # todo 指令模块，作为与事件监听和出发模块完全解耦的一个工具函数
@@ -44,10 +45,14 @@ def get_random_pic():
     return path.join(basePath, file)
 
 
-@with_command(
-    commandClasses=[查询装备, 模拟, 简单复读, 跨群复读, 跨用户复读, 全局复读, 人工智障, Pattern测试, InitialPattern]
-)
-@register(groupId=[1041902989, 819441084])
+# lastTime = None
+# messageTimeQueue = []
+
+
+# @with_command(
+#     commandClasses=[查询装备, 模拟, 简单复读, 跨群复读, 跨用户复读, 全局复读, Pattern测试, InitialPattern]
+# )
+# @register(groupId=[1041902989, 819441084])
 class WhateverNameYouWant:
     async def temp_message(
         self, bot: TempMessageBot, chain: MessageChain, stranger: Stranger, groupId: int
@@ -77,6 +82,17 @@ class WhateverNameYouWant:
             At(member.user_id),
             Image(f"https://q4.qlogo.cn/headimg_dl?dst_uin={member.user_id}&spec=640"),
             Text("进群"),
+        )
+
+    async def member_declined(
+        self,
+        bot: GroupCommonBot,
+        member: GroupMember,
+    ):
+        debug(humanize(get_current_function_name()))
+
+        await bot.group_msg(
+            Text(f"{member.user_id}已退群"),
         )
 
     async def been_group_poked(
@@ -183,11 +199,10 @@ class WhateverNameYouWant:
         # await bot.reject()
 
 
-# lastTime = None
-# messageTimeQueue = []
-
-
-@register(groupId=[1041902989])
+# @with_command(
+#     # commandClasses=[常见问题]
+# )
+# @register(groupId=[1041902989])
 # @register(groupId=[1041902989, 1057809143, 628421419, 793334204])
 class 交流群:
     async def add_group(self, bot: AddGroupBot, event: Dict):
@@ -204,6 +219,7 @@ class 交流群:
         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender
     ):
 
+        # todo 封装为工具函数，限流用户 throttle_user(user_id:int)-> throttled : bool, status { time_remain, throttle_times_set}:
         # if sender.userId == 2927753279:
         #     if chain.regex_any("赞助", "赞", "助", "zan", "zhu"):
         #         await bot.group_msg(Text("不允许直接在群中刷屏索要赞助，想要赞助请私聊"))

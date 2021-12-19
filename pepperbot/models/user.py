@@ -35,7 +35,7 @@ class User(UserBase):
     title: Optional[str]
     title_expire_time: Optional[int]
     unfriendly: Optional[bool]
-    user_id: Optional[int]
+    user_id: int
 
 
 # ---------------------------------------------------------------------------
