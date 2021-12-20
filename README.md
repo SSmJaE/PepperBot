@@ -8,15 +8,12 @@
 </p>
 
 ## 特性
-- QQ部分基于OneBot协议
-- 渐进式
-- 新手友好，完全的类型提示
-- 符合直觉，直观，流畅的把想法映射到代码上
-- 易扩展，基于class mixin的扩展
-- 使用原生import，而不是自己造一套模块轮子
-- 注入参数，无限overload
-- 异步，反向ws，性能
-- 支持集中化路由管理
+- 底层基于异步的Sanic框架，性能相当不错
+- 轻量，主要处理消息，对于其他功能，暴露底层接口，方便实现深度定制
+- api符合直觉，直观，流畅地把想法映射到代码上
+- 基于python3.6之后的类型注解，提供了完全的类型提示
+- 只会动态注入用到的参数，没必要每次写一长串用不到的参数了！
+- 支持集中化路由、装饰器式路由
 
 ## 安装
 ```bash
@@ -27,6 +24,7 @@ pip install pepperbot
 - [Go to Docs](https://ssmjae.github.io/PepperBot/)
 
 ## 示例
+只需要非常少的代码，就可以实现群消息的响应
 ```py
 # 注册群事件
 @register(groupId=819441084)
@@ -51,4 +49,27 @@ class WhateverNameYouWant:
                 Text("没人"),
                 Face(150)
             )
+```
+
+指令系统，用户消息可以自动解析为pydantic的model
+
+支持str, int, float, bool
+
+支持所有有效CQ码，如Face, Image, Video, Poke等等
+```py
+class TestComplexText(BaseModel):
+    游戏名: str
+    装备数: int
+    加强: bool
+    价格: float
+    表情: Face
+    另一个字符: str
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @validator("装备数")
+    def check_装备数(cls, value):
+        if value not in [11, 12, 13]:
+            raise PatternFormotError("请输入有效序号")
 ```

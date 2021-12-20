@@ -7,7 +7,7 @@ from typing import Callable, Union
 import pretty_errors
 from devtools import debug, pprint
 from sanic import Sanic
-from sanic.websocket import WebSocketProtocol
+# from sanic.websocket import WebSocketProtocol
 from pepperbot.action.chain import *
 from pepperbot.command.handle import handle_command
 from pepperbot.exceptions import EventHandlerDefineError
@@ -302,6 +302,6 @@ async def initialize_scheduler(app, loop):
 
 def run(host: str = "0.0.0.0", port: int = 8080, debug: bool = False):
     try:
-        app.run(host, port, protocol=WebSocketProtocol, debug=debug)
+        app.run(host, port, debug=debug)
     except (KeyboardInterrupt, SystemExit):
         pass
