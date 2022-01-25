@@ -1,6 +1,6 @@
 from typing import Optional
-from pepperbot.parse import GROUP_EVENTS_T, GroupEvent
-from pepperbot.globals import logger
+# from .event import GROUP_EVENTS_T, GroupEvent
+from pepperbot.extensions.logger import logger
 
 
 def figure_out(receive: dict):

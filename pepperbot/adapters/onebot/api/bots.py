@@ -6,6 +6,16 @@ class BotBase:
     pass
 
 
+class GroupBot:
+    pass 
+
+class PrivateBot:
+    pass 
+
+class ChannelBot:
+    pass
+
+
 class GroupCommonBot(BotBase, GroupMessageMixin, GroupMemberMixin, GroupFileMixin):
     def __init__(self, event: Dict[str, Any], api: API_Caller_T) -> None:
         self.api: API_Caller_T = api

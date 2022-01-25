@@ -30,31 +30,9 @@ pretty_errors.configure(
 )
 
 
-app = Sanic("PepperBot")
 
 
-def register(
-    groupId: Union[int, str, List[Union[int, str]]] = [],
-    friendId="all",
-    *args,
-    **kwargs,
-):
-    def decorator(handler: Callable):
-        if isclass(handler):
-            decoratorMeta = GroupDecorator(
-                **{
-                    "args": [*args],
-                    "kwargs": {**kwargs, "groupId": groupId, "friendId": friendId},
-                }
-            )
 
-            classHandlers.groupMeta[handler].decorators["register"] = decoratorMeta
-        else:
-            raise EventHandlerDefineError("只允许使用register装饰器注册class")
-
-        return handler
-
-    return decorator
 
 
 def on(eventType, *args, **kwargs):
@@ -72,75 +50,10 @@ async def handle(*args):
     print("in meta")
 
 
-def __output_config():
-
-    debug(classHandlers)
-    # debug(globalContext)
-
-    result = []
-    for groupId, groupCacheList in classHandlers.groupCache.items():
-        buffer = []
-        for groupCache in groupCacheList:
-            buffer2 = []
-
-            # todo 应该反过来，根据事件，列出订阅的classHandler，也要提升至group等级
-            buffer2.append(
-                DisplayTree(
-                    name=f"事件",
-                    node=[method for method in groupCache.methods.keys()],
-                ),
-            )
-
-            # todo 提升至group等级，uniqueCommand
-            buffer2.append(
-                DisplayTree(
-                    name=f"指令",
-                    node=[
-                        commandClass.__name__
-                        for commandClass in groupCache.commandClasses
-                    ]
-                    or ["无"],
-                ),
-            )
-
-            buffer.append(
-                DisplayTree(
-                    name=f"{groupCache.instance.__class__}",
-                    node=[*buffer2],
-                ),
-            )
-
-        groupTree = DisplayTree(name=f"群{groupId}", node=[*buffer])
-        result.append(groupTree)
-
-    print_tree(DisplayTree(name="PepperBot", node=result))
 
 
-async def __check_command_timeout():
-    # todo 超时判断应该每次心跳都判断，而不是接收到该用户消息时
-    # 超时判断，与上一条消息的createTime判断
-    # timeout: Optional[int] = commandCache.kwargs[
-    #     "timeout"
-    # ]
 
-    # if timeout:
 
-    #     prevChain = finalMessageQueue[-2]
-    #     currentChain = finalMessageQueue[-1]
-
-    #     debug(
-    #         prevChain.createTime
-    #         - currentChain.createTime
-    #     )
-    #     debug(timeout)
-
-    #     if (
-    #         prevChain.createTime
-    #         - currentChain.createTime
-    #         >= timeout
-    #     ):
-    #         raise CommandClassOnTimeout()
-    pass
 
 
 async def get_kwargs(eventName: GROUP_EVENTS_T, *_, **injectedKwargs):
@@ -153,84 +66,6 @@ async def get_kwargs(eventName: GROUP_EVENTS_T, *_, **injectedKwargs):
     return kwargs
 
 
-async def handle_qq_event(receive: Dict[str, Any], eventName: GROUP_EVENTS_T):
-
-    if eventName == GroupEvent.meta_event:
-        # print(
-        #     arrow.get(receive["time"])
-        #     .to("Asia/Shanghai")
-        #     .format("YYYY-MM-DD HH:mm:ss"),
-        #     "心跳",
-        # )
-        logger.info("心跳事件")
-
-        __check_command_timeout
-
-        # metaEvent = MetaEvent(**receive)
-        # debug(metaEvent)
-    else:
-        pprint(receive)
-
-    # function handler
-    for handler in functionHandlers[eventName]:
-        await handler(receive)
-
-    # group handler
-    if is_group_event(eventName):
-        groupId = receive["group_id"]
-
-        for handler in classHandlers.groupCache[groupId]:
-
-            kwargs = await get_kwargs(eventName, event=receive, bot=handler.botInstance)
-
-            # debug(kwargs)
-
-            # 按照生命周期调用
-            for method in handler.methods["before_" + eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-            for method in handler.methods[eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-            if eventName == GroupEvent.group_message:
-                await handle_command(receive, kwargs, groupId, handler)
-
-            for method in handler.methods["after_" + eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-    elif is_friend_event(eventName):
-
-        kwargs = await get_kwargs(eventName, event=receive)
-
-        for handler in classHandlers.friendCache:
-            for method in handler.methods["before_" + eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-            for method in handler.methods[eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-            # if eventName == GroupEvent.group_message:
-            #     await handle_command(receive, kwargs, groupId, handler)
-
-            for method in handler.methods["after_" + eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-    elif eventName == GroupEvent.temp_message:
-
-        kwargs = await get_kwargs(eventName, event=receive)
-
-        for handler in classHandlers.tempCache:
-            for method in handler.methods["before_" + eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-            for method in handler.methods[eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
-
-            # if eventName == GroupEvent.group_message:
-            #     await handle_command(receive, kwargs, groupId, handler)
-
-            for method in handler.methods["after_" + eventName]:
-                await await_or_normal(method, **fit_kwargs(method, kwargs))
 
 
 hasInitial = False
@@ -295,13 +130,8 @@ async def main_entry(request, ws):
             print(traceback.format_exc())
 
 
-@app.listener("before_server_start")
-async def initialize_scheduler(app, loop):
-    asyncScheduler.start()
 
 
-def run(host: str = "0.0.0.0", port: int = 8080, debug: bool = False):
-    try:
-        app.run(host, port, debug=debug)
-    except (KeyboardInterrupt, SystemExit):
-        pass
+    
+
+

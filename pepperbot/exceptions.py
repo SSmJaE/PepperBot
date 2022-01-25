@@ -51,3 +51,13 @@ class CommandClassOnTimeout(PepperBotBaseException):
 class EventHandlerDefineError(PepperBotBaseException):
 
     pass
+
+
+class InitializationError(PepperBotBaseException):
+    pass
+
+class EventHandleError(PepperBotBaseException):
+    pass 
+
+class BackendApiError(PepperBotBaseException):
+    pass

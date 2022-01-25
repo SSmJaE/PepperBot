@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from pepperbot.globals import GLOBAL_CONFIG
-from pepperbot.models.UserInfo import UserInfo
 import random
 from abc import abstractmethod
 from functools import wraps
@@ -35,10 +33,12 @@ from pepperbot.action.decorators import (
     permission,
     schedule,
 )
+from pepperbot.globals import GLOBAL_CONFIG
 from pepperbot.message.chain import SegmentInstance_T
 from pepperbot.models import *
 from pepperbot.models.api import get_group_member_list_return
 from pepperbot.models.user import *
+from pepperbot.models.UserInfo import UserInfo
 from pepperbot.utils.common import get_current_function_name
 from pydantic import BaseModel
 
@@ -384,3 +384,6 @@ class ActionChain:
 
     def friends(self):
         return []
+
+
+switch_to()

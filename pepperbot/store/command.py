@@ -1,20 +1,13 @@
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Literal, Union
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from loguru import logger
 from pydantic import BaseModel
 
-from pepperbot.message.chain import SegmentInstance_T
-from pepperbot.parse.bots import BotBase
-
-# logger配置
-# logger.debug("That's it, beautiful and simple logging!")
+from pepperbot.types import CommandClassBase
 
 
 class UserMessage(BaseModel):
     messageId: int
-    message: List[SegmentInstance_T]
+    # message: List[SegmentInstance_T]
     createTime: int
     groupId: int
     userId: int
@@ -86,9 +79,9 @@ class Context(BaseModel):
     # todo 相同commandClass，不同permission的处理
     cache: Dict[Callable, CommandContext] = {}
     # 全局默认栈深
-    maxSize: int = 10
+    maxSize: int = 9
     # 全局默认消息过期时间，单位秒
-    timeout: int = 2 * 60 * 60
+    timeout: int = 1 * 60 * 60
 
     class Config:
         arbitrary_types_allowed = True
@@ -106,84 +99,5 @@ class CommandCache(BaseModel):
     targetMethod: str = "initial"
 
 
-class GroupDecorator(BaseModel):
-    args: List[Any] = []
-    kwargs: Dict[str, Any] = {}
-
-
-class GroupMeta(BaseModel):
-    """
-    收集通过各种装饰器注册的基于class的事件响应handler
-    """
-
-    # class_: Callable
-    decorators: Dict[str, GroupDecorator] = {}
-
-
-class GroupCache(BaseModel):
-    """
-    根据GroupMeta生成缓存，保存实例化的class之类
-    """
-
-    botInstance: BotBase
-    instance: Union[Callable, Any]
-
-    # bounded methods
-    # methods: Dict[GROUP_EVENTS_T, List[Any]] = defaultdict(list)
-    methods: Dict[str, List[Callable]] = defaultdict(list)
-    commandClasses: List[Callable] = []
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class FriendCache(BaseModel):
-    # botInstance: BotBase
-    instance: Union[Callable, Any]
-
-    # bounded methods
-    # methods: Dict[GROUP_EVENTS_T, List[Any]] = defaultdict(list)
-    methods: Dict[str, List[Callable]] = defaultdict(list)
-    commandClasses: List[Callable] = []
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class ClassHandler(BaseModel):
-    # key为class handler
-    groupMeta: Dict[Callable, GroupMeta] = defaultdict(GroupMeta)
-    # key为群号
-    groupCache: Dict[int, List[GroupCache]] = defaultdict(list)
-    commandCache: Dict[Callable, CommandCache] = {}
-
-    friendCache: List[FriendCache] = []
-    friendPermission = {}
-    tempCache: List[FriendCache] = []
-
-
-# function handlers
-functionHandlers = defaultdict(list)
-# classHandlers = {"group": defaultdict(list), "groupCache": defaultdict(list)}
-classHandlers = ClassHandler()
-
-
-asyncScheduler = AsyncIOScheduler()
-
-# todo 允许用户修改的全局config，基于pydantic
-
-
-class QQBackend:
-    go_cqhttp = "go_cqhttp"
-
-
-GLOBAL_CONFIG = {
-    "TEST_MODE": False,
-    "HTTP_PORT": 5700,
-    "HTTP_PROXY": False,
-    # "HTTP_PROXY": {
-    #     "http://": "http://localhost:8866",
-    #     "https://": "http://localhost:8866",
-    # },
-    "QQ_BACKEND": QQBackend.go_cqhttp,
-}
+class_command_mapping: Dict[str, CommandClassBase] = {}
+""" ClassHandler.__name__ : ClassHandlerCache """

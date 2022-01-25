@@ -13,7 +13,7 @@ loguru = "^0.5.3"
 pretty-errors = "^1.2.20"
 APScheduler = "^3.7.0"
 httpx = "^0.21.1"
-sanic = "^21.9.3"
+sanic = "^21.12.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -26,3 +26,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poe.tasks]
 test = "pytest"
 run = "python private/run.py"
+
+[tool.poetry.scripts]
+pepperbot = "cli:main"
