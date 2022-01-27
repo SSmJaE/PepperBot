@@ -1,5 +1,6 @@
 from typing import Iterable, List
 
+from devtools import debug
 from pepperbot.core.route.cache import (
     cache_class_command,
     cache_class_handler,
@@ -11,26 +12,18 @@ from pepperbot.core.route.validate import (
     is_valid_route_validator,
 )
 from pepperbot.exceptions import InitializationError
-from pepperbot.store.slice.command import class_command_mapping
+from pepperbot.store.command import class_command_mapping
 from pepperbot.store.meta import (
-    class_handler_mapping,
-    route_validator_mapping,
-    route_mapping,
+    ALL_AVAILABLE_BOT_PROTOCOLS,
     BotRoute,
+    class_handler_mapping,
+    route_mapping,
+    route_validator_mapping,
 )
-from pepperbot.types import ALL_AVAILABLE_BOT_PROTOCOLS
-from devtools import debug
-
-# def cache_dict(route_dict:T_RouteGroups)
 
 
 def parse_routes(routes: Iterable[BotRoute]):
     for route in routes:
-        # protocols: Iterable[T_BotProtocol] = []
-        # if route.protocols == "*":
-        #     protocols = ALL_AVAILABLE_BOT_PROTOCOLS
-        # else:
-        #     protocols = route.protocols
 
         commands = []
         if route.commands:
@@ -57,8 +50,8 @@ def parse_routes(routes: Iterable[BotRoute]):
                 raise InitializationError(f"路由 {route} 中的消息响应器 {handler_name} 不符合要求")
 
             if handler_name not in class_handler_mapping.keys():
-                # cache_class_handler(route.handler, handler_name)
-                pass
+                cache_class_handler(route.handler, handler_name)
+                # pass
 
         # pydantic会校验不合法的情况，所以不用else
         if route.groups == "*":
@@ -69,11 +62,13 @@ def parse_routes(routes: Iterable[BotRoute]):
                 if route.handler:
                     route_mapping.global_handlers[protocol]["group"].add(handler_name)
 
-        elif type(route.groups) == dict:
+        elif route.groups and type(route.groups) == dict:
             for protocol, group_ids in route.groups.items():
                 if group_ids == "*":
                     if route.handler:
-                        route_mapping.global_handlers[protocol]["group"].add(handler_name)
+                        route_mapping.global_handlers[protocol]["group"].add(
+                            handler_name
+                        )
 
                 else:
                     for group_id in group_ids:
@@ -97,8 +92,8 @@ def parse_routes(routes: Iterable[BotRoute]):
 
             validator_name = validator.__name__
             if validator_name not in route_validator_mapping.keys():
-                # cache_route_validator(validator, validator_name)
-                pass
+                cache_route_validator(validator, validator_name)
+                # pass
 
             for command_name in command_names:
                 route_mapping.mapping["validators"]["group"][validator_name][
@@ -118,11 +113,13 @@ def parse_routes(routes: Iterable[BotRoute]):
                 if route.handler:
                     route_mapping.global_handlers[protocol]["private"].add(handler_name)
 
-        elif type(route.friends) == dict:
+        elif route.friends and type(route.friends) == dict:
             for protocol, private_ids in route.friends.items():
                 if private_ids == "*":
                     if route.handler:
-                        route_mapping.global_handlers[protocol]["private"].add(handler_name)
+                        route_mapping.global_handlers[protocol]["private"].add(
+                            handler_name
+                        )
 
                 else:
                     for private_id in private_ids:

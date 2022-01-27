@@ -1,37 +1,28 @@
-import asyncio
-from typing import Optional
-
 import httpx
-from pepperbot.types import T_BotProtocol, T_WebProtocol
-# from pepperbot.utils.mixins import *
-# from pepperbot.utils.action import *
 from pepperbot.config import global_config
+from pepperbot.types import T_BotProtocol, T_WebProtocol
+from devtools import debug
 
 
 class ApiCaller:
     """访问后端"""
 
-    # class ApiCaller(GroupMessageMixin, ActionMixin):
     def __init__(
         self,
         bot_protocol: T_BotProtocol,
         backend_protocol: T_WebProtocol,
         backend_port: int,
         backend_host: str = "127.0.0.1",
-        # proxies: Optional[Any] = None,
     ):
         if bot_protocol == "onebot":
             self.caller = self.to_onebot
 
-        elif bot_protocol == "websocket":
+        elif bot_protocol == "keaimao":
             self.caller = self.to_keaimao
 
+        self.protocol = backend_protocol
         self.host = backend_host
         self.port = backend_port
-
-        # kwargs = {}
-        # if proxies:
-        #     kwargs["proxies"] = proxies
 
         # todo proxy
         # global_config.Debug.proxy
@@ -53,7 +44,11 @@ class ApiCaller:
         return self.client.post(f"http://{self.host}:{self.port}/{action}", json=kwargs)
 
     def to_keaimao(self, action: str, kwargs):
-        return self.client.post(f"http://{self.host}:{self.port}/{action}", json=kwargs)
+        kwargs["event"] = action
+
+        debug(kwargs)
+
+        return self.client.post(f"http://{self.host}:{self.port}", json=kwargs)
 
     async def __call__(self, action: str, **kwargs):
         return self.caller(action, kwargs)

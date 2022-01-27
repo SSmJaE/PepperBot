@@ -77,14 +77,16 @@ class Text(MessageSegMentBase):
             for key, value in data.items():
                 setattr(self, key, value)
 
-            self.formatted = {**data}
+            self.onebot = {**data}
+            self.keaimao = identifier
 
         else:
             identifier = data
 
             self.text: str = data
 
-            self.formatted = {"type": "text", "data": {"text": data}}
+            self.onebot = {"type": "text", "data": {"text": data}}
+            self.keaimao = identifier
 
         super().__init__(**{"identifier": identifier})
 

@@ -3,10 +3,7 @@ from typing import Any, Callable, Iterable, Literal, Optional, Type
 from devtools import debug
 from sanic import Sanic
 
-from pepperbot.adapters.keaimao import KeaimaoAdapter
-from pepperbot.adapters.onebot import OnebotV11Adapter
 from pepperbot.core.bot.api_caller import ApiCaller
-from pepperbot.core.event.base import AdapaterBase
 from pepperbot.core.route.utils import (
     create_bot_routes,
     create_web_routes,
@@ -17,21 +14,19 @@ from pepperbot.exceptions import InitializationError
 from pepperbot.extensions.logger import logger
 from pepperbot.extensions.scheduler import async_scheduler
 from pepperbot.store.meta import (
+    ALL_AVAILABLE_BOT_PROTOCOLS,
     DEFAULT_URI,
-    AdapterBuffer,
     BotRoute,
     api_callers,
     clean_bot_instances,
     register_routes,
     route_mapping,
 )
-from pepperbot.types import API_Caller_T, T_BotProtocol, T_WebProtocol
+from pepperbot.types import T_BotProtocol, T_WebProtocol
 
 sanic_app = Sanic("PepperBot")
 
 sanic_app.config.WEBSOCKET_PING_TIMEOUT = None  # type:ignore
-
-T_ApiCaller = API_Caller_T
 
 
 class PepperBot:
@@ -56,36 +51,36 @@ class PepperBot:
         backend_host="127.0.0.1",
         receive_uri: str = None,
     ):
-        adapter: AdapaterBase
-        api_caller: ApiCaller
         uri: str
         request_handler: Optional[Callable] = None
 
-        if bot_protocol == "onebot":
-            adapter = OnebotV11Adapter()
-        elif bot_protocol == "keaimao":
-            adapter = KeaimaoAdapter()
-        else:
+        if bot_protocol not in ALL_AVAILABLE_BOT_PROTOCOLS:
             raise InitializationError(f"尚不支持的机器人协议 {bot_protocol}")
 
         if receive_uri:
             uri = receive_uri
         else:
             if receive_protocol == "http":
-                request_handler = lambda request: http_receiver(
-                    request, bot_protocol, adapter
-                )
+                request_handler = lambda request: http_receiver(request, bot_protocol)
                 uri = DEFAULT_URI[bot_protocol] + "/http"
 
             elif receive_protocol == "websocket":
                 request_handler = lambda request, ws: websocket_receiver(
-                    request, ws, bot_protocol, adapter
+                    request, ws, bot_protocol
                 )
-                # request_handler = websocket_receiver
                 uri = DEFAULT_URI[bot_protocol] + "/ws"
 
             else:
                 raise InitializationError(f"未知通信协议 {receive_protocol}")
+
+        create_web_routes(
+            sanic_app,
+            receive_protocol=receive_protocol,
+            uri=uri,
+            request_handler=request_handler,
+        )
+
+        api_caller: ApiCaller
 
         if backend_protocol == "http":
             api_caller = ApiCaller(
@@ -100,15 +95,6 @@ class PepperBot:
             raise InitializationError(f"未知通信协议 {backend_protocol}")
 
         api_callers[bot_protocol] = api_caller
-
-        create_web_routes(
-            sanic_app,
-            AdapterBuffer(
-                receive_protocol=receive_protocol,
-                uri=uri,
-                request_handler=request_handler,
-            ),
-        )
 
     def register_plugin(self):
         pass
@@ -134,7 +120,3 @@ class PepperBot:
             sanic_app.run(self.host, self.port, debug=self.debug)
         except (KeyboardInterrupt, SystemExit):
             logger.success("PepperBot成功退出")
-
-
-# 一个轻量级的跨平台机器人框架，轻松地在平台间传递消息
-# A lightweight cross-platform bot framework, write once, run everywhere

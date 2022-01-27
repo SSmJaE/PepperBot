@@ -2,67 +2,50 @@ from enum import Enum, unique
 from typing import Any, List, Literal, Union
 
 
-class OnebotV11CommonEvent:
-    meta_event: Literal["meta_event"] = "meta_event"
+class OnebotV11MetaEvent:
+    meta_event = "meta_event"
+    on_connect = "on_connect"
 
+
+# ONEBOTV11_META_EVENTS = [
+#     "meta_event",
+#     "on_connect",
+# ]
+
+
+class OnebotV11CommonEvent:
+    pass
+
+
+# ONEBOTV11_COMMON_EVENTS = []
 
 # @unique
 class OnebotV11GroupEvent:
     # 针对群
-    group_message: Literal["group_message"] = "group_message"
-    group_anonymous_essage: Literal["group_anonymous_essage"] = "group_anonymous_essage"
-    group_notice: Literal["group_notice"] = "group_notice"
-    group_message_been_withdraw: Literal[
-        "group_message_been_withdraw"
-    ] = "group_message_been_withdraw"
-    group_honor_change: Literal["group_honor_change"] = "group_honor_change"
-    group_admin_change: Literal["group_admin_change"] = "group_admin_change"
-    group_ban_change: Literal["group_ban_change"] = "group_ban_change"
-    member_increased: Literal["member_increased"] = "member_increased"
-    member_declined: Literal["member_declined"] = "member_declined"
-    new_file_uploaded: Literal["new_file_uploaded"] = "new_file_uploaded"
-    add_group: Literal["add_group"] = "add_group"
+    group_message = "group_message"
+    group_anonymous_essage = "group_anonymous_essage"
+    group_notice = "group_notice"
+    group_message_been_withdraw = "group_message_been_withdraw"
+    group_honor_change = "group_honor_change"
+    group_admin_change = "group_admin_change"
+    group_ban_change = "group_ban_change"
+    member_increased = "member_increased"
+    member_declined = "member_declined"
+    new_file_uploaded = "new_file_uploaded"
+    add_group = "add_group"
     # 针对个人，群相关
-    been_group_poked: Literal["been_group_poked"] = "been_group_poked"
-    been_invited: Literal["been_invited"] = "been_invited"
-
-
-T_OnebotV11GroupEvent = Literal[
-    "group_message",
-    "group_anonymous_essage",
-    "group_notice",
-    "group_message_been_withdraw",
-    "group_honor_change",
-    "group_admin_change",
-    "group_ban_change",
-    "member_increased",
-    "member_declined",
-    "new_file_uploaded",
-    "add_group",
-    "been_group_poked",
-    "been_invited",
-    "meta_event",
-]
+    been_group_poked = "been_group_poked"
+    been_invited = "been_invited"
+    temp_message = "temp_message"
 
 
 class OnebotV11PrivateEvent:
     # 针对个人，个人相关
-    been_added: Literal["been_added"] = "been_added"
-    friend_message: Literal["friend_message"] = "friend_message"
-    been_friend_poked: Literal["been_friend_poked"] = "been_friend_poked"
-    friend_message_been_withdraw: Literal[
-        "friend_message_been_withdraw"
-    ] = "friend_message_been_withdraw"
-    temp_message: Literal["temp_message"] = "temp_message"
+    been_added = "been_added"
+    friend_message = "friend_message"
+    been_friend_poked = "been_friend_poked"
+    friend_message_been_withdraw = "friend_message_been_withdraw"
 
-
-T_OnebotV11PrivateEvent = Literal[
-    "been_added",
-    "friend_message",
-    "been_friend_poked",
-    "friend_message_been_withdraw",
-    "temp_message",
-]
 
 # RELATIONS = {
 #     "group": {

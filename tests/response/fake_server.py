@@ -13,7 +13,7 @@ from pepperbot.parse.cache import cache
 from pepperbot.parse.figure import figure_out
 from pepperbot.types import F
 from pepperbot.utils.common import await_or_normal
-from pepperbot.utils.mixins import ActionMixin, GroupMessageMixin
+from pepperbot.adapters.onebot.api.mixins import ActionMixin, GroupMessageMixin
 
 pretty_errors.configure(
     filename_display=pretty_errors.FILENAME_EXTENDED,

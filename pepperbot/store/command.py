@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Any, Callable, Dict, List, Literal, Union
 from pydantic import BaseModel
 
-from pepperbot.types import CommandClassBase
+from pepperbot.types import BaseClassCommand
 
 
 class UserMessage(BaseModel):
@@ -99,5 +99,5 @@ class CommandCache(BaseModel):
     targetMethod: str = "initial"
 
 
-class_command_mapping: Dict[str, CommandClassBase] = {}
+class_command_mapping: Dict[str, BaseClassCommand] = {}
 """ ClassHandler.__name__ : ClassHandlerCache """

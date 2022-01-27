@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from pepperbot.utils.mixins import FriendMixin
+from pepperbot.adapters.onebot.api.mixins import FriendMixin
 
 from .user import User
 from .UserInfo import *

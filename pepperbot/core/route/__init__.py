@@ -4,7 +4,7 @@ from typing import Callable, Dict, Iterable, Literal, Optional, Type, Union
 from pepperbot.exceptions import InitializationError
 from pepperbot.store.meta import (
     BotRoute,
-    T_RouteGroups,
+    T_RouteRelation,
     register_routes,
 )
 
@@ -22,8 +22,8 @@ from pepperbot.store.meta import (
 def register(
     *,
     commands: Iterable[object] = None,
-    groups: T_RouteGroups = "*",
-    friends: T_RouteGroups = "*",
+    groups: T_RouteRelation = "*",
+    friends: T_RouteRelation = "*",
     # **kwargs,
 ):
     def decorator(handler: Callable):

@@ -18,13 +18,14 @@ from pepperbot.exceptions import EventHandlerDefineError
 # from pepperbot.parse.kwargs import (
 #     DEFAULT_KWARGS,
 #     HANDLER_KWARGS_MAP,
-#     HandlerKwarg,
+#    EventHandlerKwarg,
 #     construct_GroupCommonBot,
 # )
 from pepperbot.store.meta import (
     ClassCommandCache,
     ClassHandlerCache,
     class_handler_mapping,
+    route_validator_mapping
 )
 from pepperbot.utils.common import get_own_methods
 
@@ -54,12 +55,12 @@ def cache_class_handler(class_handler: Callable, handler_name: str):
         method_name = method.__name__
 
         # todo 多protocol合并的事件
-        if not is_valid_group_method(method_name):
-            # if is_valid_friend_method(method.__name__):
-            raise EventHandlerDefineError(f"")
+        # if not is_valid_group_method(method_name):
+        #     # if is_valid_friend_method(method.__name__):
+        #     raise EventHandlerDefineError(f"")
 
-        if not is_valid_event_handler(class_handler, method, method_name):
-            raise EventHandlerDefineError(f"")
+        # if not is_valid_event_handler(class_handler, method, method_name):
+        #     raise EventHandlerDefineError(f"")
 
         event_handlers[method_name] = method
 
@@ -83,39 +84,39 @@ def cache_class_command(class_command: Callable, command_name: str):
 
     # debug(commandKwargs)
 
-    command_methods = {}
-    for method in get_own_methods(class_command_instance):
-        method_name = method.__name__
+    # command_methods = {}
+    # for method in get_own_methods(class_command_instance):
+    #     method_name = method.__name__
 
-        if not is_valid_command_method(method):
-            raise ClassCommandDifinationError()
+    #     if not is_valid_command_method(method):
+    #         raise ClassCommandDifinationError()
 
-        commandBuffer.methods[method.__name__] = method
+    #     commandBuffer.methods[method.__name__] = method
 
-    if "initial" not in command_methods.keys():
-        raise ClassCommandDifinationError()
+    # if "initial" not in command_methods.keys():
+    #     raise ClassCommandDifinationError()
 
-    commandBuffer = ClassCommandCache(
-        instance=class_command_instance,
-        kwargs=command_kwargs,
-        methods=command_methods,
-    )
+    # commandBuffer = ClassCommandCache(
+    #     instance=class_command_instance,
+    #     kwargs=command_kwargs,
+    #     methods=command_methods,
+    # )
 
-    classHandlers.commandCache[commandClass] = commandBuffer
+    # classHandlers.commandCache[commandClass] = commandBuffer
 
-    maxSize = commandKwargs["maxSize"]
-    timeout = commandKwargs["timeout"]
-    mode = commandKwargs["mode"]
+    # maxSize = commandKwargs["maxSize"]
+    # timeout = commandKwargs["timeout"]
+    # mode = commandKwargs["mode"]
 
-    commandContext = CommandContext(
-        maxSize=maxSize or globalContext.maxSize,
-        timeout=timeout or globalContext.timeout,
-        mode=mode,
-    )
+    # commandContext = CommandContext(
+    #     maxSize=maxSize or globalContext.maxSize,
+    #     timeout=timeout or globalContext.timeout,
+    #     mode=mode,
+    # )
 
-    globalContext.cache[commandClass] = commandContext
+    # globalContext.cache[commandClass] = commandContext
 
-    class_command_mapping
+    # class_command_mapping
 
 
 def cache_route_validator(validator: Callable, validator_name: str):

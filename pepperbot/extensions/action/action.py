@@ -1,4 +1,4 @@
-from .mixins import PrivateMessageMixin
+from ...adapters.onebot.api.mixins import PrivateMessageMixin
 
 
 from pepperbot.message.chain import *

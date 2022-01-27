@@ -14,7 +14,7 @@ class DictNoNone(dict):
 
 
 def get_current_function_name():
-    return inspect.currentframe().f_back.f_code.co_name
+    return inspect.currentframe().f_back.f_code.co_name  # type:ignore
 
 
 def get_own_methods(instance: object):
@@ -28,9 +28,13 @@ def get_own_methods(instance: object):
                 yield cast(FunctionType, methodOrProperty)
 
 
-async def await_or_normal(
-    functionOrCoroutine: Union[Any, FunctionType], *args, **kwargs
-):
+def get_own_attributes(instance: object):
+    for property in dir(instance):
+        if not property.startswith("__"):
+            yield property
+
+
+async def await_or_sync(functionOrCoroutine: Union[Any, FunctionType], *args, **kwargs):
     """
     针对bound method，iscoroutine和isawaitable对bound method无效
 
@@ -63,35 +67,48 @@ async def await_or_normal(
     # return result
 
 
-async def deepawait_or_normal(
-    functionOrCoroutineOrValue: Union[Any, Coroutine, FunctionType], *args, **kwargs
-):
-    """
-    pepperbot.parse.kwargs.get_member_info
+async def deepawait_or_sync(
+    value_or_function_or_coroutine: Union[
+        Any,
+        FunctionType,
+        Coroutine,
+    ],
+    *args,
+    **kwargs
+) -> Any:
+    """双重await，lambda"""
+    if callable(value_or_function_or_coroutine):
+        # 第一次调用一个协程，会返回一个awaitable
+        # awaitable不可调用
+        result = value_or_function_or_coroutine(*args, **kwargs)
 
-    双重await，lambda
-    """
-    if callable(functionOrCoroutineOrValue):
-        result = functionOrCoroutineOrValue(*args, **kwargs)
-
-        while iscoroutine(result):
-            result = await result
+        while iscoroutine(result) or callable(result):
+            if callable(result):
+                result = result()
+            else:
+                result = await result
 
         return result
 
-    return functionOrCoroutineOrValue
+    return value_or_function_or_coroutine
 
 
 def fit_kwargs(method: Callable, kwargs: Dict[str, Any]):
-    validKwargNames = method.__annotations__.keys()
+    """
+    刨除没有在函数中定义的，但是提供了的额外参数
+    可以是lambda函数
+    定义时是位置参数或者关键字参数都可以，因为位置参数也可以通过关键词参数的形式赋值
+    """
+    # validKwargNames = method.__annotations__.keys()
+    provided_arg_names = inspect.getargs(method.__code__)[0]
 
-    finalKwargs = {}
+    fitted_args = {}
 
-    for argName in kwargs.keys():
-        if argName in validKwargNames:
-            finalKwargs[argName] = kwargs[argName]
+    for arg_name in kwargs.keys():
+        if arg_name in provided_arg_names:
+            fitted_args[arg_name] = kwargs[arg_name]
 
-    return finalKwargs
+    return fitted_args
 
 
 class DisplayTree(BaseModel):
@@ -136,3 +153,47 @@ def print_tree(tree: DisplayTree, indent=0, prefixes=[]):
             print_tree(node, indent + 1, newPrefixes)
         else:
             print("".join(newPrefixes), node)
+
+
+# def output_config():
+#
+# debug(classHandlers)
+# # debug(globalContext)
+
+# result = []
+# for groupId, groupCacheList in classHandlers.groupCache.items():
+#     buffer = []
+#     for groupCache in groupCacheList:
+#         buffer2 = []
+
+#         # todo 应该反过来，根据事件，列出订阅的classHandler，也要提升至group等级
+#         buffer2.append(
+#             DisplayTree(
+#                 name=f"事件",
+#                 node=[method for method in groupCache.methods.keys()],
+#             ),
+#         )
+
+#         # todo 提升至group等级，uniqueCommand
+#         buffer2.append(
+#             DisplayTree(
+#                 name=f"指令",
+#                 node=[
+#                     commandClass.__name__
+#                     for commandClass in groupCache.commandClasses
+#                 ]
+#                 or ["无"],
+#             ),
+#         )
+
+#         buffer.append(
+#             DisplayTree(
+#                 name=f"{groupCache.instance.__class__}",
+#                 node=[*buffer2],
+#             ),
+#         )
+
+#     groupTree = DisplayTree(name=f"群{groupId}", node=[*buffer])
+#     result.append(groupTree)
+
+# print_tree(DisplayTree(name="PepperBot", node=result))

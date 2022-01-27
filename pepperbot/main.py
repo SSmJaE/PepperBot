@@ -4,7 +4,6 @@ import traceback
 from inspect import isclass, isfunction
 from typing import Callable, Union
 
-import pretty_errors
 from devtools import debug, pprint
 from sanic import Sanic
 # from sanic.websocket import WebSocketProtocol
@@ -16,7 +15,7 @@ from pepperbot.parse import GROUP_EVENTS_T, GroupEvent, is_friend_event, is_grou
 from pepperbot.parse.bots import *
 from pepperbot.parse.cache import cache
 from pepperbot.parse.figure import figure_out
-from pepperbot.parse.kwargs import DEFAULT_KWARGS, HANDLER_KWARGS_MAP, HandlerKwarg
+from pepperbot.parse.kwargs import DEFAULT_KWARGS, HANDLER_KWARGS_MAP,EventHandlerKwarg
 from pepperbot.utils.common import (
     DisplayTree,
     await_or_normal,
@@ -25,9 +24,7 @@ from pepperbot.utils.common import (
     print_tree,
 )
 
-pretty_errors.configure(
-    filename_display=pretty_errors.FILENAME_EXTENDED,
-)
+
 
 
 
@@ -56,14 +53,7 @@ async def handle(*args):
 
 
 
-async def get_kwargs(eventName: GROUP_EVENTS_T, *_, **injectedKwargs):
-    kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(eventName, DEFAULT_KWARGS)
 
-    kwargs: Dict[str, Any] = {}
-    for kwarg in kwargList:
-        kwargs[kwarg.name] = await deepawait_or_normal(kwarg.value, **injectedKwargs)
-
-    return kwargs
 
 
 

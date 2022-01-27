@@ -8,7 +8,7 @@ from pepperbot.message.chain import MessageChain
 from pepperbot.message.segment import Text
 from pepperbot.models.sender import Sender
 from pepperbot.parse.bots import GroupCommonBot
-from pepperbot.types import CommandClassBase
+from pepperbot.types import BaseClassCommand
 
 
 class PatternModel:
@@ -19,7 +19,7 @@ class PatternModel:
 # todo command的黑白名单，动态黑白名单(提供函数，参数为当前发言用户)
 
 
-def with_command(commandClasses: List[CommandClassBase] = [], *args, **kwargs):
+def with_command(commandClasses: List[BaseClassCommand] = [], *args, **kwargs):
     """为group_message事件响应注入命令类，并不直接可用，需要__cache解析"""
 
     def decorator(handler: object):
@@ -81,7 +81,7 @@ def as_command(
             {**commandKwargs},
         )
 
-        return cast(CommandClassBase, commandClass)
+        return cast(BaseClassCommand, commandClass)
 
     return decorator
 

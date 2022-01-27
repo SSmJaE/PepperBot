@@ -28,7 +28,7 @@ def is_valid_event_handler(class_handler: object, method: Callable, method_name:
 
     kwargList: List[HandlerKwarg] = HANDLER_KWARGS_MAP.get(handlerName, DEFAULT_KWARGS)
     kwargList.append(
-        HandlerKwarg(
+       EventHandlerKwarg(
             name="event",
             type=Union[dict, Dict, Dict[str, Any]],
             value=None,

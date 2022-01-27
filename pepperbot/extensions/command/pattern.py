@@ -27,7 +27,7 @@ from pepperbot.message.chain import MessageChain
 from pepperbot.message.segment import Text
 from pepperbot.models.sender import Sender
 from pepperbot.parse.bots import GroupCommonBot
-from pepperbot.types import CommandClassBase, F
+from pepperbot.types import BaseClassCommand, F
 
 TRUE_TEXTS = ("True", "true", "1")
 FALSE_TEXTS = ("False", "false", "0")
