@@ -1,32 +1,23 @@
-from abc import ABC
-from typing import Any, Dict, List, Literal, Optional, Union, overload
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
-from devtools import debug
+from pepperbot.adapters.onebot.message.segment import OnebotFace, OnebotShare
+from pepperbot.core.message.base import BaseMessageSegment
 
 from pepperbot.utils.common import DictNoNone
 
 
-class MessageSegMentBase:
-    formatted: Dict[str, Any]
-    identifier: Any
-
-    def __init__(self, identifier: Any):
-        self.identifier = identifier
-
-    def __str__(self) -> str:
-        return f"Segment[{self.__class__.__name__}, {self.identifier}]"
-
-    def __repr__(self) -> str:
-        return f"Segment[{self.__class__.__name__}, {self.identifier}]"
-
-    def __eq__(self, other: "MessageSegMentBase") -> bool:
-        if type(self) == type(other):
-            if self.identifier == other.identifier:
-                return True
-        return False
-
-
-class At(MessageSegMentBase):
+class At(BaseMessageSegment):
     @overload
     def __init__(self, userId: int):
         ...
@@ -58,7 +49,9 @@ class At(MessageSegMentBase):
         super().__init__(**{"identifier": identifier})
 
 
-class Text(MessageSegMentBase):
+class Text(BaseMessageSegment):
+    universal = ("onebot", "keaimao")
+
     @overload
     def __init__(self, content: str):
         ...
@@ -69,65 +62,32 @@ class Text(MessageSegMentBase):
 
     def __init__(self, content: Union[dict, str]):
 
-        data = content
+        if isinstance(content, dict):
+            text: str = content["data"]["text"]
 
-        if isinstance(data, dict):
-            identifier = data["data"]["text"]
+            self.text = identifier = text
 
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.onebot = {**data}
-            self.keaimao = identifier
+            self.onebot = {**content}
+            self.keaimao = text
 
         else:
-            identifier = data
+            self.text = identifier = content
 
-            self.text: str = data
-
-            self.onebot = {"type": "text", "data": {"text": data}}
-            self.keaimao = identifier
+            self.onebot = {"type": "text", "data": {"text": content}}
+            self.keaimao = content
 
         super().__init__(**{"identifier": identifier})
 
 
-class Face(MessageSegMentBase):
-    @overload
-    def __init__(self, id: int):
-        ...
-
-    @overload
-    def __init__(self, id: Dict):
-        ...
-
-    def __init__(self, id: Union[dict, int]):
-
-        data = id
-
-        if isinstance(data, dict):
-            identifier = data["data"]["id"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
-
-        else:
-            identifier = data
-
-            self.id = data
-            self.formatted = {"type": "face", "data": {"id": id}}
-
-        super().__init__(**{"identifier": identifier})
-
-
-class Image(MessageSegMentBase):
+class Image(BaseMessageSegment):
     """
     除了支持使用收到的图片文件名直接发送外，还支持：
     绝对路径，例如 file:///C:\\Users\\Richard\\Pictures\\1.png，格式使用 file URI
     网络 URL，例如 http://i1.piimg.com/567571/fdd6e7b6d93f1ef0.jpg
     Base64 编码，例如 base64://iVBORw0
     """
+
+    universal = ("onebot", "keaimao")
 
     @overload
     def __init__(self, path: str, mode: Optional[Literal["flash"]] = None):
@@ -178,52 +138,9 @@ class Image(MessageSegMentBase):
         return self
 
 
-class Share(MessageSegMentBase):
-    @overload
-    def __init__(
-        self,
-        url: str,
-        title: str,
-        content: Optional[str] = None,
-        imageUrl: Optional[str] = None,
-    ):
-        ...
+class Poke(BaseMessageSegment):
+    universal = ("onebot", "keaimao")
 
-    @overload
-    def __init__(self, url: Dict):
-        ...
-
-    def __init__(
-        self,
-        url: Union[Dict, str],
-        title: str = "",
-        content: Optional[str] = None,
-        imageUrl: Optional[str] = None,
-    ):
-
-        data = url
-
-        if isinstance(data, dict):
-            identifier = data["data"]["url"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
-        else:
-            identifier = data
-
-            kwargs = DictNoNone()
-            kwargs["title"] = title
-            kwargs["content"] = content
-            kwargs["image"] = imageUrl
-
-            self.formatted = {"type": "share", "data": {**kwargs, "file": url}}
-
-        super().__init__(**{"identifier": identifier})
-
-
-class Poke(MessageSegMentBase):
     @overload
     def __init__(
         self,
@@ -260,7 +177,7 @@ class Poke(MessageSegMentBase):
         super().__init__(**{"identifier": identifier})
 
 
-# class Poke(MessageSegMentBase):
+# class Poke(BaseMessageSegment):
 #     @overload
 #     def __init__(self, data: Dict):
 #         ...
@@ -304,19 +221,16 @@ class Poke(MessageSegMentBase):
 #         }
 
 
-class Reply(MessageSegMentBase):
+class Reply(BaseMessageSegment):
     @overload
-    def __init__(
-        self,
-        messageId: int,
-    ):
+    def __init__(self, messageId: str):
         ...
 
     @overload
     def __init__(self, messageId: Dict):
         ...
 
-    def __init__(self, messageId: Union[dict, int]):
+    def __init__(self, messageId: Union[dict, str]):
 
         data = messageId
 
@@ -335,7 +249,7 @@ class Reply(MessageSegMentBase):
         super().__init__(**{"identifier": identifier})
 
 
-class Audio(MessageSegMentBase):
+class Audio(BaseMessageSegment):
     @overload
     def __init__(
         self,
@@ -366,7 +280,7 @@ class Audio(MessageSegMentBase):
         super().__init__(**{"identifier": identifier})
 
 
-class Video(MessageSegMentBase):
+class Video(BaseMessageSegment):
     @overload
     def __init__(
         self,
@@ -397,7 +311,7 @@ class Video(MessageSegMentBase):
         super().__init__(**{"identifier": identifier})
 
 
-class Music(MessageSegMentBase):
+class Music(BaseMessageSegment):
     @overload
     def __init__(self, id: str, source: Literal["qq", "163", "xm"] = "qq"):
         ...
@@ -423,3 +337,62 @@ class Music(MessageSegMentBase):
             self.formatted = {"type": "music", "data": {"type": source, "id": id}}
 
         super().__init__(**{"identifier": identifier})
+
+
+T_SegmentClass = Union[
+    Type[At],
+    Type[Music],
+    Type[Audio],
+    Type[Image],
+    Type[Reply],
+    Type[Text],
+    Type[OnebotFace],
+    Type[Video],
+    Type[Poke],
+    Type[OnebotShare],
+]
+T_SegmentInstance = Union[
+    At,
+    Text,
+    OnebotFace,
+    Music,
+    Audio,
+    Image,
+    Reply,
+    Video,
+    Poke,
+    OnebotShare,
+]
+GT_SegmentInstance = TypeVar(
+    "GT_SegmentInstance",
+    At,
+    Text,
+    OnebotFace,
+    Music,
+    Audio,
+    Image,
+    Reply,
+    Video,
+    Poke,
+    OnebotShare,
+)
+T_SegmentClassOrInstance = Union[T_SegmentClass, T_SegmentInstance]
+GT_SegmentClassOrInstance = TypeVar(
+    "GT_SegmentClassOrInstance",
+    T_SegmentClass,
+    T_SegmentInstance
+    # At,
+    # Text,
+    # Face,
+    # Music,
+    # Audio,
+    # Image,
+    # Reply,
+    # Type[At],
+    # Type[Music],
+    # Type[Audio],
+    # Type[Image],
+    # Type[Reply],
+    # Type[Text],
+    # Type[Face],
+)

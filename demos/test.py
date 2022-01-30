@@ -1,10 +1,14 @@
 from typing import Dict
-from pepperbot.adapters.onebot.api import OnebotV11GroupBot
-from pepperbot.core.bot.universal import UniversalGroupBot
-from pepperbot.core.message.segment import Text
-from pepperbot.store.meta import BotRoute
-from pepperbot.initial import PepperBot
+
 from devtools import debug
+from pepperbot.adapters.keaimao.api import KeaimaoGroupBot
+from pepperbot.adapters.onebot.api import OnebotV11GroupBot
+from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
+from pepperbot.core.bot.universal import UniversalGroupBot
+from pepperbot.core.message.chain import MessageChain
+from pepperbot.core.message.segment import Text
+from pepperbot.initial import PepperBot
+from pepperbot.store.meta import BotRoute
 
 # class DefaultConfig_Logger:
 #     level: str = "debug"
@@ -25,10 +29,9 @@ from devtools import debug
 # bot.register_plugin(scheduler)
 
 
-from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
 
-debug(dir(OnebotV11GroupEvent))
-debug(vars(OnebotV11GroupEvent))
+# debug(dir(OnebotV11GroupEvent))
+# debug(vars(OnebotV11GroupEvent))
 
 bot = PepperBot(
     port=53521,
@@ -77,16 +80,20 @@ class homepage:
         debug("in group_message")
         debug(bot)
 
+    async def keaimao_group_message(self, bot: KeaimaoGroupBot):
+        debug(bot)
+
     async def group_message(
         self,
         bot: UniversalGroupBot,
-        # chain:MessageChain,
         raw_event: Dict,
+        chain: MessageChain,
     ):
         debug(bot)
+        # debug(raw_event)
+        debug(chain)
         # debug(bot.onebot)
         # debug(bot.keaimao)
-        # debug(raw_event)
 
         await bot.group_message(
             Text("一条跨平台消息"),

@@ -1,275 +1,315 @@
-import re
-import sys
 from pprint import pprint
-from typing import Iterable, Tuple, Type, TypeVar
-
+from random import random
+import re
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from pepperbot.adapters.onebot.message.segment import (
+    OnebotFace,
+    OnebotShare,
+)
+from pepperbot.core.message.base import BaseMessageSegment
 from devtools import debug
-from pepperbot.core.bot.api_caller import ApiCaller
-
-from pepperbot.core.message.segment import *
-
-T_SegmentClass = Union[
-    Type[At],
-    Type[Music],
-    Type[Audio],
-    Type[Image],
-    Type[Reply],
-    Type[Text],
-    Type[Face],
-    Type[Video],
-    Type[Poke],
-    Type[Share],
-]
-T_SegmentInstance = Union[
-    At, Text, Face, Music, Audio, Image, Reply, Video, Poke, Share
-]
-T_SegmentClassOrInstance = Union[T_SegmentClass, T_SegmentInstance]
-TypeofSegmentClassOrInstance_Generic = TypeVar(
-    "TypeofSegmentClassOrInstance_Generic",
+# if TYPE_CHECKING:
+from pepperbot.core.message.segment import (
     At,
-    Text,
-    Face,
-    Music,
     Audio,
     Image,
+    Music,
     Reply,
-    Type[At],
-    Type[Music],
-    Type[Audio],
-    Type[Image],
-    Type[Reply],
-    Type[Text],
-    Type[Face],
+    T_SegmentClass,
+    T_SegmentClassOrInstance,
+    T_SegmentInstance,
+    Text,
 )
 
-currentModule = sys.modules[__name__]
+
+from pepperbot.exceptions import EventHandleError
+from pepperbot.types import T_BotProtocol, T_RouteMode
+
+
+ONEBOT_SEGMENT_MAPPING: Dict[str, T_SegmentClass] = {
+    "face": OnebotFace,
+    "share": OnebotShare,
+    "text": Text,
+    "image": Image,
+}
+
+
+def construct_chain(
+    protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict
+) -> List[T_SegmentInstance]:
+
+    result: List[T_SegmentInstance] = []
+
+    if protocol == "onebot":
+        raw_chain: List[dict] = raw_event.get("message", list)
+        for segment in raw_chain:
+            segment_type: str = segment["type"]
+
+            segment_class = ONEBOT_SEGMENT_MAPPING.get(segment_type)
+            if not segment_class:
+                raise EventHandleError(f"无法识别的onebot消息类型 {segment_type}")
+
+            segment_instance = segment_class(segment)
+            result.append(segment_instance)
+
+    elif protocol == "keaimao":
+        pass
+
+    else:
+        raise EventHandleError(f"尚未支持 {protocol} 的消息链构造")
+
+    # debug(result)
+    return result
 
 
 class MessageChain:
-    pass
-    # def __init__(
-    #     self,
-    #     event: dict,
-    #     source_id: int,
-    #     protocol: T_BotProtocol,
-    #     mode: T_RouteMode,
-    #     api_caller: ApiCaller,
-    # ) -> None:
-    #     self.chain: List[T_SegmentInstance] = []
+    __slots__ = (
+        "id",
+        "chain",
+        "raw_event",
+        "source_id",
+        "protocol",
+        "mode",
+        "onebot_message_id",
+    )
 
-    #     self.event = event
-    #     self.groupId = groupId
-    #     self.api: API_Caller_T = api
+    onebot_message_id: str
 
-    #     self.messageId = event["message_id"]
+    def __init__(
+        self,
+        protocol: T_BotProtocol,
+        mode: T_RouteMode,
+        raw_event: Dict,
+        source_id: str,
+    ) -> None:
+        """
+        [summary]
 
-    #     for key, value in event.items():
-    #         setattr(self, key, value)
+        Args:
+            event: [description]
+            source_id: 当mode为group时，source_id就是group_id，mode为private时同理
+            protocol: [description]
+            mode: [description]
 
-    #     originChain: Iterable[dict] = event.get("message", list)
-    #     for segment in originChain:
-    #         messageType: str = segment["type"]
-    #         # data: dict = segment["data"]
-    #         # pprint(segment)
+        """
+        # debug(locals())
 
-    #         segmentClass = getattr(currentModule, messageType.capitalize())
-    #         segmentInstance = segmentClass(segment)
+        self.id = random()
+        self.chain: List[T_SegmentInstance] = []
 
-    #         self.chain.append(segmentInstance)
+        self.raw_event = raw_event
+        self.source_id = source_id
+        self.protocol = protocol
+        self.mode = mode
 
-    #     pprint(self.chain)
+        self.chain = construct_chain(protocol, mode, raw_event)
 
-    # # def __repr__(self) -> str:
-    # #     json.dumps
+        self.onebot_message_id = raw_event.get("message_id", "")
 
-    # def __equal(self, segment: "MessageSegMentBase", other: T_SegmentClassOrInstance):
-    #     # 如果是实例，data是否相等
-    #     if isinstance(other, MessageSegMentBase):
-    #         if segment == other:
-    #             return True
+    # def __repr__(self) -> str:
+    #     json.dumps
 
-    #     # 是否是同一类型
-    #     else:
-    #         if type(segment) == other:
-    #             return True
+    def __equal(self, segment: "BaseMessageSegment", other: T_SegmentClassOrInstance):
+        # 如果是实例，data是否相等
+        if isinstance(other, BaseMessageSegment):
+            if segment == other:
+                return True
 
-    #     return False
+        # 是否是同一类型
+        else:
+            if type(segment) == other:
+                return True
 
-    # # todo part in raw operator in
-    # # if
+        return False
 
-    # def has(self, other: T_SegmentClassOrInstance):
-    #     for segment in self.chain:
-    #         if self.__equal(segment, other):
-    #             return True
+    # todo part in raw operator in
+    # if
 
-    #     return False
+    def has(self, other: T_SegmentClassOrInstance):
+        for segment in self.chain:
+            if self.__equal(segment, other):
+                return True
 
-    # def has_and_first(
-    #     self, other: T_SegmentClassOrInstance
-    # ) -> Tuple[bool, T_SegmentInstance]:
-    #     for segment in self.chain:
-    #         if self.__equal(segment, other):
-    #             return True, segment
+        return False
 
-    #     # 返回Text只是为了提供更好的类型注解，因为python并不能自动判断union类型的分支情况
-    #     # 即 True => type1 , False => type2
-    #     # generic可以，不过还是直接Text("")最简单
-    #     return False, Text("")
+    def has_and_first(
+        self, other: T_SegmentClassOrInstance
+    ) -> Tuple[bool, T_SegmentInstance]:
+        for segment in self.chain:
+            if self.__equal(segment, other):
+                return True, segment
 
-    # def has_and_last(self, other: T_SegmentClassOrInstance):
-    #     for segment in reversed(self.chain):
-    #         if self.__equal(segment, other):
-    #             return True, segment
+        # 返回Text只是为了提供更好的类型注解，因为python并不能自动判断union类型的分支情况
+        # 即 True => type1 , False => type2
+        # generic可以，不过还是直接Text("")最简单
+        return False, Text("")
 
-    #     return False, Text("")
+    def has_and_last(self, other: T_SegmentClassOrInstance):
+        for segment in reversed(self.chain):
+            if self.__equal(segment, other):
+                return True, segment
 
-    # def has_and_all(self, other: T_SegmentClassOrInstance):
-    #     results = []
+        return False, Text("")
 
-    #     for segment in self.chain:
-    #         if self.__equal(segment, other):
-    #             results.append(segment)
+    def has_and_all(self, other: T_SegmentClassOrInstance):
+        results = []
 
-    #     if len(results):
-    #         return True, results
-    #     return False, Text("")
+        for segment in self.chain:
+            if self.__equal(segment, other):
+                results.append(segment)
 
-    # def __getItems(self, _type: SegmentClass_T):
-    #     results = []
+        if len(results):
+            return True, results
+        return False, Text("")
 
-    #     for segment in self.chain:
-    #         if isinstance(segment, _type):
-    #             results.append(segment)
+    def __getItems(self, type_: T_SegmentClass):
+        results = []
 
-    #     return results
+        for segment in self.chain:
+            if isinstance(segment, type_):
+                results.append(segment)
 
-    # @property
-    # def at(self):
-    #     return self.__getItems(At)
+        return results
 
-    # @property
-    # def faces(self):
-    #     return self.__getItems(Face)
+    @property
+    def at(self):
+        return self.__getItems(At)
 
-    # @property
-    # def audio(self):
-    #     return self.__getItems(Audio)
+    @property
+    def onebot_faces(self):
+        return self.__getItems(OnebotFace)
 
-    # @property
-    # def images(self):
-    #     return self.__getItems(Image)
+    @property
+    def audio(self):
+        return self.__getItems(Audio)
 
-    # @property
-    # def replies(self):
-    #     return self.__getItems(Reply)
+    @property
+    def images(self):
+        return self.__getItems(Image)
 
-    # @property
-    # def music(self):
-    #     return self.__getItems(Music)
+    @property
+    def replies(self):
+        return self.__getItems(Reply)
 
-    # @property
-    # def text(
-    #     self,
-    # ) -> List[Text]:
-    #     return self.__getItems(Text)
+    @property
+    def music(self):
+        return self.__getItems(Music)
 
-    # @property
-    # def pure_text(self) -> str:
-    #     result = ""
+    @property
+    def text(
+        self,
+    ) -> List[Text]:
+        return self.__getItems(Text)
 
-    #     for part in self.text:
-    #         result += part.formatted["data"]["text"]
+    @property
+    def pure_text(self) -> str:
+        if self.protocol == "onebot":
 
-    #     return result
+            result = ""
 
-    # def any(self, *parts):
-    #     for part in parts:
-    #         if part in self.pure_text:
-    #             return True
-    #     return False
+            for segment in self.text:
+                result += segment.onebot["data"]["text"]
 
-    # def regex(self, part):
-    #     if re.search(part, self.pure_text):
-    #         return True
-    #     return False
+            return result
 
-    # def regex_any(self, *parts):
-    #     for part in parts:
-    #         if re.search(part, self.pure_text):
-    #             return True
-    #     return False
+        elif self.protocol == "keaimao":
+            return self.text[0].keaimao
 
-    # def all(self, *parts):
-    #     for part in parts:
-    #         if part not in self.pure_text:
-    #             return False
-    #     return True
+        else:
+            raise EventHandleError(f"")
 
-    # def regex_all(self, *parts):
-    #     for part in parts:
-    #         if not re.search(part, self.pure_text):
-    #             return False
-    #     return True
+    def any(self, *parts):
+        for part in parts:
+            if part in self.pure_text:
+                return True
+        return False
 
-    # def startswith(self, string: str):
-    #     return self.pure_text.startswith(string)
+    def regex(self, part):
+        if re.search(part, self.pure_text):
+            return True
+        return False
 
-    # def endswith(self, string: str):
-    #     return self.pure_text.endswith(string)
+    def regex_any(self, *parts):
+        for part in parts:
+            if re.search(part, self.pure_text):
+                return True
+        return False
 
-    # async def reply(self, *messageChain: T_SegmentInstance):
-    #     await self.api(
-    #         "send_group_msg",
-    #         **{
-    #             "group_id": self.groupId,
-    #             "message": [
-    #                 segment.formatted
-    #                 for segment in [Reply(self.messageId), *messageChain]
-    #             ],
-    #         }
-    #     )
+    def all(self, *parts):
+        for part in parts:
+            if part not in self.pure_text:
+                return False
+        return True
 
-    # async def withdraw(
-    #     self,
-    # ):
-    #     await self.api(
-    #         "delete_msg",
-    #         **{
-    #             "message_id": self.messageId,
-    #         }
-    #     )
+    def regex_all(self, *parts):
+        for part in parts:
+            if not re.search(part, self.pure_text):
+                return False
+        return True
 
-    # def __getitem__(self, index: int) -> Union[T_SegmentInstance]:
-    #     return self.chain[index]
+    def startswith(self, string: str):
+        return self.pure_text.startswith(string)
 
-    # def __contains__(self, item: Union[str, T_SegmentClassOrInstance]):
-    #     if isinstance(item, str):
-    #         if item in self.pure_text:
-    #             return True
+    def endswith(self, string: str):
+        return self.pure_text.endswith(string)
 
-    #     else:
-    #         for segment in self.chain:
-    #             if self.__equal(segment, item):
-    #                 return True
+    async def onebot_reply(self, *segments: T_SegmentInstance):
+        from pepperbot.adapters.onebot.api import OnebotV11Api
 
-    #     return False
+        if self.mode == "group":
+            api = OnebotV11Api.group_message
+        else:
+            api = OnebotV11Api.private_message
 
-    # def __eq__(self, other: "MessageChain") -> bool:
-    #     return self.messageId == other.messageId
+        return await api(
+            self.source_id,
+            *(segment.onebot for segment in [Reply(self.onebot_message_id), *segments]),
+        )
 
-    # def __len__(self):
-    #     return len(self.chain)
+    async def onebot_withdraw(
+        self,
+    ):
+        # await self.api(
+        #     "delete_msg",
+        #     **{
+        #         "message_id": self.messageId,
+        #     },
+        # )
+        pass
 
-    # def only(self, _type: T_SegmentClassOrInstance) -> bool:
-    #     for segment in self.chain:
-    #         if not self.__equal(segment, _type):
-    #             return False
+    def __getitem__(self, index: int) -> T_SegmentInstance:
+        return self.chain[index]
 
-    #     return True
+    def __contains__(self, item: Union[str, T_SegmentClassOrInstance]):
+        if isinstance(item, str):
+            if item in self.pure_text:
+                return True
 
-    # def only_one(self, _type: T_SegmentClassOrInstance) -> bool:
-    #     if len(self.chain) != 1:
-    #         return False
+        else:
+            for segment in self.chain:
+                if self.__equal(segment, item):
+                    return True
 
-    #     return self.__equal(self.chain[0], _type)
+        return False
+
+    def __eq__(self, other: "MessageChain") -> bool:
+        if not isinstance(other, MessageChain):
+            return False
+
+        return self.id == other.id
+
+    def __len__(self):
+        return len(self.chain)
+
+    def only(self, _type: T_SegmentClassOrInstance) -> bool:
+        for segment in self.chain:
+            if not self.__equal(segment, _type):
+                return False
+
+        return True
+
+    def only_one(self, _type: T_SegmentClassOrInstance) -> bool:
+        if len(self.chain) != 1:
+            return False
+
+        return self.__equal(self.chain[0], _type)

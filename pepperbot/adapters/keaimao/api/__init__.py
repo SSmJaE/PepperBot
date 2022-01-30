@@ -48,16 +48,18 @@
 #      * >>> InviteInGroup 邀请加入群聊 robot_wxid, group_wxid, to_wxid
 
 
-from typing import Tuple
+from typing import TYPE_CHECKING
 from pepperbot.core.bot.api_caller import ApiCaller
-from pepperbot.core.message.chain import T_SegmentInstance
-from pepperbot.core.message.segment import Text
+# from pepperbot.core.message.segment import Text
 from pepperbot.store.meta import get_bot_id, get_keaimao_caller
 from pepperbot.types import BaseBot
 
-KEAIMAO_SEGMENT_API_MAPPING = {
-    Text: "SendTextMsg",
-}
+if TYPE_CHECKING:
+    from pepperbot.core.message.segment import T_SegmentInstance
+
+# KEAIMAO_SEGMENT_API_MAPPING = {
+#     Text: "SendTextMsg",
+# }
 
 
 class KeaimaoApi:
@@ -66,7 +68,7 @@ class KeaimaoApi:
     #     return get_keaimao_caller()  # 获取api_caller时，一定已经实例化了对应的api_caller
 
     @staticmethod
-    async def group_message(group_id: str, *segments: T_SegmentInstance):
+    async def group_message(group_id: str, *segments: "T_SegmentInstance"):
         api_caller = get_keaimao_caller()
 
         for segment in segments:
@@ -77,6 +79,8 @@ class KeaimaoApi:
                 to_wxid=group_id,
                 msg=segment.keaimao,
             )
+
+    # @static
 
 
 class KeaimaoProperties(BaseBot):
@@ -91,7 +95,7 @@ class KeaimaoCommonApi(KeaimaoProperties):
 
 
 class KeaimaoGroupApi(KeaimaoProperties):
-    async def group_message(self, *segment: T_SegmentInstance):
+    async def group_message(self, *segment: "T_SegmentInstance"):
         return await KeaimaoApi.group_message(self.group_id, *segment)
 
 

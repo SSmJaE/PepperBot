@@ -1,16 +1,19 @@
 # https://docs.go-cqhttp.org/api/#%E5%A4%84%E7%90%86%E5%8A%A0%E7%BE%A4%E8%AF%B7%E6%B1%82-%E9%82%80%E8%AF%B7
+# from __future__ import annotations
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 from pepperbot.core.bot.api_caller import ApiCaller
-from pepperbot.core.message.chain import T_SegmentInstance
 from pepperbot.store.meta import get_onebot_caller
 from pepperbot.types import BaseBot
+
+if TYPE_CHECKING:
+    from pepperbot.core.message.chain import T_SegmentInstance
 
 
 class OnebotV11Api:
     @staticmethod
-    async def group_message(group_id: str, chain: Tuple[T_SegmentInstance, ...]):
-        message = [segment.onebot for segment in chain]
+    async def group_message(group_id: str, segments: Tuple["T_SegmentInstance", ...]):
+        message = [segment.onebot for segment in segments]
 
         await get_onebot_caller()(
             "send_group_msg",
@@ -73,7 +76,7 @@ class OnebotV11Api:
         )
 
     @staticmethod
-    async def private_message(user_id: str, *segments: T_SegmentInstance):
+    async def private_message(user_id: str, *segments: "T_SegmentInstance"):
         await get_onebot_caller()(
             "send_msg",
             **{
@@ -148,7 +151,7 @@ class OnebotV11CommonApi(OnebotV11Properties):
 
 
 class OnebotV11GroupApi(OnebotV11Properties):
-    async def group_message(self, *segments: T_SegmentInstance):
+    async def group_message(self, *segments: "T_SegmentInstance"):
         """
         默认向当前群发送消息
 
@@ -189,7 +192,7 @@ class OnebotV11GroupApi(OnebotV11Properties):
 
 
 class OnebotV11PrivateApi(OnebotV11Properties):
-    async def private_message(self, *segments: T_SegmentInstance):
+    async def private_message(self, *segments: "T_SegmentInstance"):
         return await OnebotV11Api.private_message(self.private_id, *segments)
 
     async def delete_friend(self):

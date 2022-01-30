@@ -98,8 +98,11 @@ async def get_kwargs(
     return await get_event_handler_kwargs(
         mapping,
         real_event_name,
-        bot=bot_instance,
+        protocol=protocol,
+        mode=mode,
         raw_event=raw_event,
+        source_id=source_id,
+        bot=bot_instance,
     )
 
 
