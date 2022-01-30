@@ -5,7 +5,7 @@ from pepperbot.store.meta import T_HandlerKwargMapping
 
 class BaseAdapater:
     @staticmethod
-    def get_event_name(raw_event: Dict) -> ...:
+    def get_event_name(raw_event: Dict) -> str:
         """根据各个协议，提取事件名称"""
         raise NotImplementedError()
 

@@ -1,13 +1,22 @@
-from typing import List, Optional
+from typing import List, Optional, cast
 
-from pepperbot.adapters.keaimao.api import KeaimaoGroupApi, KeaimaoGroupBot
-from pepperbot.adapters.onebot.api import OnebotV11GroupApi, OnebotV11GroupBot
+from pepperbot.adapters.keaimao.api import KeaimaoApi, KeaimaoGroupApi, KeaimaoGroupBot
+from pepperbot.adapters.onebot.api import (
+    OnebotV11Api,
+    OnebotV11GroupApi,
+    OnebotV11GroupBot,
+)
 from pepperbot.adapters.telegram.api import TelegramGroupApi
 from pepperbot.core.message.chain import T_SegmentInstance
 
 # from pepperbot.core.event.utils import get_bot_instance
 from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.types import BaseBot, T_BotProtocol
+
+
+class UniversalArbitraryApi:
+    onebot = OnebotV11Api
+    keaimao = KeaimaoApi
 
 
 class UniversalProperties(BaseBot):
@@ -58,6 +67,7 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         "onebot",
         "keaimao",
         "telegram",
+        "arbitrary",
     )
 
     def __init__(
@@ -74,9 +84,15 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         from pepperbot.core.event.handle import get_bot_instance
 
         bot_instance = get_bot_instance(protocol, "group", group_id)
-        self.onebot = bot_instance if protocol == "onebot" else None
-        self.keaimao = bot_instance if protocol == "keaimao" else None
+        self.onebot = (
+            cast(OnebotV11GroupBot, bot_instance) if protocol == "onebot" else None
+        )
+        self.keaimao = (
+            cast(KeaimaoGroupBot, bot_instance) if protocol == "keaimao" else None
+        )
         self.telegram = bot_instance if protocol == "telegram" else None
+
+        self.arbitrary = UniversalArbitraryApi
 
 
 class UniversalPrivateBot(UniversalCommonApi, UniversalPrivateApi):

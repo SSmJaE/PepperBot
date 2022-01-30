@@ -77,7 +77,12 @@ class homepage:
         debug("in group_message")
         debug(bot)
 
-    async def group_message(self, bot: UniversalGroupBot, raw_event: Dict):
+    async def group_message(
+        self,
+        bot: UniversalGroupBot,
+        # chain:MessageChain,
+        raw_event: Dict,
+    ):
         debug(bot)
         # debug(bot.onebot)
         # debug(bot.keaimao)
@@ -86,6 +91,9 @@ class homepage:
         await bot.group_message(
             Text("一条跨平台消息"),
         )
+
+        if bot.onebot:
+            await bot.arbitrary.keaimao.group_message("123", Text("转发消息"))
 
         # if bot.keaimao:
         #     await bot.keaimao.group_message("一条跨平台消息")

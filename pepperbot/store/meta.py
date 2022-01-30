@@ -13,6 +13,7 @@ from typing import (
     Type,
     Union,
 )
+from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field
 from pepperbot.core.bot.api_caller import ApiCaller
@@ -217,16 +218,23 @@ def cache_command_class(command_class: object):
         bot_meta_state.commands[command_class.__class__] = command_class
 
 
+def get_api_caller(protocol: T_BotProtocol):
+    api_caller = api_callers.get(protocol)
+    
+    assert api_caller, f"无法获取 {protocol} 对应的api_caller，请确保你注册了对应的adapter"
+
+    return api_caller
+
 def get_onebot_caller():
-    return api_callers["onebot"]
+    return get_api_caller("onebot")
 
 
 def get_keaimao_caller():
-    return api_callers["keaimao"]
+    return get_api_caller("keaimao")
 
 
 def get_telegram_caller():
-    return api_callers["telegram"]
+    return get_api_caller("telegram")
 
 
 cached_group_ids = []
@@ -279,7 +287,7 @@ async def get_event_handler_kwargs(
     event_name: str,
     *,
     default_kwargs: List[EventHandlerKwarg] = None,
-    **injected_kwargs,  # 必须提供raw_event
+    **injected_kwargs: Annotated[Any, "必须提供bot和raw_event"],
 ):
     kwarg_list: List[EventHandlerKwarg] = mapping.get(event_name, default_kwargs or [])
 

@@ -53,6 +53,8 @@ class ApiCaller:
     async def __call__(self, action: str, **kwargs):
         return self.caller(action, kwargs)
 
+    call = __call__
+
     # def on_connect():
     # todo ws
     #     """ 支持ws协议调用 """

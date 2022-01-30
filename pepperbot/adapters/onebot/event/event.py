@@ -1,3 +1,5 @@
+# https://docs.go-cqhttp.org/event/#%E5%8A%A0%E5%A5%BD%E5%8F%8B%E8%AF%B7%E6%B1%82
+
 from enum import Enum, unique
 from typing import Any, List, Literal, Union
 
