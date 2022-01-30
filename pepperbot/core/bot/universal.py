@@ -1,4 +1,4 @@
-from typing import List, Optional, cast
+from typing import List, Optional, Type, cast
 
 from pepperbot.adapters.keaimao.api import KeaimaoApi, KeaimaoGroupApi, KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import (
@@ -23,6 +23,7 @@ class UniversalProperties(BaseBot):
     protocol: T_BotProtocol
     bot_id: str
     group_id: str
+    arbitrary: Type[UniversalArbitraryApi]
     onebot: Optional[OnebotV11GroupBot]
     keaimao: Optional[KeaimaoGroupBot]
     # telegram: Optional[TelegramGroupBot]
@@ -34,13 +35,12 @@ class UniversalCommonApi(UniversalProperties):
 
 
 class UniversalGroupApi(UniversalProperties):
-    async def group_message(self, *chain: T_SegmentInstance):
+    async def group_message(self, *segments: T_SegmentInstance):
         if self.onebot:
-            await self.onebot.group_message(*chain)
+            return await self.onebot.group_message(*segments)
 
         elif self.keaimao:
-            for segment in chain:
-                await self.keaimao.group_message(segment)
+            return await self.keaimao.group_message(*segments)
 
         else:
             raise BackendApiError()
@@ -64,10 +64,10 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         "protocol",
         "bot_id",
         "group_id",
+        "arbitrary",
         "onebot",
         "keaimao",
         "telegram",
-        "arbitrary",
     )
 
     def __init__(
@@ -81,9 +81,12 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         self.bot_id = bot_id
         self.group_id = group_id
 
+        self.arbitrary = UniversalArbitraryApi
+
         from pepperbot.core.event.handle import get_bot_instance
 
         bot_instance = get_bot_instance(protocol, "group", group_id)
+
         self.onebot = (
             cast(OnebotV11GroupBot, bot_instance) if protocol == "onebot" else None
         )
@@ -91,8 +94,6 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
             cast(KeaimaoGroupBot, bot_instance) if protocol == "keaimao" else None
         )
         self.telegram = bot_instance if protocol == "telegram" else None
-
-        self.arbitrary = UniversalArbitraryApi
 
 
 class UniversalPrivateBot(UniversalCommonApi, UniversalPrivateApi):

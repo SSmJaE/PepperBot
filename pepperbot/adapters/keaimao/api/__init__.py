@@ -66,10 +66,7 @@ class KeaimaoApi:
     #     return get_keaimao_caller()  # 获取api_caller时，一定已经实例化了对应的api_caller
 
     @staticmethod
-    async def group_message(
-        group_id: str,
-        *segments: T_SegmentInstance,
-    ):
+    async def group_message(group_id: str, *segments: T_SegmentInstance):
         api_caller = get_keaimao_caller()
 
         for segment in segments:
@@ -103,6 +100,12 @@ class KeaimaoPrivateApi(KeaimaoProperties):
 
 
 class KeaimaoGroupBot(KeaimaoCommonApi, KeaimaoGroupApi):
+    __slots__ = (
+        "bot_id",
+        "group_id",
+        "api_caller",
+    )
+
     def __init__(self, bot_id: str, group_id: str):
         self.bot_id = bot_id
         self.group_id = group_id
@@ -110,6 +113,12 @@ class KeaimaoGroupBot(KeaimaoCommonApi, KeaimaoGroupApi):
 
 
 class KeaimaoPrivateBot(KeaimaoCommonApi, KeaimaoPrivateApi):
+    __slots__ = (
+        "bot_id",
+        "private_id",
+        "api_caller",
+    )
+
     def __init__(self, bot_id: str, private_id: str):
         self.bot_id = bot_id
         self.private_id = private_id
