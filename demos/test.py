@@ -6,7 +6,7 @@ from pepperbot.adapters.onebot.api import OnebotV11GroupBot
 from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
 from pepperbot.core.bot.universal import UniversalGroupBot
 from pepperbot.core.message.chain import MessageChain
-from pepperbot.core.message.segment import Text
+from pepperbot.core.message.segment import Image, Text
 from pepperbot.initial import PepperBot
 from pepperbot.store.meta import BotRoute
 
@@ -27,7 +27,6 @@ from pepperbot.store.meta import BotRoute
 
 # bot.update_plugin(Logger, loggerConfig)
 # bot.register_plugin(scheduler)
-
 
 
 # debug(dir(OnebotV11GroupEvent))
@@ -95,12 +94,23 @@ class homepage:
         # debug(bot.onebot)
         # debug(bot.keaimao)
 
-        await bot.group_message(
-            Text("一条跨平台消息"),
-        )
+        # await bot.group_message(
+        #     Text("一条跨平台消息"),
+        # )
 
         if bot.onebot:
-            await bot.arbitrary.keaimao.group_message("123", Text("转发消息"))
+            await bot.arbitrary.keaimao.group_message(
+                "19521241254@chatroom", *chain.segments
+            )
+            await bot.arbitrary.keaimao.group_message(
+                "19521241254@chatroom",
+                Image(
+                    "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
+                ),
+            )
+
+        if bot.keaimao:
+            await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)
 
         # if bot.keaimao:
         #     await bot.keaimao.group_message("一条跨平台消息")

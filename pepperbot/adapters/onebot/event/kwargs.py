@@ -1,11 +1,9 @@
 from typing import Dict, List
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot
 from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
-# from pepperbot.core.message.chain import MessageChain
+
 
 from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
-
-
 
 
 # # 双重awaitable，因为不支持async lambda
@@ -22,8 +20,10 @@ from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
 #     )
 
 
-# def construct_chain(event: Dict[str, Any], groupId) -> MessageChain:
-#     return MessageChain(event=event, groupId=groupId, api=globalApi.api)
+def construct_chain(protocol, mode, raw_event, source_id):
+    from pepperbot.core.message.chain import MessageChain
+
+    return MessageChain(protocol, mode, raw_event, source_id)
 
 
 # def construct_sender(event: Dict[str, Any]):
@@ -53,7 +53,6 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
     #     ),
     # ],
     OnebotV11GroupEvent.group_message: [
-        # todo 对kwarg的value也fit_kwargs
         EventHandlerKwarg(
             name="bot",
             type_=OnebotV11GroupBot,
@@ -62,9 +61,7 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
         EventHandlerKwarg(
             name="chain",
             type_="MessageChain",
-            value=lambda protocol, mode, raw_event, source_id: MessageChain(
-                protocol, mode, raw_event, source_id
-            ),
+            value=construct_chain,
         ),
         # EventHandlerKwarg(
         #     name="sender",

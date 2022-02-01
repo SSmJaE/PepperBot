@@ -31,6 +31,7 @@ from pepperbot.store.meta import (
     class_handler_mapping,
     get_event_handler_kwargs,
     get_onebot_caller,
+    initial_bot_info,
     route_mapping,
     route_validator_mapping,
 )
@@ -182,6 +183,11 @@ def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
 
 
 async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
+    if not route_mapping.has_initial:
+        await initial_bot_info()
+        route_mapping.has_initial = True
+        logger.success("成功获取bot元信息")
+
     adapter = get_adapter(protocol)
     raw_event_name = adapter.get_event_name(raw_event)
     protocol_event_name: str = f"{protocol}_" + raw_event_name
@@ -197,18 +203,6 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
         # )
         # logger.info("心跳事件")
         return
-
-    if protocol == "onebot":
-        if not route_mapping.bot_info.get("onebot"):
-            bot_info = await get_onebot_caller()("get_login_info")
-            route_mapping.bot_info["onebot"]["bot_id"] = bot_info.json()["data"][
-                "user_id"
-            ]
-
-    if protocol == "keaimao":
-        robot_wxid = raw_event.get("robot_wxid")
-        if robot_wxid and not route_mapping.bot_info.get("keaimao"):
-            route_mapping.bot_info["keaimao"]["bot_id"] = robot_wxid
 
     class_handler_names: Set[str] = set()
     # 对同一个消息来源，同一个class_handler也只应调用一次

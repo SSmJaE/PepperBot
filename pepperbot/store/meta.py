@@ -166,14 +166,31 @@ class RouteMapping(BaseModel):
     是否是管理员之类
     """
 
-
-def get_bot_info(protocol: T_BotProtocol):
-    raise InitializationError(f"未能获取{protocol}的bot自身信息")
-    return {}
+    has_initial = False
 
 
 def get_bot_id(protocol: T_BotProtocol):
     return route_mapping.bot_info[protocol]["bot_id"]
+
+
+async def initial_bot_info():
+    for protocol in api_callers:
+        if protocol == "onebot":
+            if not route_mapping.bot_info.get("onebot"):
+                from pepperbot.adapters.onebot.api import OnebotV11Api
+
+                bot_id = (await OnebotV11Api.get_login_info())["user_id"]
+                route_mapping.bot_info["onebot"]["bot_id"] = bot_id
+
+        elif protocol == "keaimao":
+            if not route_mapping.bot_info.get("keaimao"):
+                from pepperbot.adapters.keaimao.api import KeaimaoApi
+
+                bot_id = (await KeaimaoApi.get_login_accounts())[0]["wxid"]
+                route_mapping.bot_info["keaimao"]["bot_id"] = bot_id
+
+        else:
+            raise InitializationError()
 
 
 def clean_bot_instances():
@@ -220,10 +237,11 @@ def cache_command_class(command_class: object):
 
 def get_api_caller(protocol: T_BotProtocol):
     api_caller = api_callers.get(protocol)
-    
+
     assert api_caller, f"无法获取 {protocol} 对应的api_caller，请确保你注册了对应的adapter"
 
     return api_caller
+
 
 def get_onebot_caller():
     return get_api_caller("onebot")

@@ -1,7 +1,7 @@
 # https://docs.go-cqhttp.org/api/#%E5%A4%84%E7%90%86%E5%8A%A0%E7%BE%A4%E8%AF%B7%E6%B1%82-%E9%82%80%E8%AF%B7
 # from __future__ import annotations
 
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 from pepperbot.core.bot.api_caller import ApiCaller
 from pepperbot.store.meta import get_onebot_caller
 from pepperbot.types import BaseBot
@@ -12,10 +12,14 @@ if TYPE_CHECKING:
 
 class OnebotV11Api:
     @staticmethod
-    async def group_message(group_id: str, segments: Tuple["T_SegmentInstance", ...]):
+    async def get_login_info():
+        return (await get_onebot_caller()("get_login_info")).json()["data"]
+
+    @staticmethod
+    async def group_message(group_id: str, *segments: "T_SegmentInstance"):
         message = [segment.onebot for segment in segments]
 
-        await get_onebot_caller()(
+        return await get_onebot_caller()(
             "send_group_msg",
             **{
                 "group_id": group_id,

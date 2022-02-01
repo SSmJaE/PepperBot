@@ -1,3 +1,4 @@
+from random import random
 from typing import (
     Any,
     Dict,
@@ -13,8 +14,10 @@ from typing import (
 
 from pepperbot.adapters.onebot.message.segment import OnebotFace, OnebotShare
 from pepperbot.core.message.base import BaseMessageSegment
+from pepperbot.exceptions import EventHandleError
 
 from pepperbot.utils.common import DictNoNone
+from devtools import debug
 
 
 class At(BaseMessageSegment):
@@ -79,12 +82,29 @@ class Text(BaseMessageSegment):
         super().__init__(**{"identifier": identifier})
 
 
+def transform_keaimao_image_result_to_onebot(path: str):
+    prefix = path.split("://")[0]
+    if prefix not in ("file", "http", "https", "base64"):
+        if ":/" in path:  # 微信会直接将收到的图片保存至本地
+            return f"file:///{path}"
+        else:
+            raise EventHandleError(f"无法解析的图片路径 {path}")
+
+    return path
+
+
 class Image(BaseMessageSegment):
     """
-    除了支持使用收到的图片文件名直接发送外，还支持：
+    微信只支持URL方式
+
+    QQ支持：
+
     绝对路径，例如 file:///C:\\Users\\Richard\\Pictures\\1.png，格式使用 file URI
+
     网络 URL，例如 http://i1.piimg.com/567571/fdd6e7b6d93f1ef0.jpg
+
     Base64 编码，例如 base64://iVBORw0
+
     """
 
     universal = ("onebot", "keaimao")
@@ -99,41 +119,60 @@ class Image(BaseMessageSegment):
 
     def __init__(self, path: Union[Dict, str], mode: Optional[Literal["flash"]] = None):
 
-        data = path
+        if isinstance(path, dict):  # 仅当从raw_event构造消息链时会传入字典
+            data = path
 
-        if isinstance(data, dict):
-            identifier = data["data"].get("file")
+            file_path = identifier = data["data"].get("url")
             if not identifier:
                 raise Exception("无法解析图片地址")
 
-            for key, value in data.items():
-                setattr(self, key, value)
+            file_path = transform_keaimao_image_result_to_onebot(file_path)
+            data["data"]["url"] = file_path
 
-            self.formatted = {**data}
+            self.onebot = {**data}
+            self.mode = None
+            self.file_path = file_path
         else:
-            identifier = data
+            file_path = identifier = transform_keaimao_image_result_to_onebot(path)
 
-            self.type = mode
-            self.file = data
+            self.mode = mode
+            self.file_path = file_path
 
-            kwargs = DictNoNone()
-            kwargs["type"] = mode
-            self.formatted = {"type": "image", "data": {**kwargs, "file": data}}
+            # kwargs = DictNoNone()
+            # kwargs["type"] = mode
+            debug(file_path)
+            self.onebot = {
+                "type": "image",
+                "data": {
+                    "file": file_path,
+                    "url": file_path,
+                },
+            }
 
         super().__init__(**{"identifier": identifier})
+
+    @property
+    def keaimao(self):
+        if not self.file_path and not self.file_path.startswith("http"):
+            raise EventHandleError(f"可爱猫仅支持发送URL格式的图片")
+
+        return {
+            "name": f"{random()}.png",
+            "url": self.file_path,
+        }
 
     def download(self):
         # todo download
         pass
 
     def flash(self):
-        self.formatted["data"]["type"] = "flash"
+        self.onebot["data"]["type"] = "flash"
 
         return self
 
     def un_flash(self):
-        if self.formatted["data"].get("type"):
-            del self.formatted["data"]["type"]
+        if self.onebot["data"].get("type"):
+            del self.onebot["data"]["type"]
 
         return self
 

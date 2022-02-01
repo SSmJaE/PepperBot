@@ -8,6 +8,7 @@ from pepperbot.adapters.onebot.message.segment import (
 )
 from pepperbot.core.message.base import BaseMessageSegment
 from devtools import debug
+
 # if TYPE_CHECKING:
 from pepperbot.core.message.segment import (
     At,
@@ -53,7 +54,15 @@ def construct_chain(
             result.append(segment_instance)
 
     elif protocol == "keaimao":
-        pass
+        message_content = raw_event["msg"]
+
+        message_type = raw_event["type"]
+        if message_type == 1:
+            result.append(Text(message_content))
+        elif message_type == 3:
+            result.append(Image(message_content))
+        else:
+            raise EventHandleError(f"尚未适配的可爱猫消息类型")
 
     else:
         raise EventHandleError(f"尚未支持 {protocol} 的消息链构造")
@@ -65,7 +74,7 @@ def construct_chain(
 class MessageChain:
     __slots__ = (
         "id",
-        "chain",
+        "segments",
         "raw_event",
         "source_id",
         "protocol",
@@ -95,14 +104,14 @@ class MessageChain:
         # debug(locals())
 
         self.id = random()
-        self.chain: List[T_SegmentInstance] = []
+        self.segments: List[T_SegmentInstance] = []
 
         self.raw_event = raw_event
         self.source_id = source_id
         self.protocol = protocol
         self.mode = mode
 
-        self.chain = construct_chain(protocol, mode, raw_event)
+        self.segments = construct_chain(protocol, mode, raw_event)
 
         self.onebot_message_id = raw_event.get("message_id", "")
 
@@ -126,7 +135,7 @@ class MessageChain:
     # if
 
     def has(self, other: T_SegmentClassOrInstance):
-        for segment in self.chain:
+        for segment in self.segments:
             if self.__equal(segment, other):
                 return True
 
@@ -135,7 +144,7 @@ class MessageChain:
     def has_and_first(
         self, other: T_SegmentClassOrInstance
     ) -> Tuple[bool, T_SegmentInstance]:
-        for segment in self.chain:
+        for segment in self.segments:
             if self.__equal(segment, other):
                 return True, segment
 
@@ -145,7 +154,7 @@ class MessageChain:
         return False, Text("")
 
     def has_and_last(self, other: T_SegmentClassOrInstance):
-        for segment in reversed(self.chain):
+        for segment in reversed(self.segments):
             if self.__equal(segment, other):
                 return True, segment
 
@@ -154,7 +163,7 @@ class MessageChain:
     def has_and_all(self, other: T_SegmentClassOrInstance):
         results = []
 
-        for segment in self.chain:
+        for segment in self.segments:
             if self.__equal(segment, other):
                 results.append(segment)
 
@@ -165,7 +174,7 @@ class MessageChain:
     def __getItems(self, type_: T_SegmentClass):
         results = []
 
-        for segment in self.chain:
+        for segment in self.segments:
             if isinstance(segment, type_):
                 results.append(segment)
 
@@ -278,7 +287,7 @@ class MessageChain:
         pass
 
     def __getitem__(self, index: int) -> T_SegmentInstance:
-        return self.chain[index]
+        return self.segments[index]
 
     def __contains__(self, item: Union[str, T_SegmentClassOrInstance]):
         if isinstance(item, str):
@@ -286,7 +295,7 @@ class MessageChain:
                 return True
 
         else:
-            for segment in self.chain:
+            for segment in self.segments:
                 if self.__equal(segment, item):
                     return True
 
@@ -299,17 +308,17 @@ class MessageChain:
         return self.id == other.id
 
     def __len__(self):
-        return len(self.chain)
+        return len(self.segments)
 
     def only(self, _type: T_SegmentClassOrInstance) -> bool:
-        for segment in self.chain:
+        for segment in self.segments:
             if not self.__equal(segment, _type):
                 return False
 
         return True
 
     def only_one(self, _type: T_SegmentClassOrInstance) -> bool:
-        if len(self.chain) != 1:
+        if len(self.segments) != 1:
             return False
 
-        return self.__equal(self.chain[0], _type)
+        return self.__equal(self.segments[0], _type)

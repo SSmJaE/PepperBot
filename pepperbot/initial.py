@@ -19,6 +19,7 @@ from pepperbot.store.meta import (
     BotRoute,
     api_callers,
     clean_bot_instances,
+    get_bot_id,
     register_routes,
     route_mapping,
 )
@@ -27,6 +28,11 @@ from pepperbot.types import T_BotProtocol, T_WebProtocol
 sanic_app = Sanic("PepperBot")
 
 sanic_app.config.WEBSOCKET_PING_TIMEOUT = None  # type:ignore
+
+
+# async def async_initial_wrapper():
+#     """ 在框架启动器只执行一次的异步任务 """
+#     await initial_bot_info()
 
 
 class PepperBot:

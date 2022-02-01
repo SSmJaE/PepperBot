@@ -48,8 +48,11 @@
 #      * >>> InviteInGroup 邀请加入群聊 robot_wxid, group_wxid, to_wxid
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 from pepperbot.core.bot.api_caller import ApiCaller
+from pepperbot.core.message.segment import Image, T_SegmentClass, Text
+from pepperbot.exceptions import BackendApiError
+
 # from pepperbot.core.message.segment import Text
 from pepperbot.store.meta import get_bot_id, get_keaimao_caller
 from pepperbot.types import BaseBot
@@ -57,9 +60,10 @@ from pepperbot.types import BaseBot
 if TYPE_CHECKING:
     from pepperbot.core.message.segment import T_SegmentInstance
 
-# KEAIMAO_SEGMENT_API_MAPPING = {
-#     Text: "SendTextMsg",
-# }
+KEAIMAO_SEGMENT_API_MAPPING: Dict[T_SegmentClass, str] = {
+    Text: "SendTextMsg",
+    Image: "SendImageMsg",
+}
 
 
 class KeaimaoApi:
@@ -68,17 +72,26 @@ class KeaimaoApi:
     #     return get_keaimao_caller()  # 获取api_caller时，一定已经实例化了对应的api_caller
 
     @staticmethod
+    async def get_login_accounts():
+        return (await get_keaimao_caller()("GetLoggedAccountList")).json()["data"]
+
+    @staticmethod
     async def group_message(group_id: str, *segments: "T_SegmentInstance"):
         api_caller = get_keaimao_caller()
 
         for segment in segments:
-            # default_case
-            await api_caller(
-                "SendTextMsg",
-                robot_wxid=get_bot_id("keaimao"),
-                to_wxid=group_id,
-                msg=segment.keaimao,
-            )
+            segment_type = segment.__class__
+
+            if api_name := KEAIMAO_SEGMENT_API_MAPPING[segment_type]:
+                await api_caller(
+                    api_name,
+                    robot_wxid=get_bot_id("keaimao"),
+                    to_wxid=group_id,
+                    msg=segment.keaimao,
+                )
+
+            else:
+                raise BackendApiError(f"尚未适配的消息类型 {segment_type}")
 
     # @static
 
