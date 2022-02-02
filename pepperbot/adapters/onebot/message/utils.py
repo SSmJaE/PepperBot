@@ -6,7 +6,7 @@ def is_flash(segment: T_SegmentInstance) -> bool:
     if not isinstance(segment, Image):
         return False
 
-    if segment.formatted["data"].get("type") == "flash":
+    if segment.onebot["data"].get("type") == "flash":
         return True
     else:
         return False

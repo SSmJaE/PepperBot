@@ -102,12 +102,12 @@ class homepage:
             await bot.arbitrary.keaimao.group_message(
                 "19521241254@chatroom", *chain.segments
             )
-            await bot.arbitrary.keaimao.group_message(
-                "19521241254@chatroom",
-                Image(
-                    "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
-                ),
-            )
+            # await bot.arbitrary.keaimao.group_message(
+            #     "19521241254@chatroom",
+            #     Image(
+            #         "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
+            #     ),
+            # )
 
         if bot.keaimao:
             await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)

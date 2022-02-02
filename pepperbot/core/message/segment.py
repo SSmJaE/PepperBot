@@ -52,37 +52,37 @@ class At(BaseMessageSegment):
         super().__init__(**{"identifier": identifier})
 
 
+def onebot_text_factory(raw_segment: Dict):
+    content: str = raw_segment["data"]["text"]
+    return Text(content)
+
+
+def keaimao_text_factory(raw_event: Dict):
+    return Text(raw_event["msg"])
+
+
 class Text(BaseMessageSegment):
     universal = ("onebot", "keaimao")
+    __slots__ = (
+        "onebot",
+        "keaimao",
+        "content",
+    )
 
-    @overload
     def __init__(self, content: str):
-        ...
 
-    @overload
-    def __init__(self, content: Dict):
-        ...
+        self.content = content
 
-    def __init__(self, content: Union[dict, str]):
+        self.onebot = {
+            "type": "text",
+            "data": {"text": content},
+        }
+        self.keaimao = content
 
-        if isinstance(content, dict):
-            text: str = content["data"]["text"]
-
-            self.text = identifier = text
-
-            self.onebot = {**content}
-            self.keaimao = text
-
-        else:
-            self.text = identifier = content
-
-            self.onebot = {"type": "text", "data": {"text": content}}
-            self.keaimao = content
-
-        super().__init__(**{"identifier": identifier})
+        super().__init__(**{"identifier": content})
 
 
-def transform_keaimao_image_result_to_onebot(path: str):
+def validate_onebot_image_file_path(path: str):
     prefix = path.split("://")[0]
     if prefix not in ("file", "http", "https", "base64"):
         if ":/" in path:  # 微信会直接将收到的图片保存至本地
@@ -91,6 +91,22 @@ def transform_keaimao_image_result_to_onebot(path: str):
             raise EventHandleError(f"无法解析的图片路径 {path}")
 
     return path
+
+
+def onebot_image_factory(raw_segment: Dict):
+    file_path = raw_segment["data"].get("url")
+    if not file_path:
+        raise Exception("无法解析图片地址")
+
+    file_path = validate_onebot_image_file_path(file_path)
+
+    return Image(file_path)
+
+
+def keaimao_image_factory(raw_event: Dict):
+    file_path = raw_event["msg"]
+    file_path = validate_onebot_image_file_path(file_path)
+    return Image(file_path)
 
 
 class Image(BaseMessageSegment):
@@ -108,48 +124,23 @@ class Image(BaseMessageSegment):
     """
 
     universal = ("onebot", "keaimao")
+    __slots__ = ("onebot",)
 
-    @overload
-    def __init__(self, path: str, mode: Optional[Literal["flash"]] = None):
-        ...
+    def __init__(self, file_path: str, mode: Optional[Literal["flash"]] = None):
 
-    @overload
-    def __init__(self, path: Dict):
-        ...
+        self.file_path = file_path
+        self.mode = mode
 
-    def __init__(self, path: Union[Dict, str], mode: Optional[Literal["flash"]] = None):
+        # debug(file_path)
+        self.onebot = {
+            "type": "image",
+            "data": {
+                "file": file_path,
+                "url": file_path,
+            },
+        }
 
-        if isinstance(path, dict):  # 仅当从raw_event构造消息链时会传入字典
-            data = path
-
-            file_path = identifier = data["data"].get("url")
-            if not identifier:
-                raise Exception("无法解析图片地址")
-
-            file_path = transform_keaimao_image_result_to_onebot(file_path)
-            data["data"]["url"] = file_path
-
-            self.onebot = {**data}
-            self.mode = None
-            self.file_path = file_path
-        else:
-            file_path = identifier = transform_keaimao_image_result_to_onebot(path)
-
-            self.mode = mode
-            self.file_path = file_path
-
-            # kwargs = DictNoNone()
-            # kwargs["type"] = mode
-            debug(file_path)
-            self.onebot = {
-                "type": "image",
-                "data": {
-                    "file": file_path,
-                    "url": file_path,
-                },
-            }
-
-        super().__init__(**{"identifier": identifier})
+        super().__init__(**{"identifier": file_path})
 
     @property
     def keaimao(self):
@@ -165,7 +156,7 @@ class Image(BaseMessageSegment):
         # todo download
         pass
 
-    def flash(self):
+    def to_flash(self):
         self.onebot["data"]["type"] = "flash"
 
         return self

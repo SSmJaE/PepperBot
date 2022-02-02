@@ -49,18 +49,17 @@
 
 
 from typing import TYPE_CHECKING, Dict
-from pepperbot.core.bot.api_caller import ApiCaller
-from pepperbot.core.message.segment import Image, T_SegmentClass, Text
-from pepperbot.exceptions import BackendApiError
-
-# from pepperbot.core.message.segment import Text
-from pepperbot.store.meta import get_bot_id, get_keaimao_caller
-from pepperbot.types import BaseBot
 
 if TYPE_CHECKING:
     from pepperbot.core.message.segment import T_SegmentInstance
 
-KEAIMAO_SEGMENT_API_MAPPING: Dict[T_SegmentClass, str] = {
+from pepperbot.core.bot.api_caller import ApiCaller
+from pepperbot.core.message.segment import Image, T_SegmentClass, Text
+from pepperbot.exceptions import BackendApiError
+from pepperbot.store.meta import get_bot_id, get_keaimao_caller
+from pepperbot.types import BaseBot
+
+KEAIMAO_SEGMENT_ACTION_MAPPING: Dict[T_SegmentClass, str] = {
     Text: "SendTextMsg",
     Image: "SendImageMsg",
 }
@@ -82,18 +81,16 @@ class KeaimaoApi:
         for segment in segments:
             segment_type = segment.__class__
 
-            if api_name := KEAIMAO_SEGMENT_API_MAPPING[segment_type]:
+            if action := KEAIMAO_SEGMENT_ACTION_MAPPING.get(segment_type):
                 await api_caller(
-                    api_name,
+                    action,
                     robot_wxid=get_bot_id("keaimao"),
                     to_wxid=group_id,
                     msg=segment.keaimao,
                 )
 
             else:
-                raise BackendApiError(f"尚未适配的消息类型 {segment_type}")
-
-    # @static
+                raise BackendApiError(f"尚未适配的消息类型 可爱猫-{segment_type}")
 
 
 class KeaimaoProperties(BaseBot):
@@ -108,8 +105,8 @@ class KeaimaoCommonApi(KeaimaoProperties):
 
 
 class KeaimaoGroupApi(KeaimaoProperties):
-    async def group_message(self, *segment: "T_SegmentInstance"):
-        return await KeaimaoApi.group_message(self.group_id, *segment)
+    async def group_message(self, *segments: "T_SegmentInstance"):
+        return await KeaimaoApi.group_message(self.group_id, *segments)
 
 
 class KeaimaoPrivateApi(KeaimaoProperties):

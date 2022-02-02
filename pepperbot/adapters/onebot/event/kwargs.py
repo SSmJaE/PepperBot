@@ -1,10 +1,10 @@
-from typing import Dict, List
-from pepperbot.adapters.onebot.api import OnebotV11GroupBot
-from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
-
-
+from typing import Dict
+from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
+from pepperbot.adapters.onebot.event.event import (
+    OnebotV11GroupEvent,
+    OnebotV11PrivateEvent,
+)
 from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
-
 
 # # 双重awaitable，因为不支持async lambda
 # async def get_member_info(event: Dict[str, Any], userId: int):
@@ -37,6 +37,24 @@ def construct_chain(protocol, mode, raw_event, source_id):
 # def construct_stranger(event: Dict[str, Any]):
 #     return Stranger(event=event, api=globalApi.api)
 
+raw_event = EventHandlerKwarg(
+    name="raw_event", type_=Dict, value=lambda raw_event: raw_event
+)
+group_bot = EventHandlerKwarg(
+    name="bot",
+    type_=OnebotV11GroupBot,
+    value=lambda bot: bot,
+)
+private_bot = EventHandlerKwarg(
+    name="bot",
+    type_=OnebotV11PrivateBot,
+    value=lambda bot: bot,
+)
+common_chain = EventHandlerKwarg(
+    name="chain",
+    type_="MessageChain",
+    value=construct_chain,
+)
 
 # 所有handler都注入raw_event，所以就不重复写了，最后统一注入
 ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
@@ -53,34 +71,25 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
     #     ),
     # ],
     OnebotV11GroupEvent.group_message: [
-        EventHandlerKwarg(
-            name="bot",
-            type_=OnebotV11GroupBot,
-            value=lambda bot: bot,
-        ),
-        EventHandlerKwarg(
-            name="chain",
-            type_="MessageChain",
-            value=construct_chain,
-        ),
+        raw_event,
+        group_bot,
+        common_chain,
         # EventHandlerKwarg(
         #     name="sender",
         #     type_=Sender,
         #     value=lambda event, **kwargs: construct_sender(event),
         # ),
     ],
-    # OnebotV11GroupEvent.friend_message: [
-    #     EventHandlerKwarg(
-    #         name="friend",
-    #         type_=Friend,
-    #         value=lambda event, **kwargs: construct_friend(event),
-    #     ),
-    #     EventHandlerKwarg(
-    #         name="chain",
-    #         type_=MessageChain,
-    #         value=lambda event, **kwargs: construct_chain(event, groupId=None),
-    #     ),
-    # ],
+    OnebotV11PrivateEvent.friend_message: [
+        raw_event,
+        private_bot,
+        common_chain,
+        # EventHandlerKwarg(
+        #     name="friend",
+        #     type_=Friend,
+        #     value=lambda event, **kwargs: construct_friend(event),
+        # ),
+    ],
     # OnebotV11GroupEvent.temp_message: [
     #     EventHandlerKwarg(
     #         name="chain",

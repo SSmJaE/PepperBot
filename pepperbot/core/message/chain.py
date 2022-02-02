@@ -1,13 +1,11 @@
+import re
 from pprint import pprint
 from random import random
-import re
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
-from pepperbot.adapters.onebot.message.segment import (
-    OnebotFace,
-    OnebotShare,
-)
-from pepperbot.core.message.base import BaseMessageSegment
+from typing import TYPE_CHECKING, Callable, Dict, List, Tuple, Union
+
 from devtools import debug
+from pepperbot.adapters.onebot.message.segment import OnebotFace, OnebotShare
+from pepperbot.core.message.base import BaseMessageSegment
 
 # if TYPE_CHECKING:
 from pepperbot.core.message.segment import (
@@ -20,18 +18,29 @@ from pepperbot.core.message.segment import (
     T_SegmentClassOrInstance,
     T_SegmentInstance,
     Text,
+    keaimao_image_factory,
+    keaimao_text_factory,
+    onebot_image_factory,
+    onebot_text_factory,
 )
-
-
 from pepperbot.exceptions import EventHandleError
 from pepperbot.types import T_BotProtocol, T_RouteMode
 
+# ONEBOT_SEGMENT_NAME_MAPPING: Dict[str, T_SegmentClass] = {
+#     "text": Text,
+#     "image": Image,
+#     "face": OnebotFace,
+#     # "share": OnebotShare,
+# }
 
-ONEBOT_SEGMENT_MAPPING: Dict[str, T_SegmentClass] = {
-    "face": OnebotFace,
-    "share": OnebotShare,
-    "text": Text,
-    "image": Image,
+ONEBOT_SEGMENT_FACTORY_MAPPING: Dict[str, Callable[[Dict], T_SegmentInstance]] = {
+    "text": onebot_text_factory,
+    "image": onebot_image_factory,
+}
+
+KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] = {
+    1: keaimao_text_factory,
+    3: keaimao_image_factory,
 }
 
 
@@ -43,26 +52,24 @@ def construct_chain(
 
     if protocol == "onebot":
         raw_chain: List[dict] = raw_event.get("message", list)
-        for segment in raw_chain:
-            segment_type: str = segment["type"]
+        for raw_segment in raw_chain:
+            segment_type: str = raw_segment["type"]
 
-            segment_class = ONEBOT_SEGMENT_MAPPING.get(segment_type)
-            if not segment_class:
-                raise EventHandleError(f"无法识别的onebot消息类型 {segment_type}")
+            segment_factory = ONEBOT_SEGMENT_FACTORY_MAPPING.get(segment_type)
+            if not segment_factory:
+                raise EventHandleError(f"尚未适配的onebot消息类型 {segment_type}")
 
-            segment_instance = segment_class(segment)
+            segment_instance = segment_factory(raw_segment)
             result.append(segment_instance)
 
     elif protocol == "keaimao":
-        message_content = raw_event["msg"]
-
-        message_type = raw_event["type"]
-        if message_type == 1:
-            result.append(Text(message_content))
-        elif message_type == 3:
-            result.append(Image(message_content))
-        else:
+        message_type: int = raw_event["type"]
+        message_factory = KEAIMAO_SEGMENT_FACTORY_MAPPING.get(message_type)
+        if not message_factory:
             raise EventHandleError(f"尚未适配的可爱猫消息类型")
+
+        segment_instance = message_factory(raw_event)
+        result.append(segment_instance)
 
     else:
         raise EventHandleError(f"尚未支持 {protocol} 的消息链构造")
@@ -212,45 +219,36 @@ class MessageChain:
 
     @property
     def pure_text(self) -> str:
-        if self.protocol == "onebot":
+        result = ""
+        for segment in self.text:
+            result += segment.content
 
-            result = ""
+        return result
 
-            for segment in self.text:
-                result += segment.onebot["data"]["text"]
-
-            return result
-
-        elif self.protocol == "keaimao":
-            return self.text[0].keaimao
-
-        else:
-            raise EventHandleError(f"")
-
-    def any(self, *parts):
+    def any(self, *parts: str):
         for part in parts:
             if part in self.pure_text:
                 return True
         return False
 
-    def regex(self, part):
+    def regex(self, part: str):
         if re.search(part, self.pure_text):
             return True
         return False
 
-    def regex_any(self, *parts):
+    def regex_any(self, *parts: str):
         for part in parts:
             if re.search(part, self.pure_text):
                 return True
         return False
 
-    def all(self, *parts):
+    def all(self, *parts: str):
         for part in parts:
             if part not in self.pure_text:
                 return False
         return True
 
-    def regex_all(self, *parts):
+    def regex_all(self, *parts: str):
         for part in parts:
             if not re.search(part, self.pure_text):
                 return False
