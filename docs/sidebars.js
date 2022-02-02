@@ -4,16 +4,30 @@ module.exports = {
             type: "category",
             label: "概览",
             collapsed: false,
+            items: ["概览/动机", "概览/关于", "概览/架构", "概览/如何使用本文档"],
+        },
+        {
+            type: "category",
+            label: "环境搭建",
+            collapsed: false,
             items: [
-                "概览/动机",
-                "概览/关于",
                 {
                     type: "category",
-                    label: "安装",
+                    label: "PepperBot配置",
                     collapsed: false,
-                    items: ["概览/配置go-cqhttp", "概览/配置pepperbot"],
+                    items: ["环境/PepperBot安装", "环境/PepperBot对接"],
                 },
-                "概览/如何使用本文档",
+                {
+                    type: "category",
+                    label: "协议配置",
+                    collapsed: false,
+                    items: [
+                        "环境/配置QQ",
+                        "环境/配置微信",
+                        "环境/配置Telegram",
+                        "环境/配置Discord",
+                    ],
+                },
             ],
         },
         {
@@ -21,6 +35,7 @@ module.exports = {
             label: "响应事件",
             collapsed: false,
             items: [
+                "事件/路由",
                 "事件/事件响应",
                 "事件/生命周期",
                 "事件/事件参数",

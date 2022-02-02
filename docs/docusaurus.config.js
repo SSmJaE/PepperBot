@@ -23,18 +23,23 @@ module.exports = {
                     position: "left",
                 },
                 {
+                    to: "docs/API/",
+                    label: "示例",
+                    position: "left",
+                },
+                {
                     to: "docs/实战/",
                     label: "实战",
                     position: "left",
                 },
                 {
                     to: "docs/API/",
-                    label: "示例",
+                    label: "API",
                     position: "left",
                 },
                 {
                     to: "docs/API/",
-                    label: "API",
+                    label: "贡献指南",
                     position: "left",
                 },
                 // {

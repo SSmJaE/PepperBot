@@ -28,7 +28,7 @@ class UniversalGroupEvent:
     request_to_enter_the_group = "request_to_enter_the_group"
     been_invited_to_group = "been_invited_to_group"
     group_member_increased = "group_member_increased"
-    group_member_increased = "group_member_declined"
+    group_member_declined = "group_member_declined"
 
 
 class UniversalPrivateEvent:
