@@ -73,6 +73,7 @@ class RouteMapping(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    # todo 应该和global_handlers一样分级，少了一级T_BotProtocol
     global_commands: Dict[T_RouteMode, Set[str]] = defaultdict(set)
     """ 对所有群应用的指令，当groups="*"时注册至此 """
     """ 对所有私聊消息应用的指令，当friends="*"时注册至此 """
@@ -287,6 +288,7 @@ DEFAULT_URI = {
 
 
 ALL_AVAILABLE_BOT_PROTOCOLS: Iterable[T_BotProtocol] = ["onebot", "keaimao"]
+ALL_AVAILABLE_ROUTE_MODES: Iterable[T_RouteMode] = ["group", "private", "channel"]
 
 
 class EventHandlerKwarg(BaseModel):
@@ -320,3 +322,73 @@ async def get_event_handler_kwargs(
 
 
 T_HandlerKwargMapping = Dict[str, List[EventHandlerKwarg]]
+
+
+def output_config():
+
+    from rich.tree import Tree
+    from rich import print as rich_print
+
+    tree = Tree("协议适配")
+
+    for protocol, api_caller in api_callers.items():
+        caller_tree = tree.add(protocol)
+        caller_tree.add(f"[green]API调用协议{api_caller.protocol}")
+        caller_tree.add(f"[green]API ip{api_caller.host}")
+        caller_tree.add(f"[green]API端口{api_caller.port}")
+    rich_print(tree)
+
+    tree = Tree("路由")
+
+    for protocol in ALL_AVAILABLE_BOT_PROTOCOLS:
+        protocol_tree = tree.add(protocol)
+        for route_mode in ALL_AVAILABLE_ROUTE_MODES:
+            # todo 提升一级
+            if route_mapping.global_commands[route_mode]:
+                global_commands = protocol_tree.add(f"全局{route_mode}指令")
+                for command_name in route_mapping.global_commands[route_mode]:
+                    global_commands.add(command_name)
+
+            if route_mapping.mapping[protocol][route_mode]:
+                custom_mapping = protocol_tree.add(f"用户定义{route_mode}指令")
+                for source_id, cache in route_mapping.mapping[protocol][route_mode].items():
+                    source_id_tree = custom_mapping.add(f"{source_id}")
+                    for command_name in cache["commands"]:
+                        source_id_tree.add(command_name)
+
+            if route_mapping.global_handlers[protocol][route_mode]:
+                global_handlers = protocol_tree.add(f"全局{route_mode}响应器")
+                for handler_name in route_mapping.global_handlers[protocol][route_mode]:
+                    global_handlers.add(handler_name)
+
+            if route_mapping.mapping[protocol][route_mode]:
+                custom_mapping = protocol_tree.add(f"用户定义{route_mode}响应器")
+                for source_id, cache in route_mapping.mapping[protocol][route_mode].items():
+                    source_id_tree = custom_mapping.add(f"{source_id}")
+                    for command_name in cache["class_handlers"]:
+                        source_id_tree.add(command_name)
+
+    custom_mapping = tree.add("validator指令")
+    for route_mode in ALL_AVAILABLE_ROUTE_MODES:
+        for validator_name, cache in route_mapping.mapping["validators"][
+            route_mode
+        ].items():
+            source_id_tree = custom_mapping.add(validator_name)
+            for command_name in cache["commands"]:
+                source_id_tree.add(command_name)
+
+    custom_mapping = tree.add("validator响应器")
+    for route_mode in ALL_AVAILABLE_ROUTE_MODES:
+        for validator_name, cache in route_mapping.mapping["validators"][
+            route_mode
+        ].items():
+            source_id_tree = custom_mapping.add(validator_name)
+            for command_name in cache["class_handlers"]:
+                source_id_tree.add(command_name)
+
+    rich_print(tree)
+
+    # DisplayTree(
+    #     name=f"事件",
+    #     node=[method for method in groupCache.methods.keys()],
+    # )

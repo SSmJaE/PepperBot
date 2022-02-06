@@ -8,7 +8,7 @@ from pepperbot.adapters.onebot.event.event import (
 from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
 from pepperbot.core.event.base_adapter import BaseAdapater
 from pepperbot.exceptions import EventHandleError
-from pepperbot.extensions.logger import logger
+from pepperbot.extensions.log import logger
 from pepperbot.utils.common import get_own_attributes
 
 

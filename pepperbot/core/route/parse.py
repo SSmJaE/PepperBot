@@ -43,6 +43,7 @@ def parse_routes(routes: Iterable[BotRoute]):
             command_names.append(command_name)
 
         handler_name: str = ""
+        # todo 多handler的情况, handlers=[]
         if route.handler:
             handler_name = route.handler.__name__
 

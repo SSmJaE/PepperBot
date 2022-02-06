@@ -12,9 +12,6 @@ from pepperbot.store.meta import (
 # 消息响应器的调用顺序，和加入route的顺序是一致的
 
 
-# 如果你只有一个消息响应器，那么用register装饰器是最合适的
-# 那么什么时候用BotRoute呢？但你有很多响应器，并且想设计比较复杂的权限关系的时候
-
 # validator
 # 123 in api.admins
 

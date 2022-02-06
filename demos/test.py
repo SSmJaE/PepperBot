@@ -1,5 +1,9 @@
 from typing import Dict
 
+from pepperbot.config import global_config
+
+global_config.logger.level = "DEBUG"
+
 from devtools import debug
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot
@@ -28,9 +32,6 @@ from pepperbot.store.meta import BotRoute
 # bot.update_plugin(Logger, loggerConfig)
 # bot.register_plugin(scheduler)
 
-
-# debug(dir(OnebotV11GroupEvent))
-# debug(vars(OnebotV11GroupEvent))
 
 bot = PepperBot(
     port=53521,

@@ -24,7 +24,7 @@ from pepperbot.core.event.universal import (
 
 # from pepperbot.core.event.utils import get_bot_instance
 from pepperbot.exceptions import EventHandleError
-from pepperbot.extensions.logger import logger
+from pepperbot.extensions.log import logger
 from pepperbot.store.meta import (
     EventHandlerKwarg,
     T_HandlerKwargMapping,
@@ -185,8 +185,8 @@ def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
 async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     if not route_mapping.has_initial:
         await initial_bot_info()
+        logger.info("成功获取bot元信息")
         route_mapping.has_initial = True
-        logger.success("成功获取bot元信息")
 
     adapter = get_adapter(protocol)
     raw_event_name = adapter.get_event_name(raw_event)

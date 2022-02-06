@@ -64,6 +64,18 @@ pip install pepperbot
 
 ## 示例
 
+六行代码实现消息互转
+
+```py
+class WhateverNameYouWant:
+    async def group_message(self, bot: UniversalGroupBot, chain: MessageChain):
+        if bot.onebot: # 转发qq消息至微信
+            await bot.arbitrary.keaimao.group_message("19521241254@chatroom", *chain.segments)
+
+        if bot.keaimao: # 转发微信消息至qq
+            await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)
+```
+
 只需要非常少的代码，就可以实现**跨平台**的群消息的响应
 
 ```py

@@ -4,8 +4,6 @@ from types import FunctionType
 from typing import Any, Callable, Coroutine, Dict, List, Union, cast
 from pydantic import BaseModel
 
-from devtools import debug
-
 
 class DictNoNone(dict):
     def __setitem__(self, key, value):
@@ -74,7 +72,7 @@ async def deepawait_or_sync(
         Coroutine,
     ],
     *args,
-    **kwargs
+    **kwargs,
 ) -> Any:
     """双重await，lambda"""
     if callable(value_or_function_or_coroutine):
@@ -153,47 +151,3 @@ def print_tree(tree: DisplayTree, indent=0, prefixes=[]):
             print_tree(node, indent + 1, newPrefixes)
         else:
             print("".join(newPrefixes), node)
-
-
-# def output_config():
-#
-# debug(classHandlers)
-# # debug(globalContext)
-
-# result = []
-# for groupId, groupCacheList in classHandlers.groupCache.items():
-#     buffer = []
-#     for groupCache in groupCacheList:
-#         buffer2 = []
-
-#         # todo 应该反过来，根据事件，列出订阅的classHandler，也要提升至group等级
-#         buffer2.append(
-#             DisplayTree(
-#                 name=f"事件",
-#                 node=[method for method in groupCache.methods.keys()],
-#             ),
-#         )
-
-#         # todo 提升至group等级，uniqueCommand
-#         buffer2.append(
-#             DisplayTree(
-#                 name=f"指令",
-#                 node=[
-#                     commandClass.__name__
-#                     for commandClass in groupCache.commandClasses
-#                 ]
-#                 or ["无"],
-#             ),
-#         )
-
-#         buffer.append(
-#             DisplayTree(
-#                 name=f"{groupCache.instance.__class__}",
-#                 node=[*buffer2],
-#             ),
-#         )
-
-#     groupTree = DisplayTree(name=f"群{groupId}", node=[*buffer])
-#     result.append(groupTree)
-
-# print_tree(DisplayTree(name="PepperBot", node=result))
