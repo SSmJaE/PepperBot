@@ -1,5 +1,6 @@
 import json
 from typing import Any, Callable, Dict, List, Optional, Set
+import arrow
 
 from devtools import debug
 from pepperbot.adapters.keaimao import KeaimaoAdapter
@@ -21,11 +22,13 @@ from pepperbot.core.event.universal import (
     UNIVERSAL_PRIVATE_EVENTS,
     UNIVERSAL_PROTOCOL_EVENT_MAPPING,
 )
+from pepperbot.core.event.utils import skip_current_onebot_event
 
 # from pepperbot.core.event.utils import get_bot_instance
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import logger
 from pepperbot.store.meta import (
+    onebot_event_meta,
     EventHandlerKwarg,
     T_HandlerKwargMapping,
     class_handler_mapping,
@@ -183,6 +186,8 @@ def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
 
 
 async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
+    logger.info("*" * 50)
+
     if not route_mapping.has_initial:
         await initial_bot_info()
         logger.info("成功获取bot元信息")
@@ -192,17 +197,20 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     raw_event_name = adapter.get_event_name(raw_event)
     protocol_event_name: str = f"{protocol}_" + raw_event_name
 
-    logger.info(f"{protocol}事件 {raw_event_name}")
+    if protocol == "onebot" and raw_event_name == "meta_event":
+        if not onebot_event_meta.has_skip_buffered_event:
+            flag = skip_current_onebot_event(raw_event, raw_event_name)
+            if not flag:
+                return
 
-    if protocol_event_name in ALL_META_EVENTS:
-        # print(
-        #     arrow.get(receive["time"])
-        #     .to("Asia/Shanghai")
-        #     .format("YYYY-MM-DD HH:mm:ss"),
-        #     "心跳",
-        # )
-        # logger.info("心跳事件")
-        return
+        logger.info(
+            arrow.get(raw_event["time"])
+            .to("Asia/Shanghai")
+            .format("YYYY-MM-DD HH:mm:ss"),
+            "onebot 心跳",
+        )
+
+    logger.info(f"{protocol}事件 {raw_event_name}")
 
     class_handler_names: Set[str] = set()
     # 对同一个消息来源，同一个class_handler也只应调用一次
@@ -229,7 +237,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     validator_handlers, validator_commands = await with_validators(mode, source_id)
 
     if protocol_event_name in command_trigger_events:
-        class_command_names |= route_mapping.global_commands[mode]
+        class_command_names |= route_mapping.global_commands[protocol][mode]
         class_command_names |= route_mapping.mapping[protocol][mode][source_id][
             "commands"
         ]

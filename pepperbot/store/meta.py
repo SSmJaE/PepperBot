@@ -36,7 +36,7 @@ class BotRoute(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    handler: Optional[Callable] = None
+    handlers: Optional[Iterable[Callable]] = None
     commands: Optional[Iterable[Callable]] = None
     groups: Optional[T_RouteRelation] = "*"
     friends: Optional[T_RouteRelation] = "*"
@@ -73,10 +73,20 @@ class RouteMapping(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    # todo 应该和global_handlers一样分级，少了一级T_BotProtocol
-    global_commands: Dict[T_RouteMode, Set[str]] = defaultdict(set)
-    """ 对所有群应用的指令，当groups="*"时注册至此 """
-    """ 对所有私聊消息应用的指令，当friends="*"时注册至此 """
+    global_commands: Dict[T_BotProtocol, Dict[T_RouteMode, Set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
+    """ 
+    对所有群应用的指令，当groups="*"时注册至此
+    对所有私聊消息应用的指令，当friends="*"时注册至此
+    {
+        "onebot" : {
+            "group" : [command1, command2, ],
+            "friend" : []
+            "channel" : []
+        }
+    }
+    """
 
     global_handlers: Dict[T_BotProtocol, Dict[T_RouteMode, Set[str]]] = defaultdict(
         lambda: defaultdict(set)
@@ -168,6 +178,14 @@ class RouteMapping(BaseModel):
     """
 
     has_initial = False
+
+
+class OnebotEventMeta(BaseModel):
+    has_skip_buffered_event = False
+    buffered_message_count = 0
+
+
+onebot_event_meta = OnebotEventMeta()
 
 
 def get_bot_id(protocol: T_BotProtocol):
@@ -344,14 +362,16 @@ def output_config():
         protocol_tree = tree.add(protocol)
         for route_mode in ALL_AVAILABLE_ROUTE_MODES:
             # todo 提升一级
-            if route_mapping.global_commands[route_mode]:
+            if route_mapping.global_commands[protocol][route_mode]:
                 global_commands = protocol_tree.add(f"全局{route_mode}指令")
-                for command_name in route_mapping.global_commands[route_mode]:
+                for command_name in route_mapping.global_commands[protocol][route_mode]:
                     global_commands.add(command_name)
 
             if route_mapping.mapping[protocol][route_mode]:
                 custom_mapping = protocol_tree.add(f"用户定义{route_mode}指令")
-                for source_id, cache in route_mapping.mapping[protocol][route_mode].items():
+                for source_id, cache in route_mapping.mapping[protocol][
+                    route_mode
+                ].items():
                     source_id_tree = custom_mapping.add(f"{source_id}")
                     for command_name in cache["commands"]:
                         source_id_tree.add(command_name)
@@ -363,7 +383,9 @@ def output_config():
 
             if route_mapping.mapping[protocol][route_mode]:
                 custom_mapping = protocol_tree.add(f"用户定义{route_mode}响应器")
-                for source_id, cache in route_mapping.mapping[protocol][route_mode].items():
+                for source_id, cache in route_mapping.mapping[protocol][
+                    route_mode
+                ].items():
                     source_id_tree = custom_mapping.add(f"{source_id}")
                     for command_name in cache["class_handlers"]:
                         source_id_tree.add(command_name)

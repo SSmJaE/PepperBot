@@ -139,7 +139,7 @@ bot.apply_routes(
         #     # friends={"keaimao": [99999]},
         # ),
         BotRoute(
-            handler=homepage,
+            handlers=[homepage],
             groups={
                 "onebot": ["1041902989"],
                 "keaimao": ["19521241254@chatroom"],

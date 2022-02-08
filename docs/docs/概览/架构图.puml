@@ -1,0 +1,18 @@
+@startuml
+!theme materia-outline
+
+
+
+rectangle 协议实现 {
+rectangle 推送事件 as 事件
+rectangle 调用API as API
+}
+
+rectangle PepperBot
+
+事件 -[hidden]right-> API
+事件 -down-> PepperBot : http/ws
+PepperBot -up-> API : http/ws
+
+
+@enduml

@@ -57,3 +57,27 @@
 #         bot_instance = instances_dict[key]
 
 #     return bot_instance
+
+
+from typing import Dict
+from pepperbot.store.meta import onebot_event_meta
+from pepperbot.extensions.log import logger
+import time
+
+
+def skip_current_onebot_event(raw_event: Dict, event_name: str):
+    """跳过缓存/过期的消息，根据心跳时间判断(比如离当前时间<5s)"""
+    if event_name == "meta_event" and raw_event["meta_event_type"] == "lifecycle":
+        return False
+
+    onebot_event_meta.buffered_message_count += 1
+
+    currentTime = int(time.time())
+    event_time: int = raw_event["time"]
+
+    if currentTime - event_time < 10:
+        logger.success(f"已跳过{onebot_event_meta.buffered_message_count}条缓存的事件")
+        onebot_event_meta.has_skip_buffered_event = True
+        return True
+    else:
+        return False
