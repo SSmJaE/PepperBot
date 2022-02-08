@@ -11,7 +11,7 @@ from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
 from pepperbot.core.bot.universal import UniversalGroupBot
 from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import Image, Text
-from pepperbot.initial import PepperBot
+from pepperbot import PepperBot
 from pepperbot.store.meta import BotRoute
 
 # class DefaultConfig_Logger:
@@ -76,7 +76,11 @@ class 指令4:
 
 
 class homepage:
-    async def onebot_group_message(self, bot: OnebotV11GroupBot):
+    async def onebot_group_message(
+        self,
+        bot: OnebotV11GroupBot,
+        chain: MessageChain,
+    ):
         debug("in group_message")
         debug(bot)
 
@@ -88,30 +92,32 @@ class homepage:
         bot: UniversalGroupBot,
         raw_event: Dict,
         chain: MessageChain,
+        # test,
     ):
-        debug(bot)
-        # debug(raw_event)
-        debug(chain)
-        # debug(bot.onebot)
-        # debug(bot.keaimao)
+        pass
+        # debug(bot)
+        # # debug(raw_event)
+        # debug(chain)
+        # # debug(bot.onebot)
+        # # debug(bot.keaimao)
 
-        # await bot.group_message(
-        #     Text("一条跨平台消息"),
-        # )
+        # # await bot.group_message(
+        # #     Text("一条跨平台消息"),
+        # # )
 
-        if bot.onebot:
-            await bot.arbitrary.keaimao.group_message(
-                "19521241254@chatroom", *chain.segments
-            )
-            # await bot.arbitrary.keaimao.group_message(
-            #     "19521241254@chatroom",
-            #     Image(
-            #         "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
-            #     ),
-            # )
+        # if bot.onebot:
+        #     await bot.arbitrary.keaimao.group_message(
+        #         "19521241254@chatroom", *chain.segments
+        #     )
+        #     # await bot.arbitrary.keaimao.group_message(
+        #     #     "19521241254@chatroom",
+        #     #     Image(
+        #     #         "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
+        #     #     ),
+        #     # )
 
-        if bot.keaimao:
-            await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)
+        # if bot.keaimao:
+        #     await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)
 
         # if bot.keaimao:
         #     await bot.keaimao.group_message("一条跨平台消息")

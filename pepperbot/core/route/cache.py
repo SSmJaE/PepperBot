@@ -5,7 +5,6 @@ import re
 from typing import Callable, Dict, Set, cast, get_args, get_origin
 
 from devtools import debug
-from pepperbot.core.route.validate import is_valid_event_handler
 from pepperbot.exceptions import EventHandlerDefineError
 # from pepperbot.parse import (
 #     GROUP_EVENTS,

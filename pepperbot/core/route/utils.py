@@ -1,5 +1,4 @@
 import json
-import traceback
 from typing import Any, Iterable
 
 from devtools import pformat
@@ -41,9 +40,10 @@ async def http_receiver(request, protocol: T_BotProtocol):
 
         logger.debug(pformat(raw_event))
         await handle_event(protocol, raw_event)
-    except Exception as e:
-        logger.error(e)
-        traceback.print_exc()
+
+    except Exception:
+        logger.exception("事件处理异常")
+
     finally:
         return text("")
 
@@ -56,6 +56,6 @@ async def websocket_receiver(request, ws, protocol: T_BotProtocol):
 
             logger.debug(pformat(raw_event))
             await handle_event(protocol, raw_event)
-        except Exception as e:
-            logger.error(e)
-            traceback.print_exc()
+
+        except Exception:
+            logger.exception("事件处理异常")
