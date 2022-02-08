@@ -19,7 +19,8 @@ from pydantic import BaseModel, Field
 from pepperbot.core.bot.api_caller import ApiCaller
 from pepperbot.exceptions import InitializationError
 from pepperbot.utils.common import deepawait_or_sync, fit_kwargs
-
+from rich.tree import Tree
+from rich import print as rich_print
 
 from pepperbot.types import (
     BaseBot,
@@ -342,71 +343,96 @@ async def get_event_handler_kwargs(
 T_HandlerKwargMapping = Dict[str, List[EventHandlerKwarg]]
 
 
-def output_config():
+def get_route_chinese(route_mode: T_RouteMode) -> str:
+    if route_mode == "group":
+        route_name = "群"
+    elif route_mode == "private":
+        route_name = "好友"
+    else:
+        route_name = "频道"
 
-    from rich.tree import Tree
-    from rich import print as rich_print
+    return route_name
+
+
+def output_config():
 
     tree = Tree("协议适配")
 
     for protocol, api_caller in api_callers.items():
         caller_tree = tree.add(protocol)
-        caller_tree.add(f"[green]API调用协议{api_caller.protocol}")
-        caller_tree.add(f"[green]API ip{api_caller.host}")
-        caller_tree.add(f"[green]API端口{api_caller.port}")
+        caller_tree.add(f"[green]API调用协议").add(api_caller.protocol)
+        caller_tree.add(f"[green]API ip").add(api_caller.host)
+        caller_tree.add(f"[green]API端口").add(str(api_caller.port))
+
     rich_print(tree)
 
     tree = Tree("路由")
 
     for protocol in ALL_AVAILABLE_BOT_PROTOCOLS:
         protocol_tree = tree.add(protocol)
-        for route_mode in ALL_AVAILABLE_ROUTE_MODES:
-            # todo 提升一级
-            if route_mapping.global_commands[protocol][route_mode]:
-                global_commands = protocol_tree.add(f"全局{route_mode}指令")
-                for command_name in route_mapping.global_commands[protocol][route_mode]:
-                    global_commands.add(command_name)
 
-            if route_mapping.mapping[protocol][route_mode]:
-                custom_mapping = protocol_tree.add(f"用户定义{route_mode}指令")
-                for source_id, cache in route_mapping.mapping[protocol][
-                    route_mode
-                ].items():
-                    source_id_tree = custom_mapping.add(f"{source_id}")
+        for route_mode in ALL_AVAILABLE_ROUTE_MODES:
+            route_name = get_route_chinese(route_mode)
+
+            global_commands = route_mapping.global_handlers[protocol][route_mode]
+            if global_commands:
+                global_commands_tree = protocol_tree.add(f"全局{route_name}响应器")
+                for command_name in global_commands:
+                    global_commands_tree.add(command_name)
+
+            commands = route_mapping.mapping[protocol][route_mode]
+            if commands:
+                commands_tree = None
+
+                for source_id, cache in commands.items():
+                    if not cache["commands"]:
+                        continue
+                    if not commands_tree:
+                        commands_tree = protocol_tree.add(f"指定来源{route_name}指令")
+
+                    source_id_tree = commands_tree.add(source_id)
                     for command_name in cache["commands"]:
                         source_id_tree.add(command_name)
 
-            if route_mapping.global_handlers[protocol][route_mode]:
-                global_handlers = protocol_tree.add(f"全局{route_mode}响应器")
-                for handler_name in route_mapping.global_handlers[protocol][route_mode]:
-                    global_handlers.add(handler_name)
+            global_handlers = route_mapping.global_handlers[protocol][route_mode]
+            if global_handlers:
+                global_handlers_tree = protocol_tree.add(f"全局{route_name}响应器")
+                for handler_name in global_handlers:
+                    global_handlers_tree.add(handler_name)
 
-            if route_mapping.mapping[protocol][route_mode]:
-                custom_mapping = protocol_tree.add(f"用户定义{route_mode}响应器")
-                for source_id, cache in route_mapping.mapping[protocol][
-                    route_mode
-                ].items():
-                    source_id_tree = custom_mapping.add(f"{source_id}")
-                    for command_name in cache["class_handlers"]:
-                        source_id_tree.add(command_name)
+            handlers = route_mapping.mapping[protocol][route_mode]
+            if handlers:
+                handlers_tree = None
 
-    custom_mapping = tree.add("validator指令")
+                for source_id, cache in handlers.items():
+                    if not cache["class_handlers"]:
+                        continue
+
+                    if not handlers_tree:
+                        handlers_tree = protocol_tree.add(f"指定来源{route_name}响应器")
+
+                    source_id_tree = handlers_tree.add(source_id)
+                    for handler_name in cache["class_handlers"]:
+                        source_id_tree.add(handler_name)
+
     for route_mode in ALL_AVAILABLE_ROUTE_MODES:
-        for validator_name, cache in route_mapping.mapping["validators"][
-            route_mode
-        ].items():
-            source_id_tree = custom_mapping.add(validator_name)
-            for command_name in cache["commands"]:
-                source_id_tree.add(command_name)
+        route_name = get_route_chinese(route_mode)
 
-    custom_mapping = tree.add("validator响应器")
-    for route_mode in ALL_AVAILABLE_ROUTE_MODES:
-        for validator_name, cache in route_mapping.mapping["validators"][
-            route_mode
-        ].items():
-            source_id_tree = custom_mapping.add(validator_name)
-            for command_name in cache["class_handlers"]:
-                source_id_tree.add(command_name)
+        validators = route_mapping.mapping["validators"][route_mode]
+        if not validators:
+            continue
+
+        validator_tree = tree.add("动态判断")
+
+        for validator_name, cache in validators.items():
+            if cache["commands"] or cache["class_handlers"]:
+                current_node = validator_tree.add(f"validator {validator_name}")
+
+                for command_name in cache["commands"]:
+                    current_node.add(command_name)
+
+                for handler_name in cache["class_handlers"]:
+                    current_node.add(handler_name)
 
     rich_print(tree)
 

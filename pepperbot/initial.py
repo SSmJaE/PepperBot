@@ -109,14 +109,16 @@ class PepperBot:
         create_bot_routes([*routes, *register_routes])
 
     @staticmethod
-    def initialize_scheduler(*args):
+    def before_server_start(*args):
+        output_config()
+
         # async_scheduler.add_job(check_command_timeout)
         # async_scheduler.add_job(clean_bot_instances)
         async_scheduler.start()
 
     def run(self):
         sanic_app.register_listener(
-            PepperBot.initialize_scheduler, "before_server_start"
+            PepperBot.before_server_start, "before_server_start"
         )
 
         # logger.debug(pformat(route_mapping))
@@ -126,8 +128,6 @@ class PepperBot:
         #     raise InitializationError(f"测试")
         # except:
         #     logger.exception("捕获")
-
-        output_config()
 
         try:
             sanic_app.run(self.host, self.port, debug=self.debug)
