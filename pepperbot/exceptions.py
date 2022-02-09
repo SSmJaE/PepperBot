@@ -19,7 +19,7 @@ class CatchException(PepperBotBaseException):
     pass
 
 
-class CommandClassDefineException(PepperBotBaseException):
+class ClassCommandDefinitionError(PepperBotBaseException):
     """未按照commandClass规范定义命令类，导致的异常"""
 
     pass
@@ -33,17 +33,17 @@ class PatternValidateError(PepperBotBaseException):
     pass
 
 
-class CommandClassOnFinish(PepperBotBaseException):
+class ClassCommandOnFinish(PepperBotBaseException):
 
     pass
 
 
-class CommandClassOnExit(PepperBotBaseException):
+class ClassCommandOnExit(PepperBotBaseException):
 
     pass
 
 
-class CommandClassOnTimeout(PepperBotBaseException):
+class ClassCommandOnTimeout(PepperBotBaseException):
 
     pass
 

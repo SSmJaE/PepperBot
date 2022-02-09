@@ -37,8 +37,7 @@ def parse_routes(routes: Iterable[BotRoute]):
                 raise InitializationError(f"路由 {route} 中的指令 {command_name} 不符合要求")
 
             if command_name not in class_command_mapping.keys():
-                # cache_class_command(command, command_name)
-                pass
+                cache_class_command(command, command_name)
 
             command_names.add(command_name)
 

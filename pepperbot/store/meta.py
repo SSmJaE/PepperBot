@@ -60,9 +60,6 @@ class ClassHandlerCache(BaseModel):
     """
 
 
-class ClassCommandCache(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class RouteValidatorCache(BaseModel):

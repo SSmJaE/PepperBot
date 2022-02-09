@@ -1,6 +1,7 @@
 from typing import Dict
 
 from pepperbot.config import global_config
+from pepperbot.extensions.command import as_command
 
 global_config.logger.level = "DEBUG"
 
@@ -45,24 +46,25 @@ bot.register_adapter(
     backend_host="127.0.0.1",
     backend_port=5700,
 )
-bot.register_adapter(
-    bot_protocol="keaimao",
-    receive_protocol="http",
-    backend_protocol="http",
-    backend_host="192.168.0.109",
-    backend_port=8090,
-)
+# bot.register_adapter(
+#     bot_protocol="keaimao",
+#     receive_protocol="http",
+#     backend_protocol="http",
+#     backend_host="192.168.0.109",
+#     backend_port=8090,
+# )
 
 
+@as_command()
 class 指令1:
-    __command_kwargs__ = {}
+    async def initial(self, raw_event):
+        debug("in 指令1")
 
-    pass
 
-
+@as_command()
 class 指令2:
-    __command_kwargs__ = {}
-    pass
+    async def initial(self, raw_event):
+        debug("in 指令2")
 
 
 class 指令3:
@@ -146,6 +148,7 @@ bot.apply_routes(
         # ),
         BotRoute(
             handlers=[homepage],
+            commands=[指令1],
             groups={
                 "onebot": ["1041902989"],
                 "keaimao": ["19521241254@chatroom"],

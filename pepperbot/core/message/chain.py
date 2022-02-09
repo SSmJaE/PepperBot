@@ -44,7 +44,7 @@ KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] 
 }
 
 
-def construct_chain(
+def construct_segments(
     protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict
 ) -> List[T_SegmentInstance]:
 
@@ -118,7 +118,7 @@ class MessageChain:
         self.protocol = protocol
         self.mode = mode
 
-        self.segments = construct_chain(protocol, mode, raw_event)
+        self.segments = construct_segments(protocol, mode, raw_event)
 
         self.onebot_message_id = raw_event.get("message_id", "")
 

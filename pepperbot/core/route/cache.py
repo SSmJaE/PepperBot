@@ -6,6 +6,8 @@ from typing import Callable, Dict, Set, cast, get_args, get_origin
 
 from devtools import debug
 from pepperbot.exceptions import EventHandlerDefineError
+from pepperbot.store.command import COMMAND_CONFIG, CommandConfig
+
 # from pepperbot.parse import (
 #     GROUP_EVENTS,
 #     GROUP_EVENTS_T,
@@ -21,10 +23,14 @@ from pepperbot.exceptions import EventHandlerDefineError
 #     construct_GroupCommonBot,
 # )
 from pepperbot.store.meta import (
-    ClassCommandCache,
     ClassHandlerCache,
     class_handler_mapping,
-    route_validator_mapping
+    route_validator_mapping,
+)
+from pepperbot.store.command import (
+    class_command_config_mapping,
+    class_command_mapping,
+    ClassCommandCache,
 )
 from pepperbot.utils.common import get_own_methods
 
@@ -64,7 +70,7 @@ def cache_class_handler(class_handler: Callable, handler_name: str):
         event_handlers[method_name] = method
 
     class_handler_mapping[handler_name] = ClassHandlerCache(
-        instance=class_handler_instance,
+        class_instance=class_handler_instance,
         event_handlers=event_handlers,
     )
     # 是否可以只实例化一次botInstance？动态注入groupId
@@ -78,8 +84,32 @@ def cache_class_command(class_command: Callable, command_name: str):
     # 在提取所有可能的with_command装饰器之后执行
     # 同一个commandClass，就实例化一次
 
+    # if lifecycle_name not in get_own_methods():
+
     class_command_instance = class_command()
-    command_kwargs: Dict = getattr(class_command, "__command_kwargs__")
+    command_method_mapping = {}
+
+    for method in get_own_methods(class_command_instance):
+        method_name = method.__name__
+
+        # todo 多protocol合并的事件
+        # if not is_valid_group_method(method_name):
+        #     # if is_valid_friend_method(method.__name__):
+        #     raise EventHandlerDefineError(f"")
+
+        # if not is_valid_event_handler(class_handler, method, method_name):
+        #     raise EventHandlerDefineError(f"")
+
+        command_method_mapping[method_name] = method
+
+    class_command_mapping[command_name] = ClassCommandCache(
+        class_instance=class_command_instance,
+        command_method_mapping=command_method_mapping,
+    )
+
+    command_config: CommandConfig = getattr(class_command, COMMAND_CONFIG)
+
+    class_command_config_mapping[command_name]["default"] = command_config
 
     # debug(commandKwargs)
 

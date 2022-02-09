@@ -1,259 +1,187 @@
+from collections import deque
 import re
 from inspect import isawaitable
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Set, cast
 
 from devtools import debug
-from pepperbot.command.parse import is_valid_request, util_factory
+from pepperbot.core.message.chain import MessageChain
 from pepperbot.exceptions import (
-    CommandClassDefineException,
-    CommandClassOnExit,
-    CommandClassOnFinish,
-    CommandClassOnTimeout,
+    ClassCommandDefinitionError,
+    ClassCommandOnExit,
+    ClassCommandOnFinish,
 )
-from pepperbot.globals import (
-    classHandlers,
-    GroupCache,
-    NormalContext,
-    UserMessage,
-    globalContext,
+from pepperbot.extensions.command.parse import (
+    meet_command_exit,
+    meet_command_prefix,
 )
-from pepperbot.message.chain import MessageChain
-from pepperbot.parse.kwargs import construct_chain, construct_sender
-from pepperbot.utils.common import await_or_normal, fit_kwargs
+from pepperbot.store.command import (
+    ClassCommandStatus,
+    CommandConfig,
+    T_CommandStatusKey,
+    class_command_mapping,
+    class_command_config_mapping,
+    normal_command_context_mapping,
+)
+from pepperbot.types import T_BotProtocol, T_RouteMode
+from pepperbot.utils.common import await_or_sync, fit_kwargs
+from pepperbot.extensions.log import logger
+from pprint import pformat
 
 
-async def handle_command(
-    receive: Dict[str, Any],
-    kwargs: Dict[str, Any],
-    groupId: int,
-    groupHandler: GroupCache,
-):
+COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
+    ClassCommandOnExit.__name__: "exit",
+    ClassCommandOnFinish.__name__: "finish",
+}
+
+
+def get_command_status(key: T_CommandStatusKey, command_config: CommandConfig):
+    # 新建status时，返回Initial
+
+    if key not in normal_command_context_mapping:
+        normal_command_context_mapping[key] = ClassCommandStatus(
+            history=deque(maxlen=command_config.history_size)
+        )
+
+    return normal_command_context_mapping[key]
+
+    # 指向哪里？initial?
+
+    # 指令本身是跨协议、跨消息来源的吗？
 
     # todo 命令的优先级，
     # 命令需要优先级吗？
     # 普通的group_message也有默认优先级，所以命令可以先于group_message执行，也可以后于
 
-    chain = construct_chain(receive, groupId=groupId)
-    sender = construct_sender(receive)
 
-    for commandClass, commandCache in classHandlers.commandCache.items():
+def construct_command_sender():
+    pass
 
-        if not commandClass in groupHandler.commandClasses:
-            return
 
-        commandContext = globalContext.cache[commandClass]
-        commandClassName = commandClass.__name__
+def parse_patterns(chain: MessageChain):
+    # raise EventHandleError(f"无法解析pattern")
+    pass
 
-        userId = cast(int, sender.user_id)
-        chain = cast(MessageChain, chain)
 
-        (update_command_status, process_messageQueue,) = util_factory(
-            commandContext,
-            commandClass,
-            groupId,
-            userId,
-        )
+def store_to_history_deque(key, raw_event, chain, patterns):
+    # last_updated_time
+    pass
 
-        # 每一个用户一个指向，可以设置跨群还是不跨群
-        # 跨群就是使用一个指向，
-        # 不跨群，就是同一个用户，在不同群，有不同的指向
-        finalMessageQueue: List[UserMessage] = []
-        finalStatus: str = ""
-        finalContext: Optional[Dict] = None
 
-        if commandContext.mode == "normal":
-            userGroupMap = commandContext.normalContextMap[userId]
+async def run_command_method(method_name, method, all_locals: Dict) -> Any:
+    debug(all_locals)
+    injected_kwargs = dict(
+        raw_event=all_locals["raw_event"],
+        chain=all_locals["chain"],
+        sender=all_locals["sender"],
+        # context=all_locals["context"],
+    )
 
-            normalContext = userGroupMap.get(groupId)
-            if not normalContext:
-                normalContext = NormalContext()
-                userGroupMap[groupId] = normalContext
+    if method_name == "cache":
+        injected_kwargs["exception"] = all_locals["exception"]
 
-            finalContext = normalContext.userContext
-            finalStatus = normalContext.commandStatus
-            finalMessageQueue = normalContext.messageQueue
+    else:
+        if method_name not in COMMAND_LIFECYCLE_EXCEPTIONS.values():
+            injected_kwargs = {**injected_kwargs, **all_locals["patterns"]}
 
-        elif commandContext.mode == "crossGroup":
-            status = commandContext.crossGroupCommandStatus[userId]
+    # 参数和group_message/friend_message事件参数一致
+    logger.debug(f"将被注入 {method_name} 的参数\n", pformat(injected_kwargs))
+    result = await await_or_sync(method, **fit_kwargs(method, injected_kwargs))
+    debug(result)
+    return result
 
-            finalContext = status.userContext
-            finalStatus = status.commandStatus
-            finalMessageQueue = status.messageQueue
 
-        elif commandContext.mode == "crossUser":
-            status = commandContext.crossUserCommandStatus[groupId]
+def check_result(command_name: str, method_names, result_name: str, result: Any):
+    if result == None:  # 流程正常退出
+        raise ClassCommandOnFinish()
 
-            finalContext = status.userContext
-            finalStatus = status.commandStatus
-            finalMessageQueue = status.messageQueue
+    else:
+        if not (callable(result) or isawaitable(result)):
+            raise ClassCommandDefinitionError(f"未提供指令 {command_name} 可继续执行的下一个方法")
 
-        elif commandContext.mode == "global":
-
-            finalContext = commandContext.globalContext
-            finalStatus = commandContext.globalCommandStatus
-            finalMessageQueue = commandContext.globalMessageQueue
-
-        debug(
-            {
-                "className": commandClassName,
-                # "userId": userId,
-                # "groupId": groupId,
-                # "chain": chain.chain,
-                # "context": finalContext,
-                # "status": finalStatus,
-                # "messageQueue": finalMessageQueue,
-            }
-        )
-        # debug(finalStatus)
-        # debug(finalMessageQueue)
-        # debug(globalContext)
-
-        collectMessageFlag = False
-        if finalStatus == "initial":
-
-            # 判断是否触发命令前缀
-            isValidRequest = await is_valid_request(
-                chain, commandClassName, commandCache.kwargs
+        if not result_name in method_names:
+            raise ClassCommandDefinitionError(
+                f"指令 {command_name} 可继续执行的下一个方法，需要在指令中定义，不能是指令外部定义的函数"
             )
 
-            debug(isValidRequest)
 
-            if isValidRequest:
-                collectMessageFlag = True
+def update_command_pointer(command_name, protocol, mode, source_id, result_name):
+    pass
+
+
+async def run_class_commands(
+    protocol: T_BotProtocol,
+    mode: T_RouteMode,
+    source_id: str,
+    raw_event: Dict,
+    class_command_names: Set[str],
+):
+    # todo kwargs pydantic化
+
+    logger.info(f"开始执行指令")
+    chain = MessageChain(protocol, mode, raw_event, source_id)
+
+    for command_name in class_command_names:
+        logger.info(f"-" * 50)
+
+        class_command_cache = class_command_mapping[command_name]
+        command_method_mapping = class_command_cache.command_method_mapping
+        command_method_names = class_command_mapping.keys()
+
+        command_config = class_command_config_mapping[command_name]["default"]
+
+        key = (command_name, protocol, mode, source_id)
+        status = get_command_status(key, command_config)
+        pointer = status.pointer
+
+        if pointer == "initial":
+            if meet_command_prefix(chain, command_name, command_config):
+                logger.info(f"{chain.pure_text} 满足指令 {command_name} 的执行条件")
             else:
+                logger.info(f"{chain.pure_text} 不满足指令 {command_name} 的执行条件")
                 continue
 
-        else:
-            collectMessageFlag = True
+        sender = construct_command_sender()
+        # patterns = parse_patterns(chain, sender)
+        patterns = {}
 
-        if collectMessageFlag:
-            process_messageQueue(
-                finalMessageQueue,
-                receive,
-                chain,
-            )
-
-        # 当前指向的方法，或者说，当前激活的命令回调方法
-        targetMethod = commandCache.methods[finalStatus]
-        methodNames = commandCache.methods.keys()
-
-        # 判断是否正常退出
         try:
-            # todo 对所有事件的回调，都判断是否awaitable
+            if meet_command_exit(chain, command_config):
+                logger.info(f"满足指令 {command_name} 的退出条件")
+                raise ClassCommandOnExit()
 
-            if finalStatus != "initial":
+            logger.info(f"开始执行指令 {command_name} 的 {pointer} 方法")
+            # 当前指向的方法，或者说，当前激活的命令回调方法
+            target_method = command_method_mapping[pointer]
+            result = await run_command_method(pointer, target_method, locals())
 
-                # 退出判断
-                exitPatterns: List[str] = commandCache.kwargs["exitPattern"]
+            store_to_history_deque(key, raw_event, chain, patterns)
 
-                debug(exitPatterns)
-                for pattern in exitPatterns:
-                    debug(re.search(pattern, chain.pure_text))
-                    if re.search(pattern, chain.pure_text):
-                        raise CommandClassOnExit()
+            # 判断是否正常退出
+            result_name = str(result)
+            check_result(command_name, command_method_names, result_name, result)
+            # 设置下一次执行时要调用的方法
+            update_command_pointer(protocol, mode, source_id, command_name, result_name)
 
-            # 参数和group_message事件参数一致
-            result = await await_or_normal(
-                targetMethod,
-                **fit_kwargs(
-                    targetMethod,
-                    {
-                        **kwargs,
-                        "context": finalContext,
-                        "messageQueue": finalMessageQueue,
-                    },
-                ),
-            )
-            debug(result)
+        except Exception as exception:
+            exception_name: str = exception.__class__.__qualname__  # type:ignore
+            if exception_name in COMMAND_LIFECYCLE_EXCEPTIONS:
+                lifecycle_name = COMMAND_LIFECYCLE_EXCEPTIONS[exception_name]
 
-            # 流程正常退出
-            if result == True or result == None:
-                raise CommandClassOnFinish()
-            else:
-
-                if not (callable(result) or isawaitable(result)):
-                    raise CommandClassDefineException("未提供命令类中可继续执行的下一个方法")
-
-                if not result.__name__ in methodNames:
-                    raise CommandClassDefineException("下一步方法，需要在命令类中定义过，不能是外部函数或方法")
-
-                # 设置下一次执行时要调用的方法
-                update_command_status(result.__name__)
-
-        except CommandClassDefineException as e:
-            debug(e)
-
-        except CommandClassOnFinish:  # 流程正常退出时执行，return True时
-
-            update_command_status()
-
-            if "finish" in methodNames:
-                finishHandler = commandCache.methods["finish"]
-                await await_or_normal(
-                    finishHandler,
-                    **fit_kwargs(
-                        targetMethod,
-                        {
-                            **kwargs,
-                            "context": finalContext,
-                            "messageQueue": finalMessageQueue,
-                        },
-                    ),
-                )
-
-        except CommandClassOnExit:  # 用户主动退出时执行
-
-            update_command_status()
-
-            if "exit" in methodNames:
-                exitHandler = commandCache.methods["exit"]
-                await await_or_normal(
-                    exitHandler,
-                    **fit_kwargs(
-                        targetMethod,
-                        {
-                            **kwargs,
-                            "context": finalContext,
-                            "messageQueue": finalMessageQueue,
-                        },
-                    ),
-                )
-
-        except CommandClassOnTimeout:  # 用户响应超时时执行
-
-            update_command_status()
-
-            if "timeout" in methodNames:
-                timeoutHandler = commandCache.methods["timeout"]
-                await await_or_normal(
-                    timeoutHandler,
-                    **fit_kwargs(
-                        targetMethod,
-                        {
-                            **kwargs,
-                            "context": finalContext,
-                            "messageQueue": finalMessageQueue,
-                        },
-                    ),
-                )
-
-        except Exception as e:
-            update_command_status()
-
-            if "error" in methodNames:  # 用户定义的异常捕获方法
-                errorHandler = commandCache.methods["error"]
-                await await_or_normal(
-                    errorHandler,
-                    **fit_kwargs(
-                        targetMethod,
-                        {
-                            **kwargs,
-                            "context": finalContext,
-                            "messageQueue": finalMessageQueue,
-                            "error": e,
-                        },
-                    ),
-                )
+                lifecycle_handler = command_method_mapping.get(lifecycle_name)
+                if lifecycle_handler:
+                    logger.info(f"开始执行指令 {command_name} 的 {lifecycle_name} 生命周期")
+                    await run_command_method(
+                        lifecycle_name, lifecycle_handler, locals()
+                    )
 
             else:
-                raise e
+                if "catch" in command_method_names:
+                    cache_handler = command_method_mapping.get("catch")
+                    if cache_handler:
+                        logger.exception(
+                            f"指令 {command_name} 的 {pointer} 方法执行出错，开始执行用户定义的异常捕获"
+                        )
+                        await run_command_method("cache", cache_handler, locals())
+
+                else:
+                    raise exception

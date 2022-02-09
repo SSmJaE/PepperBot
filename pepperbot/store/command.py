@@ -1,103 +1,157 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Literal, Union
-from pydantic import BaseModel
+from collections import deque
+import time
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Sequence,
+    Set,
+    Tuple,
+    TypedDict,
+    Union,
+)
+from pydantic import BaseModel, Field
 
-from pepperbot.types import BaseClassCommand
+from pepperbot.types import (
+    BaseClassCommand,
+    T_BotProtocol,
+    T_RouteMode,
+    T_RouteRelation,
+)
 
 
-class UserMessage(BaseModel):
-    messageId: int
-    # message: List[SegmentInstance_T]
-    createTime: int
-    groupId: int
-    userId: int
+class CommandConfig(BaseModel):
+    need_prefix: bool = False
+    prefixes: Sequence[str] = ["/"]
+    """ 都是正则，自动加上^ """
+    aliases: Sequence[str] = Field(default_factory=list)
+    """ 指令前缀别名 ，都是正则 """
+    include_class_name: bool = True
+    """ 类名本身是否作为指令前缀 """
+    exit_patterns: Sequence[str] = ["^/exit", "^退出"]
+    """ 都是正则，满足条件， """
+    require_at: bool = False
+    """ 是否需要@机器人 """
+    timeout: int = 30
+    """ 会话超时时间，单位秒, """
+    history_size: int = 0
+    # lock_user = False
+    # """ 跨消息渠道锁定用户
+    # 不管他是私聊、还是群聊、还是频道，只要是一条规则指定的用户，他们的发言都会被指令接受
+    # """
+    # user_mapping: List[Dict[T_BotProtocol, str]] = Field(default_factory=list)
+    # """
+    # 用户自己负责，是否有重复指定的情况
+    # 如果重复指定了两次，那么就会执行两次
+    # [
+    #     {
+    #         "onebot" : "123455",
+    #         "keaimao" : "wxid_askjhfljdsaf",
+    #     },
+    #     {
+    #         "onebot" : "7890784",
+    #         "keaimao" : "wxid_xnvkjdhf",
+    #     },
+    # ]
+    # """
+    # lock_source = False
+    # """
+    # 指定消息来源，该消息来源(群、频道)内，所有用户的发言都被指令接受
+    # 不要和lock_user同时使用，二选一
+    # 也就是说，normal, lock_user, lock_source是三选一的关系
+    # """
+    # source_mapping: List[Dict[T_BotProtocol, List[str]]] = Field(default_factory=list)
+    # """
+    # [
+    #     {
+    #         "onebot" : ["123455", "2034789"],
+    #         "keaimao" : ["123789@chatroom",],
+    #     },
+    # ]
+    # """
 
+
+class ClassCommandCache(BaseModel):
+    class_instance: Any
+    command_method_mapping: Dict[str, Callable] = {}
+    """ key为方法名，value为实例化后的方法 """
+    # command_config: Dict[str, Any]
+    # lock_user_context_ids: Set[str] = set()
+    """ 
+    允许在BotRoute中，对同一个command设置多个不同的kwargs组合
+    [id1, id2, id3]
+
+    for id in ids:
+        if meet_lock_user_rule()
+    """
+    # lock_source_context_ids
+
+
+class_command_mapping: Dict[str, ClassCommandCache] = {}
+""" ClassCommand.__name__ : ClassHandlerCache """
+
+
+class_command_config_mapping: Dict[str, Dict[str, CommandConfig]] = defaultdict(dict)
+""" 一个command可能有多个config，share_state_command时，复用class_command_cache，
+解耦class_instance和config，不然要重复创建多次
+default是给BotRoute中注册的command用的
+{
+    [command_name] : {
+        "default" : CommandConfig,
+        "id1" : CommandConfig,
+        "id2" : CommandConfig,
+    }
+}
+ """
+
+COMMAND_CONFIG = "__command_config__"
+
+
+class HistoryItem(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-
-class NormalContext(BaseModel):
-    """
-    默认不收录消息，除非触发了指令，减少内存占用
-    """
-
-    messageQueue: List[UserMessage] = []
-    commandStatus: str = "initial"
-    userContext: Dict = {}
+    raw_event: Dict
 
 
-class CommandContext(BaseModel):
-    """
-    如果相同的一条指令，需要为某些用户跨群，某些不跨群，应该怎么操作？
-    复制一份，一个全局permission，另一个提供permission方法，实现动态用户黑名单/白名单
-    """
-
-    # todo 如果未提供，使用全局设置
-    # 通过as_command的kwargs指定
-    maxSize: int
-    timeout: int
-
-    """
-    - normal        same user same group
-    - crossUser     cross user same group 
-    - crossGroup    same user cross group
-    - global        cross user cross group
-    """
-    mode: Literal["normal", "crossUser", "crossGroup", "global"] = "normal"
-
-    # 如果是normal指令，需要为一个用户在每个群都保存一个消息队列和指令进度
-    # 第一个key为QQ号，第二个key为群号
-    normalContextMap: Dict[int, Dict[int, NormalContext]] = defaultdict(dict)
-
-    # crossGroup
-    crossGroupMessageQueue: List[UserMessage] = []
-    # key为qq号
-    # 对于当前用户，他的指令执行到哪一步了
-    crossGroupCommandStatus: Dict[int, NormalContext] = defaultdict(NormalContext)
-
-    # crossUser
-    crossUserMessageQueue: List[UserMessage] = []
-    # key为群号
-    crossUserCommandStatus: Dict[int, NormalContext] = defaultdict(NormalContext)
-
-    # global
-    globalMessageQueue: List[UserMessage] = []
-    globalCommandStatus: str = "initial"
-    globalContext: Dict = {}
+class ClassCommandStatus(BaseModel):
+    pointer: str = "initial"
+    history: deque
+    last_updated_time: float = Field(default_factory=time.time)
+    """ 用来判断timeout """
+    context: Dict = Field(default_factory=dict)
+    """ 用户定义，method之间的消息传递方式 """
 
 
-# todo 多个命令，一致前缀，都执行？
-class Context(BaseModel):
-    """
-    context主要是为一个用户和各个commandClass的交互服务
+T_CommandStatusKey = Tuple[str, T_BotProtocol, T_RouteMode, str]
 
-    以用户或者commandClass为key都可以，不过用户的数量可能要比命令多得多
-
-    所以以命令类为key
-    """
-
-    # todo 相同commandClass，不同permission的处理
-    cache: Dict[Callable, CommandContext] = {}
-    # 全局默认栈深
-    maxSize: int = 9
-    # 全局默认消息过期时间，单位秒
-    timeout: int = 1 * 60 * 60
-
-    class Config:
-        arbitrary_types_allowed = True
+normal_command_context_mapping: Dict[T_CommandStatusKey, ClassCommandStatus] = {}
+""" 
+默认情况，不锁定用户，也不锁定消息来源
+{
+    (command_name, protocol, mode, source_id) : status
+}
+"""
 
 
-# todo 提供统一的api，允许用户设置各种全局变量的默认值
-globalContext = Context()
+# class LockRelation(TypedDict):
+#     rule: Dict[T_BotProtocol, List[str]]
+#     context: ClassCommandContext
 
 
-class CommandCache(BaseModel):
-    instance: Union[Callable, Any]
-    # key为方法名，value为实例化后的方法
-    methods: Dict[str, Union[Callable, Any]] = {}
-    kwargs: Dict[str, Any]
-    targetMethod: str = "initial"
+# lock_user_context_mapping: Dict[str, LockRelation] = {}
+"""
+锁定用户
+lock_user_mapping中的每一条规则，都应该有一个单独的context
 
+{
+    id : {
+        rule : {},
+        context : context
+    }
+}
 
-class_command_mapping: Dict[str, BaseClassCommand] = {}
-""" ClassHandler.__name__ : ClassHandlerCache """
+"""

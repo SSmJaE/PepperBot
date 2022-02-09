@@ -26,6 +26,7 @@ from pepperbot.core.event.utils import skip_current_onebot_event
 
 # from pepperbot.core.event.utils import get_bot_instance
 from pepperbot.exceptions import EventHandleError
+from pepperbot.extensions.command.handle import run_class_commands
 from pepperbot.extensions.log import logger
 from pepperbot.store.meta import (
     onebot_event_meta,
@@ -131,10 +132,6 @@ async def run_class_handlers(
             await await_or_sync(event_handler, **fit_kwargs(event_handler, kwargs))
 
 
-async def run_class_commands():
-    pass
-
-
 async def with_validators(mode: T_RouteMode, source_id: str):
     handlers: Set[str] = set()
     commands: Set[str] = set()
@@ -237,14 +234,25 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     validator_handlers, validator_commands = await with_validators(mode, source_id)
 
     if protocol_event_name in command_trigger_events:
+        # normal
         class_command_names |= route_mapping.global_commands[protocol][mode]
         class_command_names |= route_mapping.mapping[protocol][mode][source_id][
             "commands"
         ]
         class_command_names |= validator_commands
 
-        # if class_command_names:
-        # await run_class_commands(protocol, mode, raw_event, class_command_names)
+        if class_command_names:
+            await run_class_commands(protocol, mode,source_id, raw_event, class_command_names)
+
+        # lock_user
+        # for rule_id, rule in lock_user_mapping.items():
+        #     if source_id in rule[protocol]:
+        #         await run_class_command(mode="lock_user",rule_id)
+
+        # if mode =="group" or mode =="channel":
+        #     lock_source_mapping
+
+        # lock_source
 
     class_handler_names |= route_mapping.global_handlers[protocol][mode]
     class_handler_names |= route_mapping.mapping[protocol][mode][source_id][

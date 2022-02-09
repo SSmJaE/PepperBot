@@ -4,6 +4,7 @@ from typing import Any, Iterable
 from devtools import pformat
 from pepperbot.core.event.handle import handle_event
 from pepperbot.core.route.parse import parse_routes
+from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import logger
 from pepperbot.store.meta import BotRoute
 from pepperbot.types import T_BotProtocol, T_WebProtocol
@@ -56,6 +57,9 @@ async def websocket_receiver(request, ws, protocol: T_BotProtocol):
 
             logger.debug(pformat(raw_event))
             await handle_event(protocol, raw_event)
+
+        except EventHandleError as e:
+            logger.error(e)
 
         except Exception:
             logger.exception("事件处理异常")

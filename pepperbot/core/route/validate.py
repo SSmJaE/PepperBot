@@ -27,19 +27,6 @@ def is_valid_class_handler(class_handler: object):
     return True
 
 
-def is_valid_class_command(class_command: object):
-
-    return True
-
-
-def is_valid_route_validator(validator: Callable):
-    """参数检查"""
-
-    validator.__annotations__
-
-    return True
-
-
 def is_handler_method_name_valid(method_name: str):
     if not (
         method_name in ALL_META_EVENTS
@@ -143,3 +130,32 @@ def is_handler_method_args_valid(
             raise InitializationError(
                 common_prefix + f"的参数{arg_name}的类型应该为{supposed_arg_type}，而不是{arg_type}"
             )
+
+
+def is_valid_class_command(class_command: object):
+
+    return True
+
+
+def is_command_method_args_valid():
+    # no *, **
+
+    # kwargs
+
+    ## name valid
+
+    ## has type hint
+
+    ## type hint correct
+
+    # pattern args
+
+    return True
+
+
+def is_valid_route_validator(validator: Callable):
+    """参数检查"""
+
+    validator.__annotations__
+
+    return True
