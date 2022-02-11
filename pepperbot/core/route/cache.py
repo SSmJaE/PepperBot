@@ -103,13 +103,13 @@ def cache_class_command(class_command: Callable, command_name: str):
 
         # debug(method.__annotations__)
         signature = inspect.signature(method)
-        debug(signature)
-        debug(signature.parameters.items())
+        # debug(signature)
+        # debug(signature.parameters.items())
 
         # todo 移动到validate, return patterns
         for arg_name, p in signature.parameters.items():
-            debug(p.default)
-            debug(p.annotation)
+            # debug(p.default)
+            # debug(p.annotation)
 
             if p.default == "PatternArg":
                 annotation = p.annotation
@@ -119,10 +119,10 @@ def cache_class_command(class_command: Callable, command_name: str):
                 # 未具体指定类型(int, float, bool)的Text按照str处理
                 patterns.append((arg_name, annotation if annotation != Text else str))
 
-        debug(patterns)
+        # debug(patterns)
 
         compressed_patterns = merge_text_of_patterns(patterns)
-        debug(compressed_patterns)
+        # debug(compressed_patterns)
 
         command_method_mapping[method_name] = CommandMethodCache(
             method=method,

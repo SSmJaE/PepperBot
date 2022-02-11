@@ -84,10 +84,15 @@ ALL_PRIVATE_EVENTS = [
 # todo
 GROUP_COMMAND_TRIGGER_EVENTS = [
     "group_message",
-    "onebot_group_message",
-    "keaimao_group_message",
+    "onebot_" + OnebotV11GroupEvent.group_message,
+    "keaimao_" + KeaimaoGroupEvent.group_message,
 ]
-PRIVATE_COMMAND_TRIGGER_EVENTS = ["friend_message", "onebot_temp_message"]
+PRIVATE_COMMAND_TRIGGER_EVENTS = [
+    "friend_message",
+    "onebot_" + OnebotV11PrivateEvent.friend_message,
+    "onebot_" + OnebotV11PrivateEvent.temp_message,
+    "keaimao_" + KeaimaoPrivateEvent.friend_message,
+]
 
 UNIVERSAL_PROTOCOL_EVENT_MAPPING = {
     UniversalGroupEvent.group_message: [

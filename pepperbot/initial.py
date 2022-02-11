@@ -3,6 +3,7 @@ from typing import Any, Callable, Iterable, Literal, Optional, Type
 from devtools import debug, pformat
 from sanic import Sanic
 
+from pepperbot.config import global_config
 from pepperbot.core.bot.api_caller import ApiCaller
 from pepperbot.core.route.utils import (
     create_bot_routes,
@@ -19,9 +20,9 @@ from pepperbot.store.meta import (
     BotRoute,
     api_callers,
     clean_bot_instances,
+    output_config,
     register_routes,
     route_mapping,
-    output_config,
 )
 from pepperbot.types import T_BotProtocol, T_WebProtocol
 
@@ -114,6 +115,7 @@ class PepperBot:
     @staticmethod
     def before_server_start(*args):
         output_config()
+        logger.success(f"成功读取.env\n {pformat(global_config)}")
 
         # async_scheduler.add_job(check_command_timeout)
         # async_scheduler.add_job(clean_bot_instances)
@@ -123,14 +125,6 @@ class PepperBot:
         sanic_app.register_listener(
             PepperBot.before_server_start, "before_server_start"
         )
-
-        # logger.debug(pformat(route_mapping))
-        # logger.debug(pformat(sanic_app._future_routes))
-
-        # try:
-        #     raise InitializationError(f"测试")
-        # except:
-        #     logger.exception("捕获")
 
         try:
             sanic_app.run(self.host, self.port, debug=self.debug)

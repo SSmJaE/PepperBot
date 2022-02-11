@@ -69,8 +69,6 @@ class 指令1:
         # test_Text: Text = PatternArg(),
         test_segment: OnebotFace = PatternArg(),
     ):
-        debug("in 指令1")
-        debug(name)
         await sender.send_message(Text(f"收到了你发送的消息 {name} {age} {male}"), test_segment)
         await sender.send_message(Text(f"{name}是个{age}岁的{'男' if male else '女'}人"))
 
@@ -167,7 +165,7 @@ bot.apply_routes(
                 "onebot": ["1041902989"],
                 "keaimao": ["19521241254@chatroom"],
             },
-            friends=None,
+            friends="*",
         ),
         # BotRoute(
         #     groups={

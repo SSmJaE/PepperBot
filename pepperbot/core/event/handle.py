@@ -2,7 +2,7 @@ import json
 from typing import Any, Callable, Dict, List, Literal, Optional, Set, Union, cast
 
 import arrow
-from devtools import debug
+from devtools import debug, pformat
 from pepperbot.adapters.keaimao import KeaimaoAdapter
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot, KeaimaoPrivateBot
 from pepperbot.adapters.onebot import OnebotV11Adapter
@@ -184,15 +184,16 @@ async def run_class_handlers(
     class_handler_names: Set[str],
 ):
     kwargs = await get_kwargs(protocol, mode, source_id, event_name, raw_event)
-    debug(kwargs)
+    logger.debug(pformat(kwargs))
 
     for class_handler_name in class_handler_names:
         class_handler_cache = class_handler_mapping[class_handler_name]
-        debug(class_handler_cache)
+        logger.debug(pformat(class_handler_cache))
 
         event_handler = class_handler_cache.event_handlers.get(event_name)
-        debug(event_name, event_handler)
+        # logger.debug(pformat(event_name, event_handler))
         if event_handler:
+            logger.info(f"开始执行 {class_handler_name} 的 {event_name} 事件响应")
             await await_or_sync(event_handler, **fit_kwargs(event_handler, kwargs))
 
 
@@ -310,7 +311,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     ]
     class_handler_names |= validator_handlers
 
-    debug(class_handler_names)
+    logger.debug(pformat(class_handler_names))
 
     # 比如group_message这样的实现了统一事件的事件
     # 如果用户同时定义了group_message和onebot_group_message，应该执行两次

@@ -1,8 +1,8 @@
 from typing import Union
-from pydantic import BaseSettings
+from pydantic import BaseModel, BaseSettings
 
 
-class Debug(BaseSettings):
+class Debug(BaseModel):
     test_mode = False
     """ 单元测试用 """
 
@@ -13,16 +13,22 @@ class Debug(BaseSettings):
     }
 
 
-class Logger(BaseSettings):
-    level: Union[str, int] = "DEBUG"
+class Logger(BaseModel):
+    level: Union[str, int] = "INFO"
     write_to_log: bool = False
 
 
-class Sqlite(BaseSettings):
-    path = "./{id}.sqlite3"
+class Sqlite(BaseModel):
+    path = "./.sqlite3"
 
 
 class GlobalConfig(BaseSettings):
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        env_prefix = "p_"
+        env_nested_delimiter = "__"
+
     debug = Debug()
     logger = Logger()
     sqlite = Sqlite()

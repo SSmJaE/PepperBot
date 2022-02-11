@@ -154,6 +154,15 @@ def is_command_method_args_valid():
     return True
 
 
+def is_command_method_return_valid():
+    """
+    通过ast，保证方法返回值要么为None，要么是同一class的其它方法名
+
+    即使有了静态检测，运行时检测方法返回值也是需要的
+    """
+    pass
+
+
 def is_valid_route_validator(validator: Callable):
     """参数检查"""
 

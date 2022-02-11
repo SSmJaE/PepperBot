@@ -38,7 +38,6 @@ class OnebotV11GroupEvent:
     # 针对个人，群相关
     been_group_poked = "been_group_poked"
     been_invited = "been_invited"
-    temp_message = "temp_message"
 
 
 class OnebotV11PrivateEvent:
@@ -47,6 +46,7 @@ class OnebotV11PrivateEvent:
     friend_message = "friend_message"
     been_friend_poked = "been_friend_poked"
     friend_message_been_withdraw = "friend_message_been_withdraw"
+    temp_message = "temp_message"
 
 
 # RELATIONS = {

@@ -27,8 +27,8 @@ def as_command(
 
     # 自动获取所有kwargs
     command_kwargs = locals()
-    del command_kwargs["args"]
-    del command_kwargs["kwargs"]
+    command_kwargs.pop("args")
+    command_kwargs.pop("kwargs")
 
     # 处理函数动态默认值复用的问题
     for config in ("prefixes", "aliases", "exit_patterns", "history_size"):

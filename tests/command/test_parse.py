@@ -8,8 +8,6 @@ from pepperbot.extensions.command.pattern import (
 
 
 def test_merge_text_of_segments():
-    assert isinstance(OnebotFace(123), Text)
-
     result = merge_text_of_segments([])
     assert result == []
 
