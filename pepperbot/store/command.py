@@ -1,7 +1,9 @@
-from collections import defaultdict
-from collections import deque
+from __future__ import annotations
+
 import time
+from collections import defaultdict, deque
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -10,17 +12,22 @@ from typing import (
     Sequence,
     Set,
     Tuple,
-    TypedDict,
+    Type,
     Union,
 )
-from pydantic import BaseModel, Field
 
+from devtools import debug
+
+# if TYPE_CHECKING:
+from pepperbot.core.message.segment import T_SegmentClass, T_SegmentInstance
 from pepperbot.types import (
     BaseClassCommand,
     T_BotProtocol,
     T_RouteMode,
     T_RouteRelation,
 )
+from pydantic import BaseModel, Field
+from typing_extensions import TypedDict, get_args
 
 
 class CommandConfig(BaseModel):
@@ -74,9 +81,65 @@ class CommandConfig(BaseModel):
     # """
 
 
+T_PatternArg = Union[Type[str], Type[int], Type[float], Type[bool], T_SegmentClass]
+T_PatternArgResult = Union[str, int, float, bool, T_SegmentInstance]
+
+
+def get_runtime_pattern_arg_types():
+    runtime_generic_types = []
+    for type_ in get_args(T_PatternArg):
+
+        if type_ is Union:  # T_SegmentClass
+            runtime_generic_types.extend(get_args(type_))
+
+        else:  # str, bool, int, float
+            runtime_generic_types.append(type_)
+
+    # debug(runtime_generic_types)
+    runtime_class_types = tuple(
+        map(lambda generic: get_args(generic)[0], runtime_generic_types)
+    )
+    # debug(runtime_class_types)
+    return runtime_class_types
+
+
+runtime_pattern_arg_types = get_runtime_pattern_arg_types()
+
+# class PatternArg:
+#     # pass
+#     # __slots__ = ("type_",)
+
+#     def __init__(self):
+#         # self.type_ = type_
+
+#         return 123
+
+
+def PatternArg() -> Any:
+    return "PatternArg"
+
+
+T_CompressedPatterns = List[
+    Union[List[Tuple[str, T_PatternArg]], Tuple[str, T_PatternArg]]
+]
+
+
+class CommandMethodCache(BaseModel):
+    method: Callable
+    patterns: List[Tuple[str, T_PatternArg]]
+    compressed_patterns: T_CompressedPatterns
+    """ cache时缓存便于正则的格式化的pattern，不用每次收到消息都解析 """
+
+
+# CommandMethodCache.update_forward_refs()
+
+
 class ClassCommandCache(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
     class_instance: Any
-    command_method_mapping: Dict[str, Callable] = {}
+    command_method_mapping: Dict[str, CommandMethodCache] = {}
     """ key为方法名，value为实例化后的方法 """
     # command_config: Dict[str, Any]
     # lock_user_context_ids: Set[str] = set()
@@ -118,6 +181,8 @@ class HistoryItem(BaseModel):
 
 
 class ClassCommandStatus(BaseModel):
+    """也可以理解为一个session"""
+
     pointer: str = "initial"
     history: deque
     last_updated_time: float = Field(default_factory=time.time)

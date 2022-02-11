@@ -40,7 +40,7 @@ def meet_command_prefix(
     chain: MessageChain,
     command_name: str,
     command_config: CommandConfig,
-):
+) -> Tuple[bool, str]:
     """
     通过command_kwargs和messageChain的pure_text，判断是否触发命令的initial
     """
@@ -50,12 +50,13 @@ def meet_command_prefix(
         bot_id = get_bot_id(chain.protocol)  # type:ignore
 
         if not chain.has(At(bot_id)):
-            return False
+            return False, ""
 
-    if not meet_text_prefix(chain, command_name, command_config)[0]:
-        return False
+    meet_prefix, prefix = meet_text_prefix(chain, command_name, command_config)
+    if not meet_prefix:
+        return False, ""
 
-    return True
+    return True, prefix
 
 
 def meet_command_exit(chain: MessageChain, command_config: CommandConfig):

@@ -1,9 +1,10 @@
 import json
-from typing import Any, Callable, Dict, List, Optional, Set
-import arrow
+from typing import Any, Callable, Dict, List, Literal, Optional, Set, Union, cast
 
+import arrow
 from devtools import debug
 from pepperbot.adapters.keaimao import KeaimaoAdapter
+from pepperbot.adapters.keaimao.api import KeaimaoGroupBot, KeaimaoPrivateBot
 from pepperbot.adapters.onebot import OnebotV11Adapter
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
 from pepperbot.core.bot.universal import UniversalGroupBot, UniversalPrivateBot
@@ -29,18 +30,81 @@ from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.command.handle import run_class_commands
 from pepperbot.extensions.log import logger
 from pepperbot.store.meta import (
-    onebot_event_meta,
     EventHandlerKwarg,
+    RouteMapping,
     T_HandlerKwargMapping,
     class_handler_mapping,
+    get_bot_id,
     get_event_handler_kwargs,
     get_onebot_caller,
     initial_bot_info,
+    onebot_event_meta,
     route_mapping,
     route_validator_mapping,
 )
 from pepperbot.types import BaseBot, T_BotProtocol, T_RouteMode
 from pepperbot.utils.common import await_or_sync, fit_kwargs
+
+PROTOCOL_ADAPTER_MAPPING: Dict[T_BotProtocol, Any] = {
+    "onebot": OnebotV11Adapter,
+    "keaimao": KeaimaoAdapter,
+    # "telegram":Telegram
+}
+
+
+def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
+    return PROTOCOL_ADAPTER_MAPPING[protocol]
+
+
+def get_bot_instance(
+    protocol: T_BotProtocol,
+    mode: T_RouteMode,
+    identifier: str,
+    universal=False,
+) -> BaseBot:
+    """这里只创建非universal的bot_instance"""
+
+    instances_dict = route_mapping.bot_instances
+
+    if universal:
+        key = ("universal", mode, identifier)
+    else:
+        key = (protocol, mode, identifier)
+
+    bot_instance: Optional[BaseBot] = None
+
+    if key not in instances_dict:
+        if universal:
+            bot_instance = UniversalGroupBot(protocol, mode, identifier)
+
+        else:
+            bot_id = get_bot_id(protocol)
+
+            if mode == "group":
+                if protocol == "onebot":
+                    bot_instance = OnebotV11GroupBot(bot_id, identifier)
+                elif protocol == "keaimao":
+                    bot_instance = KeaimaoGroupBot(bot_id, identifier)
+                # elif protocol == "telegram":
+                #     bot_instance = TelegramGroupBot(bot_id, identifier)
+
+            elif mode == "private":
+                if protocol == "onebot":
+                    bot_instance = OnebotV11PrivateBot(bot_id, identifier)
+                elif protocol == "keaimao":
+                    bot_instance = KeaimaoPrivateBot(bot_id, identifier)
+                # elif protocol == "telegram":
+                #     bot_instance = TelegramPrivateBot(bot_id, identifier)
+
+        if not bot_instance:
+            raise EventHandleError(f"未能创建bot实例 {protocol} {mode} {identifier}")
+
+        instances_dict[key] = bot_instance
+
+    else:
+        bot_instance = instances_dict[key]
+
+    return bot_instance
 
 
 async def get_kwargs(
@@ -171,17 +235,6 @@ def get_source_id(protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict) -
     return str(source_id)
 
 
-PROTOCOL_ADAPTER_MAPPING: Dict[T_BotProtocol, Any] = {
-    "onebot": OnebotV11Adapter,
-    "keaimao": KeaimaoAdapter,
-    # "telegram":Telegram
-}
-
-
-def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
-    return PROTOCOL_ADAPTER_MAPPING[protocol]
-
-
 async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     logger.info("*" * 50)
 
@@ -194,18 +247,13 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     raw_event_name = adapter.get_event_name(raw_event)
     protocol_event_name: str = f"{protocol}_" + raw_event_name
 
-    if protocol == "onebot" and raw_event_name == "meta_event":
+    if protocol == "onebot":
         if not onebot_event_meta.has_skip_buffered_event:
             flag = skip_current_onebot_event(raw_event, raw_event_name)
             if not flag:
                 return
 
-        logger.info(
-            arrow.get(raw_event["time"])
-            .to("Asia/Shanghai")
-            .format("YYYY-MM-DD HH:mm:ss"),
-            "onebot 心跳",
-        )
+        logger.info("onebot 心跳")
 
     logger.info(f"{protocol}事件 {raw_event_name}")
 
@@ -242,7 +290,9 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
         class_command_names |= validator_commands
 
         if class_command_names:
-            await run_class_commands(protocol, mode,source_id, raw_event, class_command_names)
+            await run_class_commands(
+                protocol, mode, source_id, raw_event, class_command_names
+            )
 
         # lock_user
         # for rule_id, rule in lock_user_mapping.items():
@@ -273,64 +323,3 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     await run_class_handlers(
         protocol, mode, source_id, raw_event, protocol_event_name, class_handler_names
     )
-
-
-from typing import Literal, Optional, Union, cast
-
-from pepperbot.adapters.keaimao.api import KeaimaoGroupBot, KeaimaoPrivateBot
-from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
-from pepperbot.core.bot.universal import UniversalGroupBot
-from pepperbot.exceptions import EventHandleError
-from pepperbot.store.meta import RouteMapping, get_bot_id
-from pepperbot.types import BaseBot, T_BotProtocol, T_RouteMode
-
-
-def get_bot_instance(
-    protocol: T_BotProtocol,
-    mode: T_RouteMode,
-    identifier: str,
-    universal=False,
-) -> BaseBot:
-    """这里只创建非universal的bot_instance"""
-
-    instances_dict = route_mapping.bot_instances
-
-    if universal:
-        key = ("universal", mode, identifier)
-    else:
-        key = (protocol, mode, identifier)
-
-    bot_instance: Optional[BaseBot] = None
-
-    if key not in instances_dict:
-        if universal:
-            bot_instance = UniversalGroupBot(protocol, mode, identifier)
-
-        else:
-            bot_id = get_bot_id(protocol)
-
-            if mode == "group":
-                if protocol == "onebot":
-                    bot_instance = OnebotV11GroupBot(bot_id, identifier)
-                elif protocol == "keaimao":
-                    bot_instance = KeaimaoGroupBot(bot_id, identifier)
-                # elif protocol == "telegram":
-                #     bot_instance = TelegramGroupBot(bot_id, identifier)
-
-            elif mode == "private":
-                if protocol == "onebot":
-                    bot_instance = OnebotV11PrivateBot(bot_id, identifier)
-                elif protocol == "keaimao":
-                    bot_instance = KeaimaoPrivateBot(bot_id, identifier)
-                # elif protocol == "telegram":
-                #     bot_instance = TelegramPrivateBot(bot_id, identifier)
-
-        if not bot_instance:
-            raise EventHandleError(f"未能创建bot实例 {protocol} {mode} {identifier}")
-
-        instances_dict[key] = bot_instance
-
-    else:
-        bot_instance = instances_dict[key]
-
-    return bot_instance

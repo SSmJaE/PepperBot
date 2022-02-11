@@ -1,188 +1,256 @@
+import re
 from functools import wraps
-from inspect import isclass, ismethod
-
-from pydantic.fields import ModelField
-from pepperbot.command.parse import is_meet_prefix
-from pepperbot.utils.common import await_or_normal
-from pepperbot.exceptions import EventHandlerDefineError, PatternFormotError
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     List,
-    Optional,
     OrderedDict,
-    Sequence,
     Tuple,
-    TypeVar,
     Union,
     cast,
 )
-import re
 
+from pepperbot.extensions.log import logger
 from devtools import debug
-from pydantic import BaseModel
-from pepperbot.globals import *
-from pepperbot.message.chain import MessageChain
-from pepperbot.message.segment import Text
-from pepperbot.models.sender import Sender
-from pepperbot.parse.bots import GroupCommonBot
-from pepperbot.types import BaseClassCommand, F
+from pepperbot.core.message.chain import MessageChain, T_SegmentInstance
+from pepperbot.core.message.segment import Text
+from pepperbot.exceptions import EventHandleError, PatternFormotError
+from pepperbot.store.command import (
+    CommandMethodCache,
+    T_CompressedPatterns,
+    T_PatternArg,
+    T_PatternArgResult,
+)
+from copy import deepcopy
+
+if TYPE_CHECKING:
+    from pepperbot.extensions.command.handle import CommandSender
 
 TRUE_TEXTS = ("True", "true", "1")
 FALSE_TEXTS = ("False", "false", "0")
 
-PatternResult_T = Union[str, int, float, bool, SegmentInstance_T]
 
-
-def merge_multi_text(*args: Text):
+def merge_multi_text(*texts: Text):
     """
     为什么要合并字符串呢？应为接收到的消息类型，可能是分片的，也可能是连续的，
     为了保持一致，全部转换成连续的，再进行正则会方便很多
     """
-    mergedString = ""
-    for text in args:
-        mergedString += text.formatted["data"]["text"] + " "
+    merged_string = ""
+    text_count = len(texts)
 
-    return Text(mergedString)
+    for index, text in enumerate(texts, start=1):
+        merged_string += text.content
 
+        if index != text_count:
+            merged_string += " "
 
-def merge_text_of_chain(chain: List[SegmentInstance_T]):
-    """合并相邻的Text片段"""
-
-    compressed_chain: List[SegmentInstance_T] = []
-    chainLength = len(chain)
-
-    lastNotTextSegmentIndex = 0
-    for index, segment in enumerate(chain):
-        debug(segment.__class__.__name__)
-        if segment.__class__.__name__ != "Text":
-
-            if index == 0:  # 第一个segment为非Text的情况
-                compressed_chain.append(segment)
-                lastNotTextSegmentIndex = index + 1
-                continue
-
-            multiText: List[Any] = chain[lastNotTextSegmentIndex:index]
-
-            compressed_chain.append(merge_multi_text(*multiText))
-            compressed_chain.append(segment)
-            lastNotTextSegmentIndex = index + 1
-
-    # 倒数第二个为非Text，最后一个为Text的情况
-    if chain[chainLength - 1].__class__.__name__ == "Text":
-        compressed_chain.append(
-            merge_multi_text(*cast(List, chain[lastNotTextSegmentIndex:chainLength]))
-        )
-
-    return compressed_chain
+    return Text(merged_string)
 
 
-def merge_text_of_model(command_pattern: BaseModel):
+T_CompressedSegments = List[T_SegmentInstance]
+
+
+def merge_text_of_segments(segments: List[T_SegmentInstance]) -> T_CompressedSegments:
+    """合并相邻的Text片段，空格分隔，方便正则"""
+    debug(segments)
+
+    if len(segments) <= 1:
+        return segments
+
+    compressed_segments: T_CompressedSegments = []
+
+    text_buffer: List[Text] = []
+    last_segment_type = Text
+    segments_count = len(segments)
+
+    for index, segment in enumerate(segments, start=1):
+
+        # True, True
+        if last_segment_type == Text and isinstance(segment, Text):
+            text_buffer.append(segment)
+
+            if index == segments_count:
+                compressed_segments.append(merge_multi_text(*text_buffer))
+
+        # False, True
+        elif last_segment_type != Text and isinstance(segment, Text):
+            text_buffer.append(segment)
+
+            if index == segments_count:
+                compressed_segments.append(merge_multi_text(*text_buffer))
+
+        # True, False
+        elif last_segment_type == Text and not isinstance(segment, Text):
+            if text_buffer:
+                compressed_segments.append(merge_multi_text(*text_buffer))
+                text_buffer = []
+
+            compressed_segments.append(segment)
+
+        # False, False
+        else:
+            compressed_segments.append(segment)
+
+        last_segment_type = segment.__class__
+
+    return compressed_segments
+
+
+VALID_TEXT_TYPES = (str, int, float, bool)
+
+
+def merge_text_of_patterns(
+    patterns: List[Tuple[str, T_PatternArg]]
+) -> T_CompressedPatterns:
     """
-    合并pattern_model中的str, int, float, bool, 即python的四种简单类型
-
+    合并patterns中的str, int, float, bool, 即python的四种简单类型
     不管有几个连续的Textable segment，都解析为List[Tuple[str, ModelField]]
 
     其它类型解析为Tuple[str, ModelField]
+
+    [
+        [
+            ("字符1", str),
+            ("字符2", float),
+            ("字符3", int),
+        ],
+        ("表情1", Face),
+        ("图片1", Image),
+        [
+            ("字符4", bool),
+            ("字符5", float),
+        ],
+    ]
     """
+    if not patterns:
+        return []
 
-    debug(command_pattern.__fields__)
+    # 只有一个元素的情况
+    if len(patterns) == 1:
+        arg_type = patterns[0][1]
 
-    compressed_model: List[
-        Union[List[Tuple[str, ModelField]], Tuple[str, ModelField]]
-    ] = []
-    buffer = list(command_pattern.__fields__.items())
+        if arg_type in VALID_TEXT_TYPES:
+            return [patterns]
+        else:
+            return patterns  # type:ignore
 
-    lastNotStrIndex = 0
-    for index, (argName, field) in enumerate(command_pattern.__fields__.items()):
-        if field.type_ not in [str, int, float, bool]:
+    compressed_patterns: T_CompressedPatterns = []
 
-            if index == 0:  # 第一个field为非Text的情况
-                compressed_model.append((argName, field))
-                lastNotStrIndex = index + 1
-                continue
+    text_buffer = []
+    last_pattern_type = str
+    patterns_count = len(patterns)
 
-            multiText: List[Any] = buffer[lastNotStrIndex:index]
+    for index, (arg_name, arg_type) in enumerate(patterns, start=1):
 
-            compressed_model.append(multiText)
-            compressed_model.append((argName, field))
-            lastNotStrIndex = index + 1
+        # Text 都转换为str, 方便比较
+        last_type = str if last_pattern_type in VALID_TEXT_TYPES else last_pattern_type
+        current_type = str if arg_type in VALID_TEXT_TYPES else arg_type
 
-    # 倒数第二个为非Text，最后一个为Text的情况
-    if buffer[len(buffer) - 1][1].type_ in [str, int, float, bool]:
-        compressed_model.append(buffer[lastNotStrIndex : len(buffer)])
+        # True, True
+        if last_type == current_type == str:
+            text_buffer.append((arg_name, arg_type))
 
-    return compressed_model
+            if index == patterns_count:
+                compressed_patterns.append(deepcopy(text_buffer))
+
+        # False, True
+        elif last_type != str and current_type == str:
+            text_buffer.append((arg_name, arg_type))
+
+            if index == patterns_count:
+                compressed_patterns.append(deepcopy(text_buffer))
+
+        # True, False
+        elif last_type == str and current_type != str:
+            if text_buffer:
+                compressed_patterns.append(deepcopy(text_buffer))
+                text_buffer = []
+
+            compressed_patterns.append((arg_name, arg_type))
+
+        # False, False
+        else:
+            compressed_patterns.append((arg_name, arg_type))
+
+        last_pattern_type = arg_type
+
+    return compressed_patterns
 
 
 def check_type(
-    command_pattern: Any,
-    compressed_chain: List[SegmentInstance_T],
-    compressed_model: List[Union[List[Tuple[str, ModelField]], Tuple[str, ModelField]]],
+    compressed_segments: List[T_SegmentInstance],
+    compressed_patterns: List[
+        Union[List[Tuple[str, T_PatternArg]], Tuple[str, T_PatternArg]]
+    ],
 ):
-    pattern_result = OrderedDict()
+    pattern_result: OrderedDict[str, T_PatternArgResult] = OrderedDict()
 
-    for index, (segment, chunk) in enumerate(zip(compressed_chain, compressed_model)):
+    for index, (segment, pattern) in enumerate(
+        zip(compressed_segments, compressed_patterns)
+    ):
         # debug(type(segment))
         # debug(type(chunk))
 
         if isinstance(segment, Text):
-            if not isinstance(chunk, list):  # 所有text都被解析为list[(name, model)]
+            if not isinstance(pattern, list):  # 所有text都被解析为list[(arg_name, arg_type)]
                 raise PatternFormotError("未按照格式提供参数")
 
-            fields = chunk
+            text_patterns = pattern
 
+            # 通过正则，匹配对应的text和pattern
+            # 拼接正则，所有文字参数，应该都是空格分格的
             regex = r""
-            arg_count = len(fields)
-            for index, name_field in enumerate(fields):
-                (arg_name, field) = name_field
+            arg_count = len(text_patterns)
+            for index, text_pattern in enumerate(text_patterns):
+                (arg_name, arg_type) = text_pattern
 
                 if index != arg_count - 1:
                     regex += r"(\S+)\s*"
                 else:
                     regex += r"(\S+)"
 
-                debug(field.type_)
+                # debug(arg_type)
 
-            debug(regex, segment.text)
-            texts = re.search(regex, segment.text).groups()  # type:ignore
+            debug(regex, segment.content)
+            match = re.search(regex, segment.content)
+            if not match:
+                raise PatternFormotError(f"pattern匹配失败-->正则失败")
 
+            texts = match.groups()
             debug(texts)
 
             if len(texts) != arg_count:
                 raise PatternFormotError(f"未按照格式提供参数 参数之间使用空格分隔")
 
-            for index, raw_text in enumerate(texts):
-                arg_name, field = fields[index]
+            for index, text_without_type in enumerate(texts):
+                arg_name, arg_type = text_patterns[index]
 
-                debug(raw_text, field.type_)
+                debug(text_without_type, arg_type)
 
                 result = None
 
-                if field.type_ == str:
-                    result = raw_text
+                if arg_type == str:
+                    result = text_without_type
 
-                if field.type_ == bool:
-                    if raw_text not in (*TRUE_TEXTS, *FALSE_TEXTS):
-                        raise PatternFormotError(
-                            f"未按照格式提供参数 {arg_name}应为{field.type_}类型"
-                        )
+                if arg_type == bool:
+                    if not (
+                        text_without_type in TRUE_TEXTS
+                        or text_without_type in FALSE_TEXTS
+                    ):
+                        raise PatternFormotError(f"未按照格式提供参数 {arg_name} 应为bool类型")
                     else:
-                        if raw_text in TRUE_TEXTS:
+                        if text_without_type in TRUE_TEXTS:
                             result = True
                         else:
                             result = False
 
-                else:  # 解析int, float, bool
+                else:  # 解析int, float
                     try:
-                        result = field.type_(raw_text)
+                        result = arg_type(text_without_type)  # type:ignore
 
                     except Exception as e:
-                        debug(e)
-                        raise PatternFormotError(
-                            f"未按照格式提供参数 {arg_name}应为{field.type_}类型"
-                        )
+                        raise PatternFormotError(f"未按照格式提供参数 {arg_name}应为{arg_type}类型")
 
                 pattern_result[arg_name] = result
 
@@ -197,118 +265,109 @@ def check_type(
         # )
 
         else:  # 检测是否是有效类型，Face，Image之类
-            chunk = cast(Tuple[str, ModelField], chunk)
-            (arg_name, field) = chunk
+            pattern = cast(Tuple[str, T_PatternArg], pattern)
+            (arg_name, arg_type) = pattern
 
-            if type(segment) != field.type_:
-                raise PatternFormotError(f"未按照格式提供参数 {arg_name}应为{field.type_}类型")
+            if type(segment) != arg_type:
+                raise PatternFormotError(f"未按照格式提供参数 {arg_name} 应为 {arg_type} 类型")
 
             pattern_result[arg_name] = segment
 
         # 支持pydantic的validate装饰器
-        for arg_name, validators in command_pattern.__validators__.items():
-            for validator in validators:
-                validator.func(command_pattern.__class__, pattern_result[arg_name])
+        # for arg_name, validators in command_pattern.__validators__.items():
+        #     for validator in validators:
+        #         validator.func(command_pattern.__class__, pattern_result[arg_name])
 
     return pattern_result
 
 
-def pattern(
-    command_pattern: object,
-    max_time: int = None,
-    on_format_error: Callable[[str], str] = None,
+def pattern_config(
     with_formot_hint: bool = True,
+    on_format_error: Callable[[T_CompressedSegments, T_CompressedPatterns], str] = None,
+    retry: int = 3,
+):
+    """装饰器，函数粒度的config"""
+    PATTERN_CONFIG = "__pattern_config__"
+    pass
+
+
+async def parse_pattern(
+    chain: MessageChain,
+    sender: "CommandSender",
+    method_name,
+    cache: CommandMethodCache,
+    prefix: str,
+    context,
 ):
     """
-    用于command的装饰器，对message chain进行预拦截，满足pattern放行，
+    根据签名中的PatternArg，自动解析参数，并转换为对应类型，自动注入函数调用中
 
-    注入解析后的参数，并保存在context中，不然执行on_format_error
-
-    Args:
-        command_pattern (object): [pattern应继承自pydantic的BaseModel]
-        max_time (int, optional): [同一个进度，允许尝试几次]. Defaults to None.
+    满足pattern放行，如果不满足，会对方法调用进行拦截，
     """
 
-    def decorator(f: F) -> F:
-        @wraps(f)
-        async def wrapper(self: BaseModel, *args, **kwargs):
-            nonlocal command_pattern
-            command_pattern = cast(BaseModel, command_pattern)
+    if not cache.compressed_patterns:
+        return {}
 
-            chain: MessageChain = kwargs["chain"]
-            bot: GroupCommonBot = kwargs["bot"]
-            context: Dict = kwargs["context"]
+    compressed_patterns = cache.compressed_patterns
 
-            # todo pydantic有没有原生的功能
-            # 尝试解析，解析失败，报错
-            # todo List(展开), Any, Union, List[Union/Any]
+    # todo pydantic有没有原生的功能
+    # 尝试解析，解析失败，报错
+    # todo List(展开), Any, Union, List[Union/Any]
 
-            formot_hint = "请按照 "
-            for argName, field in command_pattern.__fields__.items():
-                formot_hint += f"<{argName} : {field.type_.__name__}> "
-            formot_hint += "的格式输入\n不需要<或者>，:右侧是该参数的类型"
+    formot_hint = "请按照 "
+    for arg_name, arg_type in cache.patterns:
+        formot_hint += f"<{arg_name} : {arg_type.__name__}> "
+    formot_hint += "的格式输入\n不需要<或者>，:右侧是该参数的类型"
 
-            command_class = self.__class__
-            commandClassName = command_class.__name__
-            debug(command_class)
-            commandKwargs: Dict = getattr(command_class, "kwargs")
-            debug(commandKwargs)
+    results = {}
 
-            try:
+    try:
 
-                compressed_chain = merge_text_of_chain(chain.chain)
-                debug(compressed_chain)
+        compressed_segments = merge_text_of_segments(chain.segments)
+        debug(compressed_segments)
 
-                compressed_model = merge_text_of_model(command_pattern)
-                debug(compressed_model)
+        if len(compressed_segments) != len(compressed_patterns):
+            raise PatternFormotError(
+                f"未提供足够参数，应为{len(cache.patterns)}个，" + f"获得{len(chain.segments)}个"
+            )
 
-                if len(compressed_chain) != len(compressed_model):
-                    raise PatternFormotError(
-                        f"未提供足够参数，应为{len(command_pattern.__fields__)}个，"
-                        + f"获得{len(chain.chain)}个"
-                    )
+        # 对initial应用pattern的情况，支持prefix
+        # 目前仅支持文字prefix
+        if method_name == "initial":
+            if not isinstance(compressed_segments[0], Text):
+                return PatternFormotError("目前仅支持文字前缀")
 
-                # 对initial应用pattern的情况，支持prefix
-                if f.__name__ == "initial":
-                    if not isinstance(compressed_chain[0], Text):
-                        return f
+            with_prefix = compressed_segments[0].content
+            without_prefix = re.sub(f"^{prefix}", "", with_prefix)
+            compressed_segments[0].content = without_prefix
 
-                    meetPrefix, prefix = is_meet_prefix(
-                        chain, commandClassName, commandKwargs
-                    )
-                    if not meetPrefix:
-                        return f
+        results = check_type(compressed_segments, compressed_patterns)
 
-                    withoutPrefix = re.sub(f"^{prefix}", "", compressed_chain[0].text)
-                    compressed_chain[0] = Text(withoutPrefix)
+    except PatternFormotError as e:
+        # if on_format_error:
+        #     return_text = await await_or_normal(
+        #         on_format_error, *args, **kwargs
+        #     )
+        #     if return_text:
+        #         await bot.group_msg(return_text)
+        # else:
+        await sender.send_message(
+            # Text(f"{e}\n{formot_hint if with_formot_hint else ''}")
+            Text(f"{e}\n{formot_hint}")
+        )
 
-                result = check_type(command_pattern, compressed_chain, compressed_model)
+        logger.exception("指令解析失败")
+        raise e
 
-                debug(result)
+    else:
+        # todo patternResults的maxSize
 
-            except PatternFormotError as e:
-                # if on_format_error:
-                #     return_text = await await_or_normal(
-                #         on_format_error, *args, **kwargs
-                #     )
-                #     if return_text:
-                #         await bot.group_msg(return_text)
-                # else:
-                await bot.group_msg(
-                    Text(f"{e}\n{formot_hint if with_formot_hint else ''}")
-                )
+        debug(results)
+        return results
 
-                return f
+    # finally:
+    # # 满足pattern时，提供解析好的字典
+    # context.setdefault("pattern", {})
+    # context["pattern"][f.__name__] = result
 
-            else:
-                # todo patternResults的maxSize
-
-                # 满足pattern时，提供解析好的字典
-                context.setdefault("pattern", {})
-                context["pattern"][f.__name__] = result
-
-                return await await_or_normal(f, self, *args, **kwargs)
-
-        return cast(F, wrapper)
-
-    return decorator
+    # return await await_or_normal(f, self, *args, **kwargs)

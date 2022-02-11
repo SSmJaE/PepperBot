@@ -108,6 +108,9 @@ class PepperBot:
     def apply_routes(self, routes: Iterable[BotRoute]):
         create_bot_routes([*routes, *register_routes])
 
+    def share_state_command(self):
+        pass
+
     @staticmethod
     def before_server_start(*args):
         output_config()
@@ -133,3 +136,5 @@ class PepperBot:
             sanic_app.run(self.host, self.port, debug=self.debug)
         except (KeyboardInterrupt, SystemExit):
             logger.info("PepperBot成功退出")
+        # except:
+        #     logger.exception("")

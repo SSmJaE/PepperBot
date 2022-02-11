@@ -42,6 +42,9 @@ async def http_receiver(request, protocol: T_BotProtocol):
         logger.debug(pformat(raw_event))
         await handle_event(protocol, raw_event)
 
+    except EventHandleError as e:
+        logger.error(e)
+
     except Exception:
         logger.exception("事件处理异常")
 

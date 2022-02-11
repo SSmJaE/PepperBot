@@ -24,13 +24,13 @@ class OnebotFace(BaseMessageSegment):
             for key, value in data.items():
                 setattr(self, key, value)
 
-            self.formatted = {**data}
+            self.onebot = {**data}
 
         else:
             identifier = data
 
             self.id = data
-            self.formatted = {"type": "face", "data": {"id": id}}
+            self.onebot = {"type": "face", "data": {"id": id}}
 
         super().__init__(**{"identifier": identifier})
 

@@ -1,12 +1,25 @@
-from ast import Call
 import inspect
 import random
 import re
-from typing import Callable, Dict, Set, cast, get_args, get_origin
+from ast import Call
+from collections import OrderedDict
+from typing import Callable, Dict, List, Set, Tuple, Union, cast, get_args, get_origin
 
 from devtools import debug
-from pepperbot.exceptions import EventHandlerDefineError
-from pepperbot.store.command import COMMAND_CONFIG, CommandConfig
+from pepperbot.core.message.segment import Text
+from pepperbot.exceptions import EventHandlerDefineError, InitializationError
+from pepperbot.extensions.command.pattern import merge_text_of_patterns
+from pepperbot.store.command import (
+    COMMAND_CONFIG,
+    ClassCommandCache,
+    CommandConfig,
+    CommandMethodCache,
+    PatternArg,
+    T_PatternArg,
+    class_command_config_mapping,
+    class_command_mapping,
+    runtime_pattern_arg_types,
+)
 
 # from pepperbot.parse import (
 #     GROUP_EVENTS,
@@ -27,13 +40,7 @@ from pepperbot.store.meta import (
     class_handler_mapping,
     route_validator_mapping,
 )
-from pepperbot.store.command import (
-    class_command_config_mapping,
-    class_command_mapping,
-    ClassCommandCache,
-)
 from pepperbot.utils.common import get_own_methods
-
 
 """ 
 todo
@@ -92,15 +99,36 @@ def cache_class_command(class_command: Callable, command_name: str):
     for method in get_own_methods(class_command_instance):
         method_name = method.__name__
 
-        # todo 多protocol合并的事件
-        # if not is_valid_group_method(method_name):
-        #     # if is_valid_friend_method(method.__name__):
-        #     raise EventHandlerDefineError(f"")
+        patterns: List[Tuple[str, T_PatternArg]] = []
 
-        # if not is_valid_event_handler(class_handler, method, method_name):
-        #     raise EventHandlerDefineError(f"")
+        # debug(method.__annotations__)
+        signature = inspect.signature(method)
+        debug(signature)
+        debug(signature.parameters.items())
 
-        command_method_mapping[method_name] = method
+        # todo 移动到validate, return patterns
+        for arg_name, p in signature.parameters.items():
+            debug(p.default)
+            debug(p.annotation)
+
+            if p.default == "PatternArg":
+                annotation = p.annotation
+                if annotation not in runtime_pattern_arg_types:
+                    raise InitializationError(f"仅支持str, bool, int, float和所有消息类型")
+
+                # 未具体指定类型(int, float, bool)的Text按照str处理
+                patterns.append((arg_name, annotation if annotation != Text else str))
+
+        debug(patterns)
+
+        compressed_patterns = merge_text_of_patterns(patterns)
+        debug(compressed_patterns)
+
+        command_method_mapping[method_name] = CommandMethodCache(
+            method=method,
+            patterns=patterns,
+            compressed_patterns=compressed_patterns,
+        )
 
     class_command_mapping[command_name] = ClassCommandCache(
         class_instance=class_command_instance,

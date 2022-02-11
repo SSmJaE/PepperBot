@@ -92,6 +92,10 @@ class KeaimaoApi:
             else:
                 raise BackendApiError(f"尚未适配的消息类型 可爱猫-{segment_type}")
 
+    @staticmethod
+    async def private_message(group_id: str, *segments: "T_SegmentInstance"):
+        raise NotImplementedError()
+
 
 class KeaimaoProperties(BaseBot):
     bot_id: str

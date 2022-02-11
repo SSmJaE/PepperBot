@@ -133,6 +133,7 @@ def is_handler_method_args_valid(
 
 
 def is_valid_class_command(class_command: object):
+    "initial"
 
     return True
 

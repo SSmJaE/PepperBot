@@ -1,32 +1,33 @@
-from collections import deque
 import re
+from collections import deque
+from functools import partial
 from inspect import isawaitable
+from pprint import pformat
 from typing import Any, Dict, List, Optional, Set, cast
 
 from devtools import debug
+from pepperbot.adapters.keaimao.api import KeaimaoApi
+from pepperbot.adapters.onebot.api import OnebotV11Api
 from pepperbot.core.message.chain import MessageChain
+from pepperbot.core.message.segment import T_SegmentInstance
 from pepperbot.exceptions import (
     ClassCommandDefinitionError,
     ClassCommandOnExit,
     ClassCommandOnFinish,
 )
-from pepperbot.extensions.command.parse import (
-    meet_command_exit,
-    meet_command_prefix,
-)
+from pepperbot.extensions.command.parse import meet_command_exit, meet_command_prefix
+from pepperbot.extensions.command.pattern import parse_pattern
+from pepperbot.extensions.log import logger
 from pepperbot.store.command import (
     ClassCommandStatus,
     CommandConfig,
     T_CommandStatusKey,
-    class_command_mapping,
     class_command_config_mapping,
+    class_command_mapping,
     normal_command_context_mapping,
 )
 from pepperbot.types import T_BotProtocol, T_RouteMode
 from pepperbot.utils.common import await_or_sync, fit_kwargs
-from pepperbot.extensions.log import logger
-from pprint import pformat
-
 
 COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
     ClassCommandOnExit.__name__: "exit",
@@ -53,13 +54,29 @@ def get_command_status(key: T_CommandStatusKey, command_config: CommandConfig):
     # 普通的group_message也有默认优先级，所以命令可以先于group_message执行，也可以后于
 
 
-def construct_command_sender():
-    pass
+class CommandSender:
+    __slots__ = ("message_sender",)
 
+    def __init__(self, protocol: T_BotProtocol, mode: T_RouteMode, source_id: str):
 
-def parse_patterns(chain: MessageChain):
-    # raise EventHandleError(f"无法解析pattern")
-    pass
+        if protocol == "onebot":
+            if mode == "group":
+                self.message_sender = partial(OnebotV11Api.group_message, source_id)
+            else:
+                self.message_sender = partial(OnebotV11Api.private_message, source_id)
+
+        else:
+            if mode == "group":
+                self.message_sender = partial(KeaimaoApi.group_message, source_id)
+            else:
+                self.message_sender = partial(KeaimaoApi.private_message, source_id)
+
+    async def send_message(self, *segments: T_SegmentInstance):
+        """自动识别消息来源并发送，不需要指定协议，不需要指定是私聊还是群"""
+        return await self.message_sender(*segments)
+
+    async def reply(self, *segments: T_SegmentInstance):
+        pass
 
 
 def store_to_history_deque(key, raw_event, chain, patterns):
@@ -84,7 +101,7 @@ async def run_command_method(method_name, method, all_locals: Dict) -> Any:
             injected_kwargs = {**injected_kwargs, **all_locals["patterns"]}
 
     # 参数和group_message/friend_message事件参数一致
-    logger.debug(f"将被注入 {method_name} 的参数\n", pformat(injected_kwargs))
+    logger.debug(f"将被注入 {method_name} 的参数\n{pformat(injected_kwargs)}")
     result = await await_or_sync(method, **fit_kwargs(method, injected_kwargs))
     debug(result)
     return result
@@ -133,16 +150,18 @@ async def run_class_commands(
         status = get_command_status(key, command_config)
         pointer = status.pointer
 
+        final_prefix = ""
         if pointer == "initial":
-            if meet_command_prefix(chain, command_name, command_config):
+            meet_prefix, final_prefix = meet_command_prefix(
+                chain, command_name, command_config
+            )
+            if meet_prefix:
                 logger.info(f"{chain.pure_text} 满足指令 {command_name} 的执行条件")
             else:
                 logger.info(f"{chain.pure_text} 不满足指令 {command_name} 的执行条件")
                 continue
 
-        sender = construct_command_sender()
-        # patterns = parse_patterns(chain, sender)
-        patterns = {}
+        sender = CommandSender(protocol, mode, source_id)
 
         try:
             if meet_command_exit(chain, command_config):
@@ -150,8 +169,20 @@ async def run_class_commands(
                 raise ClassCommandOnExit()
 
             logger.info(f"开始执行指令 {command_name} 的 {pointer} 方法")
+
             # 当前指向的方法，或者说，当前激活的命令回调方法
-            target_method = command_method_mapping[pointer]
+            command_method_cache = command_method_mapping[pointer]
+
+            patterns = await parse_pattern(
+                chain,
+                sender,
+                pointer,
+                command_method_cache,
+                final_prefix,
+                status.context,
+            )
+
+            target_method = command_method_cache.method
             result = await run_command_method(pointer, target_method, locals())
 
             store_to_history_deque(key, raw_event, chain, patterns)

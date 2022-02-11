@@ -33,9 +33,16 @@ from pepperbot.types import T_BotProtocol, T_RouteMode
 #     # "share": OnebotShare,
 # }
 
+
+def onebot_face_factory(raw_segment: Dict):
+    content = raw_segment["data"]["id"]
+    return OnebotFace(int(content))
+
+
 ONEBOT_SEGMENT_FACTORY_MAPPING: Dict[str, Callable[[Dict], T_SegmentInstance]] = {
     "text": onebot_text_factory,
     "image": onebot_image_factory,
+    "face": onebot_face_factory,
 }
 
 KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] = {

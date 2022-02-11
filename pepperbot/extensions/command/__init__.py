@@ -1,13 +1,14 @@
-from inspect import isclass
-from typing import Any, Callable, List, Optional, Sequence, cast
-from devtools import debug
+from typing import Any, Optional, Sequence, cast
 
-from pepperbot.store.command import COMMAND_CONFIG, CommandConfig
+from devtools import debug
+from pepperbot.store.command import COMMAND_CONFIG, CommandConfig, PatternArg
 from pepperbot.types import BaseClassCommand
 
 
-# todo command的权限管理
-# todo command的黑白名单，动态黑白名单(提供函数，参数为当前发言用户)
+def permission():
+    # todo command的权限管理
+    # todo command的黑白名单，动态黑白名单(提供函数，参数为当前发言用户)
+    pass
 
 
 def as_command(
@@ -66,3 +67,9 @@ def as_command(
 #         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
 #     ):
 #         await bot.group_msg(Text("用户超时未回复，结束会话"))
+
+__all__ = (
+    "as_command",
+    "PatternArg",
+    "permission",
+)

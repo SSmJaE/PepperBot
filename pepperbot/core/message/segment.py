@@ -22,14 +22,14 @@ from devtools import debug
 
 class At(BaseMessageSegment):
     @overload
-    def __init__(self, userId: int):
+    def __init__(self, userId: str):
         ...
 
     @overload
     def __init__(self, userId: Dict):
         ...
 
-    def __init__(self, userId: Union[dict, int]):
+    def __init__(self, userId: Union[dict, str]):
 
         data = userId
 

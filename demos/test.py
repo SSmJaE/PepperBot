@@ -1,19 +1,17 @@
 from typing import Dict
 
-from pepperbot.config import global_config
-from pepperbot.extensions.command import as_command
-
-global_config.logger.level = "DEBUG"
-
 from devtools import debug
+from pepperbot import PepperBot
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot
 from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
+from pepperbot.adapters.onebot.message.segment import OnebotFace
 from pepperbot.core.bot.universal import UniversalGroupBot
 from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import Image, Text
-from pepperbot import PepperBot
-from pepperbot.store.meta import BotRoute
+from pepperbot.core.route import BotRoute
+from pepperbot.extensions.command import PatternArg, as_command
+from pepperbot.extensions.command.handle import CommandSender
 
 # class DefaultConfig_Logger:
 #     level: str = "debug"
@@ -55,10 +53,26 @@ bot.register_adapter(
 # )
 
 
+# str_arg = PatternArg(str)  # type:ignore
+
+
 @as_command()
 class 指令1:
-    async def initial(self, raw_event):
+    async def initial(
+        self,
+        raw_event,
+        sender: CommandSender,
+        name: str = PatternArg(),
+        age: int = PatternArg(),
+        male: bool = PatternArg(),
+        # test_invalid: None = PatternArg(),
+        # test_Text: Text = PatternArg(),
+        test_segment: OnebotFace = PatternArg(),
+    ):
         debug("in 指令1")
+        debug(name)
+        await sender.send_message(Text(f"收到了你发送的消息 {name} {age} {male}"), test_segment)
+        await sender.send_message(Text(f"{name}是个{age}岁的{'男' if male else '女'}人"))
 
 
 @as_command()
