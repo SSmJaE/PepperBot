@@ -6,29 +6,36 @@ authors = ["SSmJaE <shaoxydd8888@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-arrow = "^1.0.3"
-pydantic = "^1.8.1"
-devtools = "^0.6.1"
-loguru = "^0.5.3"
-pretty-errors = "^1.2.20"
-APScheduler = "^3.7.0"
-httpx = "^0.21.1"
 sanic = "^21.12.1"
+httpx = "^0.21.1"
+pydantic = "^1.8.1"
+arrow = "^1.0.3"
+loguru = "^0.5.3"
+APScheduler = "^3.7.0"
 rich = "^11.1.0"
+pretty-errors = "^1.2.20"
 python-dotenv = "^0.19.2"
+devtools = "^0.6.1"
+better-exceptions = "^0.3.3"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
 black = { version = "^21.4b2", allow-prereleases = true }
+pytest = "^5.2"
 pytest-cov = "^3.0.0"
+mdutils = "^1.3.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poe.tasks]
-test = "pytest"
-run = "python private/run.py"
-
 [tool.poetry.scripts]
 pepperbot = "cli:main"
+
+[tool.poe.tasks]
+run = "python private/run.py"
+test = "pytest --cov-report html --cov-branch --cov=pepperbot ./tests"
+badge.sequence = [
+    "pytest --cov-report xml --cov-branch --cov=pepperbot ./tests/command/test_parse.py",
+    "deactive",
+    "genbadge coverage -i ./coverage.xml",
+]

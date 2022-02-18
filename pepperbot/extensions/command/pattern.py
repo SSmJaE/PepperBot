@@ -17,21 +17,23 @@ from pepperbot.core.message.chain import MessageChain, T_SegmentInstance
 from pepperbot.core.message.segment import Text
 from pepperbot.exceptions import EventHandleError, PatternFormotError
 from pepperbot.store.command import (
+    FALSE_TEXTS,
+    TRUE_TEXTS,
+    VALID_TEXT_TYPES,
     CommandMethodCache,
     T_CompressedPatterns,
     T_PatternArg,
     T_PatternArgResult,
+    T_ValidTextType,
+    T_ValidTextTypeInstance,
 )
 from copy import deepcopy
 
 if TYPE_CHECKING:
     from pepperbot.extensions.command.handle import CommandSender
 
-TRUE_TEXTS = ("True", "true", "1")
-FALSE_TEXTS = ("False", "false", "0")
 
-
-def merge_multi_text(*texts: Text):
+def merge_multi_text_with_space(*texts: Text):
     """
     为什么要合并字符串呢？应为接收到的消息类型，可能是分片的，也可能是连续的，
     为了保持一致，全部转换成连续的，再进行正则会方便很多
@@ -71,19 +73,19 @@ def merge_text_of_segments(segments: List[T_SegmentInstance]) -> T_CompressedSeg
             text_buffer.append(segment)
 
             if index == segments_count:
-                compressed_segments.append(merge_multi_text(*text_buffer))
+                compressed_segments.append(merge_multi_text_with_space(*text_buffer))
 
         # False, True
         elif last_segment_type != Text and isinstance(segment, Text):
             text_buffer.append(segment)
 
             if index == segments_count:
-                compressed_segments.append(merge_multi_text(*text_buffer))
+                compressed_segments.append(merge_multi_text_with_space(*text_buffer))
 
         # True, False
         elif last_segment_type == Text and not isinstance(segment, Text):
             if text_buffer:
-                compressed_segments.append(merge_multi_text(*text_buffer))
+                compressed_segments.append(merge_multi_text_with_space(*text_buffer))
                 text_buffer = []
 
             compressed_segments.append(segment)
@@ -95,9 +97,6 @@ def merge_text_of_segments(segments: List[T_SegmentInstance]) -> T_CompressedSeg
         last_segment_type = segment.__class__
 
     return compressed_segments
-
-
-VALID_TEXT_TYPES = (str, int, float, bool)
 
 
 def merge_text_of_patterns(
@@ -178,11 +177,69 @@ def merge_text_of_patterns(
     return compressed_patterns
 
 
-def check_type(
-    compressed_segments: List[T_SegmentInstance],
+def match_by_regex(text_patterns: List[Tuple[str, T_ValidTextType]], segment: Text):
+    """通过正则，匹配对应的text和pattern"""
+    regex = r""
+    arg_count = len(text_patterns)
+
+    for index, text_pattern in enumerate(text_patterns):
+        (arg_name, arg_type) = text_pattern
+
+        # 拼接正则，所有文字参数，应该都是空格分格的
+        if index != arg_count - 1:
+            regex += r"(\S+)\s*"
+        else:
+            regex += r"(\S+)"
+
+        # debug(arg_type)
+
+    # debug(regex, segment.content)
+    match = re.search(regex, segment.content)
+    if not match:
+        raise PatternFormotError(f"pattern匹配失败-->正则失败")
+
+    texts = match.groups()
+    # debug(texts)
+
+    if len(texts) != arg_count:
+        raise PatternFormotError(f"未按照格式提供参数 参数之间使用空格分隔")
+
+    return texts
+
+
+def try_convert_type(arg_name: str, arg_type: T_ValidTextType, text_without_type: str):
+    # debug(text_without_type, arg_type)
+
+    result: T_ValidTextTypeInstance
+
+    if arg_type == str:
+        result = text_without_type
+
+    if arg_type == bool:
+        if not (text_without_type in TRUE_TEXTS or text_without_type in FALSE_TEXTS):
+            raise PatternFormotError(f"未按照格式提供参数 {arg_name} 应为bool类型")
+
+        else:
+            if text_without_type in TRUE_TEXTS:
+                result = True
+            else:
+                result = False
+
+    else:  # 解析int, float
+        try:
+            result = arg_type(text_without_type)  # type:ignore
+
+        except Exception as e:
+            raise PatternFormotError(f"未按照格式提供参数 {arg_name}应为{arg_type}类型")
+
+    return result
+
+
+def get_pattern_results(
     compressed_patterns: List[
         Union[List[Tuple[str, T_PatternArg]], Tuple[str, T_PatternArg]]
     ],
+    compressed_segments: List[T_SegmentInstance],
 ):
     pattern_result: OrderedDict[str, T_PatternArgResult] = OrderedDict()
 
@@ -196,63 +253,17 @@ def check_type(
             if not isinstance(pattern, list):  # 所有text都被解析为list[(arg_name, arg_type)]
                 raise PatternFormotError("未按照格式提供参数")
 
-            text_patterns = pattern
-
-            # 通过正则，匹配对应的text和pattern
-            # 拼接正则，所有文字参数，应该都是空格分格的
-            regex = r""
-            arg_count = len(text_patterns)
-            for index, text_pattern in enumerate(text_patterns):
-                (arg_name, arg_type) = text_pattern
-
-                if index != arg_count - 1:
-                    regex += r"(\S+)\s*"
-                else:
-                    regex += r"(\S+)"
-
-                # debug(arg_type)
-
-            debug(regex, segment.content)
-            match = re.search(regex, segment.content)
-            if not match:
-                raise PatternFormotError(f"pattern匹配失败-->正则失败")
-
-            texts = match.groups()
-            debug(texts)
-
-            if len(texts) != arg_count:
-                raise PatternFormotError(f"未按照格式提供参数 参数之间使用空格分隔")
+            text_patterns = cast(List[Tuple[str, T_ValidTextType]], pattern)
+            texts = match_by_regex(text_patterns, segment)
 
             for index, text_without_type in enumerate(texts):
                 arg_name, arg_type = text_patterns[index]
 
-                debug(text_without_type, arg_type)
-
-                result = None
-
-                if arg_type == str:
-                    result = text_without_type
-
-                if arg_type == bool:
-                    if not (
-                        text_without_type in TRUE_TEXTS
-                        or text_without_type in FALSE_TEXTS
-                    ):
-                        raise PatternFormotError(f"未按照格式提供参数 {arg_name} 应为bool类型")
-                    else:
-                        if text_without_type in TRUE_TEXTS:
-                            result = True
-                        else:
-                            result = False
-
-                else:  # 解析int, float
-                    try:
-                        result = arg_type(text_without_type)  # type:ignore
-
-                    except Exception as e:
-                        raise PatternFormotError(f"未按照格式提供参数 {arg_name}应为{arg_type}类型")
-
-                pattern_result[arg_name] = result
+                pattern_result[arg_name] = try_convert_type(
+                    arg_name,
+                    arg_type,
+                    text_without_type,
+                )
 
         # todo 支持pydantic的Field，比如gt,lt,对输出的报错信息，转为PatternFormotError
         # 最好能找到，pydantic中是怎么使用ModelField进行字段验证的，只是使用就好了
@@ -264,19 +275,19 @@ def check_type(
         #     lt=50,
         # )
 
+        # 支持pydantic的validate装饰器
+        # for arg_name, validators in command_pattern.__validators__.items():
+        #     for validator in validators:
+        #         validator.func(command_pattern.__class__, pattern_result[arg_name])
+
         else:  # 检测是否是有效类型，Face，Image之类
             pattern = cast(Tuple[str, T_PatternArg], pattern)
-            (arg_name, arg_type) = pattern
+            arg_name, arg_type = pattern
 
             if type(segment) != arg_type:
                 raise PatternFormotError(f"未按照格式提供参数 {arg_name} 应为 {arg_type} 类型")
 
             pattern_result[arg_name] = segment
-
-        # 支持pydantic的validate装饰器
-        # for arg_name, validators in command_pattern.__validators__.items():
-        #     for validator in validators:
-        #         validator.func(command_pattern.__class__, pattern_result[arg_name])
 
     return pattern_result
 
@@ -319,6 +330,9 @@ async def parse_pattern(
         formot_hint += f"<{arg_name} : {arg_type.__name__}> "
     formot_hint += "的格式输入\n不需要<或者>，:右侧是该参数的类型"
 
+    # formot_hint添加prefix
+    # if method_name == "initial":
+
     results = {}
 
     try:
@@ -341,7 +355,7 @@ async def parse_pattern(
             without_prefix = re.sub(f"^{prefix}", "", with_prefix)
             compressed_segments[0].content = without_prefix
 
-        results = check_type(compressed_segments, compressed_patterns)
+        results = get_pattern_results(compressed_patterns, compressed_segments)
 
     except PatternFormotError as e:
         # if on_format_error:

@@ -81,8 +81,16 @@ class CommandConfig(BaseModel):
     # """
 
 
-T_PatternArg = Union[Type[str], Type[int], Type[float], Type[bool], T_SegmentClass]
+VALID_TEXT_TYPES = (str, int, float, bool)
+T_ValidTextTypeInstance = Union[str, int, float, bool]
+T_ValidTextType = Union[Type[str], Type[int], Type[float], Type[bool]]
+
+T_PatternArg = Union[T_ValidTextType, T_SegmentClass]
 T_PatternArgResult = Union[str, int, float, bool, T_SegmentInstance]
+
+
+TRUE_TEXTS = ("True", "true", "1")
+FALSE_TEXTS = ("False", "false", "0")
 
 
 def get_runtime_pattern_arg_types():

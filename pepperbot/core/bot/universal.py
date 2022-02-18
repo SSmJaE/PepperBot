@@ -14,7 +14,7 @@ from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.types import BaseBot, T_BotProtocol
 
 
-class UniversalArbitraryApi:
+class ArbitraryApi:
     onebot = OnebotV11Api
     keaimao = KeaimaoApi
 
@@ -23,7 +23,7 @@ class UniversalProperties(BaseBot):
     protocol: T_BotProtocol
     bot_id: str
     group_id: str
-    arbitrary: Type[UniversalArbitraryApi]
+    arbitrary: Type[ArbitraryApi]
     onebot: Optional[OnebotV11GroupBot]
     keaimao: Optional[KeaimaoGroupBot]
     # telegram: Optional[TelegramGroupBot]
@@ -81,7 +81,7 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         self.bot_id = bot_id
         self.group_id = group_id
 
-        self.arbitrary = UniversalArbitraryApi
+        self.arbitrary = ArbitraryApi
 
         from pepperbot.core.event.handle import get_bot_instance
 

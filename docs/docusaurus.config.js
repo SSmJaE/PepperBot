@@ -18,12 +18,12 @@ module.exports = {
             },
             items: [
                 {
-                    to: "docs/概览/",
+                    to: "docs/教程/",
                     label: "教程",
                     position: "left",
                 },
                 {
-                    to: "docs/API/",
+                    to: "docs/示例/",
                     label: "示例",
                     position: "left",
                 },
@@ -37,11 +37,16 @@ module.exports = {
                     label: "API",
                     position: "left",
                 },
-                {
-                    to: "docs/API/",
-                    label: "贡献指南",
-                    position: "left",
-                },
+                // {
+                //     to: "docs/store",
+                //     label: "指令市场",
+                //     position: "left",
+                // },
+                // {
+                //     to: "docs/贡献指南/",
+                //     label: "贡献指南",
+                //     position: "left",
+                // },
                 // {
                 //   to: 'docs/',
                 //   activeBasePath: 'docs',
@@ -102,6 +107,9 @@ module.exports = {
         //     // ],
         //     copyright: `Built with Docusaurus.`,
         // },
+        prism: {
+            theme: require("prism-react-renderer/themes/vsDark"),
+        },
     },
     presets: [
         [
@@ -113,6 +121,7 @@ module.exports = {
                     editUrl: "https://github.com/SSmJaE/PepperBot/edit/master/docs/",
                     showLastUpdateAuthor: true,
                     showLastUpdateTime: true,
+                    // remarkPlugins: [[require("remark-admonitions"), { infima: false }]],
                 },
                 // blog: {
                 //     showReadingTime: true,
@@ -120,7 +129,10 @@ module.exports = {
                 //     editUrl: "https://github.com/facebook/docusaurus/edit/master/website/blog/",
                 // },
                 theme: {
-                    customCss: require.resolve("./src/css/custom.css"),
+                    customCss: [
+                        require.resolve("./src/css/custom.css"),
+                        // require.resolve("remark-admonitions/styles/classic.css"),
+                    ],
                 },
             },
         ],

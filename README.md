@@ -12,6 +12,10 @@
 <a href="https://jq.qq.com/?_wv=1027&k=EPhcRRib">TG交流群</a>  -->
 </p>
 
+<p align="center">
+<img src="./archive/coverage-badge.svg" />
+</p>
+
 ## 生而跨平台
 
 -   QQ 基于 Onebot
@@ -33,7 +37,7 @@
 -   定时任务
 -   日志支持
 -   [ ] 数据库连接(内置 sqlite)
--   链式调用 api(行为链)
+-   [ ] 链式调用 api(行为链)
 -   [ ] cli，快速创建项目，安装社区指令
 
 ## 接口合语义
