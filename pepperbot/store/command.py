@@ -6,7 +6,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Deque,
     Dict,
+    ForwardRef,
     List,
     Literal,
     Sequence,
@@ -19,6 +21,8 @@ from typing import (
 from devtools import debug
 
 # if TYPE_CHECKING:
+from pepperbot.core.message.chain import MessageChain
+
 from pepperbot.core.message.segment import T_SegmentClass, T_SegmentInstance
 from pepperbot.types import (
     BaseClassCommand,
@@ -44,7 +48,11 @@ class CommandConfig(BaseModel):
     """ 是否需要@机器人 """
     timeout: int = 30
     """ 会话超时时间，单位秒, """
-    history_size: int = 0
+    history_size: int = 1
+    """ 
+    保留上一次的raw_event，可以在timeout中复用
+    不然timeout中并没有办法获取到raw_event，因为timeout实在apscheduler中独立调用的 
+    """
     # lock_user = False
     # """ 跨消息渠道锁定用户
     # 不管他是私聊、还是群聊、还是频道，只要是一条规则指定的用户，他们的发言都会被指令接受
@@ -186,15 +194,21 @@ class HistoryItem(BaseModel):
         arbitrary_types_allowed = True
 
     raw_event: Dict
+    chain: MessageChain
+
+
+# MessageChain = ForwardRef('MessageChain')
+# MessageChain.update_forward_refs()
 
 
 class ClassCommandStatus(BaseModel):
     """也可以理解为一个session"""
 
     pointer: str = "initial"
-    history: deque
+    history: Deque[HistoryItem]
     last_updated_time: float = Field(default_factory=time.time)
     """ 用来判断timeout """
+    timeout: int
     context: Dict = Field(default_factory=dict)
     """ 用户定义，method之间的消息传递方式 """
 

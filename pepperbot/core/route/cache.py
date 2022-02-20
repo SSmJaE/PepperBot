@@ -106,6 +106,7 @@ def cache_class_command(class_command: Callable, command_name: str):
         # debug(signature)
         # debug(signature.parameters.items())
 
+        # todo no pattern in lifecycle hooks
         # todo 移动到validate, return patterns
         for arg_name, p in signature.parameters.items():
             # debug(p.default)

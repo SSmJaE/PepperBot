@@ -56,7 +56,9 @@ bot.register_adapter(
 # str_arg = PatternArg(str)  # type:ignore
 
 
-@as_command()
+@as_command(
+    timeout=10,
+)
 class 指令1:
     async def initial(
         self,
@@ -71,6 +73,14 @@ class 指令1:
     ):
         await sender.send_message(Text(f"收到了你发送的消息 {name} {age} {male}"), test_segment)
         await sender.send_message(Text(f"{name}是个{age}岁的{'男' if male else '女'}人"))
+
+        return self.second
+
+    async def second(self, sender: CommandSender, nonsense: str = PatternArg()):
+        await sender.send_message(Text(f"{nonsense}"))
+
+    async def timeout(self, sender: CommandSender):
+        await sender.send_message(Text("用户超时未响应"))
 
 
 @as_command()

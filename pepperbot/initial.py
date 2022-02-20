@@ -1,5 +1,6 @@
 from typing import Any, Callable, Iterable, Literal, Optional, Type
 
+from apscheduler.triggers.interval import IntervalTrigger
 from devtools import debug, pformat
 from sanic import Sanic
 
@@ -12,6 +13,7 @@ from pepperbot.core.route.utils import (
     websocket_receiver,
 )
 from pepperbot.exceptions import InitializationError
+from pepperbot.extensions.command.handle import check_command_timeout
 from pepperbot.extensions.log import logger
 from pepperbot.extensions.scheduler import async_scheduler
 from pepperbot.store.meta import (
@@ -117,7 +119,7 @@ class PepperBot:
         output_config()
         logger.success(f"成功读取.env\n {pformat(global_config)}")
 
-        # async_scheduler.add_job(check_command_timeout)
+        async_scheduler.add_job(check_command_timeout, IntervalTrigger(seconds=10))
         # async_scheduler.add_job(clean_bot_instances)
         async_scheduler.start()
 

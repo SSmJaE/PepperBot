@@ -2,11 +2,12 @@ import re
 import time
 from typing import Any, Callable, Dict, List, Set, Tuple
 
-from devtools import debug
+from devtools import pformat
 from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import At
 from pepperbot.store.command import CommandConfig
 from pepperbot.store.meta import get_bot_id
+from pepperbot.extensions.log import logger
 
 
 def meet_text_prefix(
@@ -18,9 +19,9 @@ def meet_text_prefix(
     aliases: Set[str] = set(command_config.aliases)
     prefixes: Set[str] = set(command_config.prefixes)
 
-    debug(command_name)
-    debug(prefixes)
-    debug(aliases)
+    logger.debug(pformat(command_name))
+    logger.debug(pformat(prefixes))
+    logger.debug(pformat(aliases))
 
     if command_config.include_class_name:
         aliases.add(command_name)
@@ -29,7 +30,7 @@ def meet_text_prefix(
         final_prefixes = prefixes if command_config.need_prefix else []
         for prefix in final_prefixes:
             final_prefix = prefix + alias
-            debug(final_prefix)
+            logger.debug(pformat(final_prefix))
             if re.search(f"^{final_prefix}", chain.pure_text):
                 return True, final_prefix
 
@@ -62,9 +63,9 @@ def meet_command_prefix(
 def meet_command_exit(chain: MessageChain, command_config: CommandConfig):
     """退出判断"""
 
-    debug(command_config.exit_patterns)
+    logger.debug(pformat(command_config.exit_patterns))
     for pattern in command_config.exit_patterns:
-        debug(re.search(pattern, chain.pure_text))
+        logger.debug(pformat(re.search(pattern, chain.pure_text)))
         if re.search(pattern, chain.pure_text):
             return True
 

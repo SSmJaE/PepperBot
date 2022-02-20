@@ -27,7 +27,7 @@ def formatter(record: Dict):
 
     else:
         return (
-            "<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level:^8}</lvl> | "
+            "<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level:^7}</lvl> | "
             + f"{displayed_path} | "
             + "{message}"
             + "\n{exception}"

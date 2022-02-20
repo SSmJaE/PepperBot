@@ -1,11 +1,12 @@
+import asyncio
 import re
+import time
 from collections import deque
 from functools import partial
 from inspect import isawaitable
-from pprint import pformat
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, cast
 
-from devtools import debug
+from devtools import debug, pformat
 from pepperbot.adapters.keaimao.api import KeaimaoApi
 from pepperbot.adapters.onebot.api import OnebotV11Api
 from pepperbot.core.message.chain import MessageChain
@@ -14,13 +15,15 @@ from pepperbot.exceptions import (
     ClassCommandDefinitionError,
     ClassCommandOnExit,
     ClassCommandOnFinish,
+    ClassCommandOnTimeout,
 )
-from pepperbot.extensions.command.parse import meet_command_exit, meet_command_prefix
 from pepperbot.extensions.command.pattern import parse_pattern
+from pepperbot.extensions.command.utils import meet_command_exit, meet_command_prefix
 from pepperbot.extensions.log import logger
 from pepperbot.store.command import (
     ClassCommandStatus,
     CommandConfig,
+    HistoryItem,
     T_CommandStatusKey,
     class_command_config_mapping,
     class_command_mapping,
@@ -32,6 +35,7 @@ from pepperbot.utils.common import await_or_sync, fit_kwargs
 COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
     ClassCommandOnExit.__name__: "exit",
     ClassCommandOnFinish.__name__: "finish",
+    ClassCommandOnTimeout.__name__: "timeout",
 }
 
 
@@ -40,7 +44,8 @@ def get_command_status(key: T_CommandStatusKey, command_config: CommandConfig):
 
     if key not in normal_command_context_mapping:
         normal_command_context_mapping[key] = ClassCommandStatus(
-            history=deque(maxlen=command_config.history_size)
+            history=deque(maxlen=command_config.history_size),
+            timeout=command_config.timeout,
         )
 
     return normal_command_context_mapping[key]
@@ -79,13 +84,13 @@ class CommandSender:
         pass
 
 
-def store_to_history_deque(key, raw_event, chain, patterns):
-    # last_updated_time
-    pass
+# def store_to_history_deque(key, raw_event, chain, patterns):
+#     # last_updated_time
+#     pass
 
 
 async def run_command_method(method_name, method, all_locals: Dict) -> Any:
-    debug(all_locals)
+    logger.debug(pformat(all_locals))
     injected_kwargs = dict(
         raw_event=all_locals["raw_event"],
         chain=all_locals["chain"],
@@ -103,11 +108,15 @@ async def run_command_method(method_name, method, all_locals: Dict) -> Any:
     # 参数和group_message/friend_message事件参数一致
     logger.debug(f"将被注入 {method_name} 的参数\n{pformat(injected_kwargs)}")
     result = await await_or_sync(method, **fit_kwargs(method, injected_kwargs))
-    debug(result)
+    logger.debug(pformat(result))
     return result
 
 
-def check_result(command_name: str, method_names, result_name: str, result: Any):
+def check_result(
+    command_name: str, method_names: Iterable[str], result_name: str, result: Any
+):
+    """运行时检查，和ast检查不冲突"""
+
     if result == None:  # 流程正常退出
         raise ClassCommandOnFinish()
 
@@ -121,8 +130,100 @@ def check_result(command_name: str, method_names, result_name: str, result: Any)
             )
 
 
-def update_command_pointer(command_name, protocol, mode, source_id, result_name):
-    pass
+def update_command_pointer(
+    key: T_CommandStatusKey,
+    result_name: str,
+    raw_event: Dict,
+    chain: MessageChain,
+):
+    """此时已经经过check_result，result_name一定有效"""
+
+    status = normal_command_context_mapping[key]
+
+    status.pointer = result_name
+    status.history.append(
+        HistoryItem(
+            raw_event=raw_event,
+            chain=chain,
+        )
+    )
+    status.last_updated_time = time.time()
+
+
+async def check_command_timeout():
+    """超时判断应该每次心跳都判断，而不是接收到该用户消息时"""
+
+    logger.info("检查指令是否超时……")
+
+    timeouted_status: List[T_CommandStatusKey] = []
+    """ 不要在迭代字典的过程中，动态的修改字典 """
+
+    for key, status in normal_command_context_mapping.items():
+        pointer = status.pointer
+        if pointer == "initial":
+            continue
+
+        last_updated_time = status.last_updated_time
+        timeout = status.timeout
+        current_time = time.time()
+
+        # 超时判断，与上一条消息的createTime判断
+        if current_time >= last_updated_time + timeout:
+
+            command_name, protocol, mode, source_id = key
+            logger.info(f"{protocol} {mode} 中的用户 {source_id} 指令 {command_name} 已超时")
+
+            if not len(status.history):
+                logger.error(f"如果要执行timeout生命周期，history_size至少为1")
+                timeouted_status.append(key)
+                continue
+
+            class_command_cache = class_command_mapping[command_name]
+            command_method_mapping = class_command_cache.command_method_mapping
+            command_method_names = command_method_mapping.keys()
+
+            pointer = "timeout"
+
+            lifecycle_handler = command_method_mapping.get(pointer)
+            if not lifecycle_handler:
+                logger.error(f"未定义timeout生命周期，直接结束指令")
+                timeouted_status.append(key)
+                continue
+
+            logger.info(f"开始执行指令 {command_name} 的生命周期 {pointer}")
+
+            history_item = status.history[-1]
+            raw_event = history_item.raw_event
+            chain = history_item.chain
+            sender = CommandSender(protocol, mode, source_id)
+
+            try:
+
+                command_method_cache = command_method_mapping[pointer]
+                target_method = command_method_cache.method
+                # await run_command_method(pointer, target_method, locals())
+                task = asyncio.create_task(
+                    run_command_method(pointer, target_method, locals())
+                )
+                # await task
+
+            except Exception as exception:
+                if "catch" in command_method_names:
+                    cache_handler = command_method_mapping.get("catch")
+                    if cache_handler:
+                        logger.exception(
+                            f"指令 {command_name} 的 {pointer} 方法执行出错，开始执行用户定义的异常捕获"
+                        )
+                        await run_command_method("catch", cache_handler, locals())
+
+                else:
+                    raise exception from exception
+
+            finally:
+                timeouted_status.append(key)
+
+    for key in timeouted_status:
+        normal_command_context_mapping.pop(key)
 
 
 async def run_class_commands(
@@ -142,7 +243,7 @@ async def run_class_commands(
 
         class_command_cache = class_command_mapping[command_name]
         command_method_mapping = class_command_cache.command_method_mapping
-        command_method_names = class_command_mapping.keys()
+        command_method_names = command_method_mapping.keys()
 
         command_config = class_command_config_mapping[command_name]["default"]
 
@@ -185,13 +286,12 @@ async def run_class_commands(
             target_method = command_method_cache.method
             result = await run_command_method(pointer, target_method, locals())
 
-            store_to_history_deque(key, raw_event, chain, patterns)
-
             # 判断是否正常退出
-            result_name = str(result)
+            result_name = result.__name__ if result else "not_exist_in_names"
             check_result(command_name, command_method_names, result_name, result)
             # 设置下一次执行时要调用的方法
-            update_command_pointer(protocol, mode, source_id, command_name, result_name)
+            # store_to_history_deque(key, raw_event, chain, patterns)
+            update_command_pointer(key, result_name, raw_event, chain)
 
         except Exception as exception:
             exception_name: str = exception.__class__.__qualname__  # type:ignore
@@ -200,7 +300,7 @@ async def run_class_commands(
 
                 lifecycle_handler = command_method_mapping.get(lifecycle_name)
                 if lifecycle_handler:
-                    logger.info(f"开始执行指令 {command_name} 的 {lifecycle_name} 生命周期")
+                    logger.info(f"开始执行指令 {command_name} 的生命周期 {lifecycle_name}")
                     await run_command_method(
                         lifecycle_name, lifecycle_handler, locals()
                     )
@@ -212,7 +312,7 @@ async def run_class_commands(
                         logger.exception(
                             f"指令 {command_name} 的 {pointer} 方法执行出错，开始执行用户定义的异常捕获"
                         )
-                        await run_command_method("cache", cache_handler, locals())
+                        await run_command_method("catch", cache_handler, locals())
 
                 else:
-                    raise exception
+                    raise exception from exception

@@ -12,7 +12,7 @@ from typing import (
 )
 
 from pepperbot.extensions.log import logger
-from devtools import debug
+from devtools import pformat
 from pepperbot.core.message.chain import MessageChain, T_SegmentInstance
 from pepperbot.core.message.segment import Text
 from pepperbot.exceptions import EventHandleError, PatternFormotError
@@ -55,7 +55,7 @@ T_CompressedSegments = List[T_SegmentInstance]
 
 def merge_text_of_segments(segments: List[T_SegmentInstance]) -> T_CompressedSegments:
     """合并相邻的Text片段，空格分隔，方便正则"""
-    debug(segments)
+    logger.debug(pformat(segments))
 
     if len(segments) <= 1:
         return segments
@@ -191,15 +191,15 @@ def match_by_regex(text_patterns: List[Tuple[str, T_ValidTextType]], segment: Te
         else:
             regex += r"(\S+)"
 
-        # debug(arg_type)
+        # logger.debug(pformat(arg_type))
 
-    # debug(regex, segment.content)
+    # logger.debug(pformat(regex, segment.content))
     match = re.search(regex, segment.content)
     if not match:
         raise PatternFormotError(f"pattern匹配失败-->正则失败")
 
     texts = match.groups()
-    # debug(texts)
+    # logger.debug(pformat(texts))
 
     if len(texts) != arg_count:
         raise PatternFormotError(f"未按照格式提供参数 参数之间使用空格分隔")
@@ -208,7 +208,7 @@ def match_by_regex(text_patterns: List[Tuple[str, T_ValidTextType]], segment: Te
 
 
 def try_convert_type(arg_name: str, arg_type: T_ValidTextType, text_without_type: str):
-    # debug(text_without_type, arg_type)
+    # logger.debug(pformat(text_without_type, arg_type))
 
     result: T_ValidTextTypeInstance
 
@@ -246,8 +246,8 @@ def get_pattern_results(
     for index, (segment, pattern) in enumerate(
         zip(compressed_segments, compressed_patterns)
     ):
-        # debug(type(segment))
-        # debug(type(chunk))
+        # logger.debug(pformat(type(segment)))
+        # logger.debug(pformat(type(chunk)))
 
         if isinstance(segment, Text):
             if not isinstance(pattern, list):  # 所有text都被解析为list[(arg_name, arg_type)]
@@ -338,7 +338,7 @@ async def parse_pattern(
     try:
 
         compressed_segments = merge_text_of_segments(chain.segments)
-        debug(compressed_segments)
+        logger.debug(pformat(compressed_segments))
 
         if len(compressed_segments) != len(compressed_patterns):
             raise PatternFormotError(
@@ -376,7 +376,7 @@ async def parse_pattern(
     else:
         # todo patternResults的maxSize
 
-        debug(results)
+        logger.debug(pformat(results))
         return results
 
     # finally:
