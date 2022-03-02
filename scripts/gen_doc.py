@@ -32,7 +32,7 @@ from pepperbot.utils.common import get_own_methods
 
 
 def gen_api_markdown(
-    target_api_class: Any, output_file_path: str, extra_head: str = None
+    target_api_class: Any, output_file_path: str, extra_head: str = ""
 ):
     md_file = MdUtils(file_name=output_file_path)
 
@@ -109,7 +109,7 @@ gen_api_markdown(KeaimaoPrivateApi, f"{api_prefix}/区分模式 API/私聊/可�
 
 
 def gen_kwargs_markdown(
-    mapping: T_HandlerKwargMapping, output_file_path: str, extra_head: str = None
+    mapping: T_HandlerKwargMapping, output_file_path: str, extra_head: str = ""
 ):
     md_file = MdUtils(file_name=output_file_path)
 

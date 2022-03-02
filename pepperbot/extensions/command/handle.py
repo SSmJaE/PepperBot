@@ -20,6 +20,7 @@ from pepperbot.exceptions import (
 from pepperbot.extensions.command.pattern import parse_pattern
 from pepperbot.extensions.command.utils import meet_command_exit, meet_command_prefix
 from pepperbot.extensions.log import logger
+from pepperbot.store.meta import EventHandlerKwarg
 from pepperbot.store.command import (
     ClassCommandStatus,
     CommandConfig,
@@ -31,32 +32,6 @@ from pepperbot.store.command import (
 )
 from pepperbot.types import T_BotProtocol, T_RouteMode
 from pepperbot.utils.common import await_or_sync, fit_kwargs
-
-COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
-    ClassCommandOnExit.__name__: "exit",
-    ClassCommandOnFinish.__name__: "finish",
-    ClassCommandOnTimeout.__name__: "timeout",
-}
-
-
-def get_command_status(key: T_CommandStatusKey, command_config: CommandConfig):
-    # 新建status时，返回Initial
-
-    if key not in normal_command_context_mapping:
-        normal_command_context_mapping[key] = ClassCommandStatus(
-            history=deque(maxlen=command_config.history_size),
-            timeout=command_config.timeout,
-        )
-
-    return normal_command_context_mapping[key]
-
-    # 指向哪里？initial?
-
-    # 指令本身是跨协议、跨消息来源的吗？
-
-    # todo 命令的优先级，
-    # 命令需要优先级吗？
-    # 普通的group_message也有默认优先级，所以命令可以先于group_message执行，也可以后于
 
 
 class CommandSender:
@@ -84,9 +59,58 @@ class CommandSender:
         pass
 
 
+def get_command_status(key: T_CommandStatusKey, command_config: CommandConfig):
+    # 新建status时，返回Initial
+
+    if key not in normal_command_context_mapping:
+        normal_command_context_mapping[key] = ClassCommandStatus(
+            history=deque(maxlen=command_config.history_size),
+            timeout=command_config.timeout,
+        )
+
+    return normal_command_context_mapping[key]
+
+    # 指向哪里？initial?
+
+    # 指令本身是跨协议、跨消息来源的吗？
+
+    # todo 命令的优先级，
+    # 命令需要优先级吗？
+    # 普通的group_message也有默认优先级，所以命令可以先于group_message执行，也可以后于
+
+
 # def store_to_history_deque(key, raw_event, chain, patterns):
 #     # last_updated_time
 #     pass
+
+COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
+    ClassCommandOnExit.__name__: "exit",
+    ClassCommandOnFinish.__name__: "finish",
+    ClassCommandOnTimeout.__name__: "timeout",
+}
+
+LIFECYCLE_WITHOUT_PATTERNS = ("exit", "finish", "timeout", "catch")
+""" 这些生命周期不应支持pattern """
+
+LIFECYCLE_NO_PROGRAMMIC = ("catch", "timeout", "exit")
+""" 这些生命周期不应该主动调用 """
+
+common_kwargs = (
+    EventHandlerKwarg(name="raw_event", type_=Dict),
+    EventHandlerKwarg(name="chain", type_=MessageChain),
+    EventHandlerKwarg(name="sender", type_=CommandSender),
+)
+
+COMMAND_DEFAULT_KWARGS = {
+    "initial": (*common_kwargs,),
+    "exit": (*common_kwargs,),
+    "finish": (*common_kwargs,),
+    "timeout": (*common_kwargs,),
+    "catch": (
+        *common_kwargs,
+        EventHandlerKwarg(name="exception", type_=Exception),
+    ),
+}
 
 
 async def run_command_method(method_name, method, all_locals: Dict) -> Any:

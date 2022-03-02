@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Set, Tuple, Union, cast, get_args, get_
 from devtools import debug
 from pepperbot.core.message.segment import Text
 from pepperbot.exceptions import EventHandlerDefineError, InitializationError
+from pepperbot.extensions.command.handle import LIFECYCLE_WITHOUT_PATTERNS
 from pepperbot.extensions.command.pattern import merge_text_of_patterns
 from pepperbot.store.command import (
     COMMAND_CONFIG,
@@ -88,7 +89,6 @@ def cache_class_handler(class_handler: Callable, handler_name: str):
 
 def cache_class_command(class_command: Callable, command_name: str):
     # 多个group handler，相同command的处理(解析所有指令和groupId，重新生成缓存)
-    # 在提取所有可能的with_command装饰器之后执行
     # 同一个commandClass，就实例化一次
 
     # if lifecycle_name not in get_own_methods():
@@ -99,18 +99,14 @@ def cache_class_command(class_command: Callable, command_name: str):
     for method in get_own_methods(class_command_instance):
         method_name = method.__name__
 
+        if method_name in LIFECYCLE_WITHOUT_PATTERNS:
+            continue
+
         patterns: List[Tuple[str, T_PatternArg]] = []
 
-        # debug(method.__annotations__)
         signature = inspect.signature(method)
-        # debug(signature)
-        # debug(signature.parameters.items())
 
-        # todo no pattern in lifecycle hooks
-        # todo 移动到validate, return patterns
         for arg_name, p in signature.parameters.items():
-            # debug(p.default)
-            # debug(p.annotation)
 
             if p.default == "PatternArg":
                 annotation = p.annotation

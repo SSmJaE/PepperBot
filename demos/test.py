@@ -62,7 +62,7 @@ bot.register_adapter(
 class 指令1:
     async def initial(
         self,
-        raw_event,
+        raw_event:Dict,
         sender: CommandSender,
         name: str = PatternArg(),
         age: int = PatternArg(),

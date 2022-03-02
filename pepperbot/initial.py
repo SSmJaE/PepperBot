@@ -58,7 +58,7 @@ class PepperBot:
         backend_protocol: T_WebProtocol,
         backend_port: int,
         backend_host="127.0.0.1",
-        receive_uri: str = None,
+        receive_uri: str = "",
     ):
         uri: str
         request_handler: Optional[Callable] = None
