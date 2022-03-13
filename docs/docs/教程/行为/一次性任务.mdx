@@ -3,4 +3,11 @@ import CodeBlock from '@theme/CodeBlock';
 
 import MyComponentSource from '!!raw-loader!./11.py';
 
+
+bot.run()是持续监听事件，持续运行
+只想跑一次的话，只要配置了adapter，然后asyncio.run()一下即可
+
+
+
+
 <CodeBlock className="language-python">{MyComponentSource}</CodeBlock>;
