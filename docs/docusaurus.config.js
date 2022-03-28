@@ -1,3 +1,5 @@
+const iconPath = "/img/icon.png"
+
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
     title: "PepperBot Docs",
@@ -6,7 +8,7 @@ module.exports = {
     baseUrl: "/PepperBot/",
     onBrokenLinks: "throw",
     onBrokenMarkdownLinks: "warn",
-    favicon: "img/favicon.ico",
+    favicon: iconPath,
     organizationName: "SSmJaE", // Usually your GitHub org/user name.
     projectName: "PepperBot", // Usually your repo name.
     themeConfig: {
@@ -14,7 +16,7 @@ module.exports = {
             title: "PepperBot",
             logo: {
                 alt: "My Site Logo",
-                src: "img/logo.svg",
+                src: iconPath,
             },
             items: [
                 {
@@ -42,11 +44,11 @@ module.exports = {
                 //     label: "指令市场",
                 //     position: "left",
                 // },
-                // {
-                //     to: "docs/贡献指南/",
-                //     label: "贡献指南",
-                //     position: "left",
-                // },
+                {
+                    to: "docs/贡献指南/",
+                    label: "贡献指南",
+                    position: "left",
+                },
                 // {
                 //   to: 'docs/',
                 //   activeBasePath: 'docs',
