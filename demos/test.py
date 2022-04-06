@@ -62,7 +62,7 @@ bot.register_adapter(
 class 指令1:
     async def initial(
         self,
-        raw_event:Dict,
+        raw_event: Dict,
         sender: CommandSender,
         name: str = PatternArg(),
         age: int = PatternArg(),
@@ -118,6 +118,8 @@ class homepage:
         chain: MessageChain,
         # test,
     ):
+        if chain.pure_text == "芜湖":
+            await bot.group_message(Text("起飞"))
         pass
         # debug(bot)
         # # debug(raw_event)

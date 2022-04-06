@@ -10,3 +10,4 @@ docs/.vitepress/dist
 .vscode
 dist
 htmlcov
+bot

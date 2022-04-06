@@ -161,7 +161,7 @@ class OnebotV11GroupApi(OnebotV11Properties):
 
         如果想实现，在A群接收到消息后，给B群发消息，手动调api
         """
-        return await OnebotV11Api.group_message(self.group_id, segments)
+        return await OnebotV11Api.group_message(self.group_id, *segments)
 
     def at_all(self):
         return {"type": "at", "data": {"qq": "all"}}
