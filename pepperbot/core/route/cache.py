@@ -99,26 +99,27 @@ def cache_class_command(class_command: Callable, command_name: str):
     for method in get_own_methods(class_command_instance):
         method_name = method.__name__
 
-        if method_name in LIFECYCLE_WITHOUT_PATTERNS:
-            continue
-
         patterns: List[Tuple[str, T_PatternArg]] = []
+        compressed_patterns = []
 
-        signature = inspect.signature(method)
+        if method_name not in LIFECYCLE_WITHOUT_PATTERNS:
+            signature = inspect.signature(method)
 
-        for arg_name, p in signature.parameters.items():
+            for arg_name, p in signature.parameters.items():
 
-            if p.default == "PatternArg":
-                annotation = p.annotation
-                if annotation not in runtime_pattern_arg_types:
-                    raise InitializationError(f"仅支持str, bool, int, float和所有消息类型")
+                if p.default == "PatternArg":
+                    annotation = p.annotation
+                    if annotation not in runtime_pattern_arg_types:
+                        raise InitializationError(f"仅支持str, bool, int, float和所有消息类型")
 
-                # 未具体指定类型(int, float, bool)的Text按照str处理
-                patterns.append((arg_name, annotation if annotation != Text else str))
+                    # 未具体指定类型(int, float, bool)的Text按照str处理
+                    patterns.append(
+                        (arg_name, annotation if annotation != Text else str)
+                    )
 
-        # debug(patterns)
+            # debug(patterns)
 
-        compressed_patterns = merge_text_of_patterns(patterns)
+            compressed_patterns = merge_text_of_patterns(patterns)
         # debug(compressed_patterns)
 
         command_method_mapping[method_name] = CommandMethodCache(
