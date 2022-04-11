@@ -81,6 +81,12 @@ module.exports = {
         },
         {
             type: "category",
+            label: "进阶",
+            collapsed: false,
+            items: ["进阶/直接操作Sanic", "进阶/数据库"],
+        },
+        {
+            type: "category",
             label: "插件",
             collapsed: false,
             items: [],
@@ -89,11 +95,10 @@ module.exports = {
             type: "category",
             label: "部署",
             collapsed: false,
-            items: ["教程/部署/两套配置文件", "教程/部署/日志", "教程/部署/linux下部署"],
+            items: ["教程/部署/配置文件", "教程/部署/日志", "教程/部署/linux下部署"],
         },
     ],
-    示例: ["示例/概览", "示例/定时任务", "示例/构造消息", "示例/消息转发"],
-    实战: ["实战/概览", "实战/课程表"],
+    示例: ["示例/概览", "示例/定时任务", "示例/构造消息", "示例/消息转发", "示例/课程表"],
     API: [
         "API/概览",
         {

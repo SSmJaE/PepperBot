@@ -22,7 +22,7 @@ def meet_text_prefix(
     aliases: Set[str] = set(command_config.aliases)
     if command_config.include_class_name:
         aliases.add(command_name)
-    aliases.add("")  # 保证下方循环至少执行一次
+    # aliases.add("")  # 保证下方循环至少执行一次
 
     if command_config.need_prefix:
         prefixes: Iterable[str] = set(command_config.prefixes)

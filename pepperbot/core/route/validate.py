@@ -229,7 +229,12 @@ def is_command_method_args_valid(
 
             # type hint correct
             if p.default != "PatternArg":
-                supposed_type = kwarg_name_type_mapping[arg_name]
+                supposed_type = kwarg_name_type_mapping.get(arg_name)
+                if not supposed_type:
+                    raise InitializationError(
+                        common_prefix + f"{arg_name} 无对应的类型，请确认该参数是否为有效参数"
+                    )
+
                 is_kwarg_annotation_correct(
                     arg_name, p.annotation, supposed_type, common_prefix
                 )

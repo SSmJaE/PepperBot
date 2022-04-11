@@ -39,6 +39,15 @@ pip install poetry
 poetry install
 ```
 
+也可以使用poetry的`git module`
+
+在`pyproject.toml`中添加
+
+```
+pepperbot = {git=""}
+
+```
+
 如果你希望在本地使用最新版本的 PepperBot，在使用 poetry 安装好 PepperBot 的依赖之后
 
 ```

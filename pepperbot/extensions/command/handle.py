@@ -4,7 +4,18 @@ import time
 from collections import deque
 from functools import partial
 from inspect import isawaitable
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, cast
+from typing import (
+    Any,
+    Deque,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    cast,
+)
 
 from devtools import debug, pformat
 from pepperbot.adapters.keaimao.api import KeaimaoApi
@@ -99,6 +110,7 @@ common_kwargs = (
     EventHandlerKwarg(name="raw_event", type_=Dict),
     EventHandlerKwarg(name="chain", type_=MessageChain),
     EventHandlerKwarg(name="sender", type_=CommandSender),
+    EventHandlerKwarg(name="history", type_=Deque[HistoryItem]),
 )
 
 COMMAND_DEFAULT_KWARGS = {
@@ -119,6 +131,7 @@ async def run_command_method(method_name, method, all_locals: Dict) -> Any:
         raw_event=all_locals["raw_event"],
         chain=all_locals["chain"],
         sender=all_locals["sender"],
+        history=all_locals["status"].history,
         # context=all_locals["context"],
     )
 

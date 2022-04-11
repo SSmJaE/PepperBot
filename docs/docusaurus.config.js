@@ -30,11 +30,6 @@ module.exports = {
                     position: "left",
                 },
                 {
-                    to: "docs/实战/",
-                    label: "实战",
-                    position: "left",
-                },
-                {
                     to: "docs/API/",
                     label: "API",
                     position: "left",
@@ -45,8 +40,8 @@ module.exports = {
                 //     position: "left",
                 // },
                 {
-                    to: "docs/贡献指南/",
-                    label: "贡献指南",
+                    to: "docs/参与开发/",
+                    label: "参与开发",
                     position: "left",
                 },
                 // {

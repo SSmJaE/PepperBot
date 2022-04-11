@@ -157,6 +157,9 @@ def whether_available(mode, source_id):
     return True
 
 
+from bot.faq import 常见问题
+from demos.示例.查询装备 import 查询装备
+
 bot.apply_routes(
     [
         # 为所有消息渠道注册的commands
@@ -172,7 +175,7 @@ bot.apply_routes(
         # ),
         BotRoute(
             handlers=[homepage],
-            commands=[指令1],
+            commands=[指令1, 常见问题, 查询装备],
             groups={
                 "onebot": ["1041902989"],
                 "keaimao": ["19521241254@chatroom"],
