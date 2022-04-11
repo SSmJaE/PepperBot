@@ -159,18 +159,25 @@ def update_command_pointer(
     result_name: str,
     raw_event: Dict,
     chain: MessageChain,
+    reset=False,
 ):
     """此时已经经过check_result，result_name一定有效"""
 
     status = normal_command_context_mapping[key]
 
-    status.pointer = result_name
-    status.history.append(
-        HistoryItem(
-            raw_event=raw_event,
-            chain=chain,
+    if not reset:
+        status.pointer = result_name
+        status.history.append(
+            HistoryItem(
+                raw_event=raw_event,
+                chain=chain,
+            )
         )
-    )
+
+    else:
+        status.pointer = "initial"
+        status.history.clear()
+
     status.last_updated_time = time.time()
 
 
@@ -326,8 +333,12 @@ async def run_class_commands(
                 if lifecycle_handler:
                     logger.info(f"开始执行指令 {command_name} 的生命周期 {lifecycle_name}")
                     await run_command_method(
-                        lifecycle_name, lifecycle_handler, locals()
+                        lifecycle_name, lifecycle_handler.method, locals()
                     )
+                    update_command_pointer(key, "initial", raw_event, chain, reset=True)
+
+                else:
+                    logger.info(f"指令 {command_name} 的生命周期 {lifecycle_name} 无对应hook")
 
             else:
                 if "catch" in command_method_names:
@@ -336,7 +347,12 @@ async def run_class_commands(
                         logger.exception(
                             f"指令 {command_name} 的 {pointer} 方法执行出错，开始执行用户定义的异常捕获"
                         )
-                        await run_command_method("catch", cache_handler, locals())
+                        await run_command_method(
+                            "catch", cache_handler.method, locals()
+                        )
+                        update_command_pointer(
+                            key, "initial", raw_event, chain, reset=True
+                        )
 
                 else:
                     raise exception from exception
