@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Callable, Dict, List, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, Tuple
 
 from devtools import pformat
 from pepperbot.core.message.chain import MessageChain
@@ -10,6 +10,9 @@ from pepperbot.store.meta import get_bot_id
 from pepperbot.extensions.log import logger
 
 
+from devtools import debug
+
+
 def meet_text_prefix(
     chain: MessageChain,
     command_name: str,
@@ -17,18 +20,21 @@ def meet_text_prefix(
 ) -> Tuple[bool, str]:
 
     aliases: Set[str] = set(command_config.aliases)
-    prefixes: Set[str] = set(command_config.prefixes)
+    if command_config.include_class_name:
+        aliases.add(command_name)
+    aliases.add("")  # 保证下方循环至少执行一次
+
+    if command_config.need_prefix:
+        prefixes: Iterable[str] = set(command_config.prefixes)
+    else:  # 保证下方循环至少执行一次
+        prefixes = [""]
 
     logger.debug(pformat(command_name))
     logger.debug(pformat(prefixes))
     logger.debug(pformat(aliases))
 
-    if command_config.include_class_name:
-        aliases.add(command_name)
-
     for alias in aliases:
-        final_prefixes = prefixes if command_config.need_prefix else []
-        for prefix in final_prefixes:
+        for prefix in prefixes:
             final_prefix = prefix + alias
             logger.debug(pformat(final_prefix))
             if re.search(f"^{final_prefix}", chain.pure_text):
@@ -49,6 +55,9 @@ def meet_command_prefix(
     # 是否需要@机器人
     if command_config.require_at:
         bot_id = get_bot_id(chain.protocol)  # type:ignore
+
+        # debug(bot_id)
+        # debug(chain.has(At(bot_id)))
 
         if not chain.has(At(bot_id)):
             return False, ""

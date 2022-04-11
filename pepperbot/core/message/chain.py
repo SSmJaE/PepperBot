@@ -20,6 +20,7 @@ from pepperbot.core.message.segment import (
     Text,
     keaimao_image_factory,
     keaimao_text_factory,
+    onebot_at_factory,
     onebot_image_factory,
     onebot_text_factory,
 )
@@ -43,6 +44,7 @@ ONEBOT_SEGMENT_FACTORY_MAPPING: Dict[str, Callable[[Dict], T_SegmentInstance]] =
     "text": onebot_text_factory,
     "image": onebot_image_factory,
     "face": onebot_face_factory,
+    "at": onebot_at_factory,
 }
 
 KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] = {

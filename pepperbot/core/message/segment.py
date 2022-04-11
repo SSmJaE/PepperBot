@@ -21,35 +21,25 @@ from devtools import debug
 
 
 class At(BaseMessageSegment):
-    @overload
-    def __init__(self, userId: str):
-        ...
+    universal = ("onebot", "keaimao")
+    __slots__ = (
+        "onebot",
+        "keaimao",
+        "user_id",
+    )
 
-    @overload
-    def __init__(self, userId: Dict):
-        ...
+    def __init__(self, user_id: str):
 
-    def __init__(self, userId: Union[dict, str]):
+        self.user_id = user_id
 
-        data = userId
+        self.onebot = {"type": "at", "data": {"qq": user_id}}
 
-        # todo pydantic pydantic
-        # 这个str和int不一致，判断has的时候，排查了半天
-        if isinstance(data, dict):
-            identifier = int(data["data"]["qq"])
+        super().__init__(**{"identifier": user_id})
 
-            for key, value in data.items():
-                setattr(self, key, value)
 
-            self.formatted = {**data}
-        else:
-            identifier = data
-
-            self.qq = data
-
-            self.formatted = {"type": "at", "data": {"qq": data}}
-
-        super().__init__(**{"identifier": identifier})
+def onebot_at_factory(raw_segment: Dict):
+    content: str = raw_segment["data"]["qq"]
+    return At(content)
 
 
 def onebot_text_factory(raw_segment: Dict):

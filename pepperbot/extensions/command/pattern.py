@@ -328,7 +328,7 @@ async def parse_pattern(
     formot_hint = "请按照 "
     for arg_name, arg_type in cache.patterns:
         formot_hint += f"<{arg_name} : {arg_type.__name__}> "
-    formot_hint += "的格式输入\n不需要<或者>，:右侧是该参数的类型"
+    formot_hint += "的格式输入\n不需要输入<或者>，:右侧是该参数的类型"
 
     # formot_hint添加prefix
     # if method_name == "initial":

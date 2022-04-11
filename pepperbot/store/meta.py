@@ -60,8 +60,6 @@ class ClassHandlerCache(BaseModel):
     """
 
 
-
-
 class RouteValidatorCache(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -187,7 +185,7 @@ onebot_event_meta = OnebotEventMeta()
 
 
 def get_bot_id(protocol: T_BotProtocol):
-    return route_mapping.bot_info[protocol]["bot_id"]
+    return str(route_mapping.bot_info[protocol]["bot_id"])
 
 
 async def initial_bot_info():
