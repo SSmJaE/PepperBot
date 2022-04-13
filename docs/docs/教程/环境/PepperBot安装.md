@@ -12,26 +12,50 @@ title: 安装
 简单来说，就是打开两个窗口，一个运行 go-cqhttp，一个运行 PepperBot，微信等其他平台同理
 :::
 
-## 安装
-
-### 稳定版本
+## 安装稳定版本
 
 > PepperBot 使用 Poetry 管理依赖，建议使用 Poetry 进行开发
 
-#### 使用 poetry
+### 使用 poetry
 
 ```
 pip install poetry
 poetry add pepperbot
 ```
 
-#### 使用 pip
+:::info
+poetry第一次resolve会比较慢
+:::
+
+### 使用 pip
 
 ```
 pip install pepperbot
 ```
 
-### 最新版本
+## 安装最新版本
+
+### 使用`git module`
+
+可以使用poetry的`git module`
+
+在`pyproject.toml`中添加
+
+```
+pepperbot = { git = "https://github.com/SSmJaE/PepperBot.git", branch = "master" }
+```
+
+这种方式比较方便，不需要手动添加`PYTHONPATH`
+
+添加之后
+
+```
+poetry install
+```
+
+然后就像正常安装一样使用就行
+
+### 直接clone
 
 ```
 git clone https://github.com/SSmJaE/PepperBot.git
@@ -39,16 +63,7 @@ pip install poetry
 poetry install
 ```
 
-也可以使用poetry的`git module`
-
-在`pyproject.toml`中添加
-
-```
-pepperbot = {git=""}
-
-```
-
-如果你希望在本地使用最新版本的 PepperBot，在使用 poetry 安装好 PepperBot 的依赖之后
+如果你希望在本地使用最新版本的 PepperBot，在使用 poetry 安装好 PepperBot 的依赖之后，需要手动添加`PYTHONPATH`
 
 ```
 -pepperbot
@@ -81,7 +96,7 @@ from pepperbot import PepperBot
 ```
 
 :::warning
-注意，导入 pepperbot 的语句，必须在添加路径的下方
+注意，所有从 pepperbot 导入的语句，必须在添加路径(sys.path.append)的下方
 
 其它模块无所谓在上还是在下
 :::

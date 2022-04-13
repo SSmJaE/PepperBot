@@ -248,6 +248,20 @@ async def func(self, history):
 
 ```
 
+## CommandSender
+
+可以发现，我们在指令中，并没有使用 bot.group_message 之类的 api，而是 sender.send_message
+
+那么，我们为什么引入 sender 这样一个新概念呢？
+
+sender，其实就是个快捷方式，自动向不同消息来源的对象发送消息的快捷方式
+
+因为作为指令的话，你不知道，用户是从私聊消息，还是从群消息发送的
+
+新引入 sender 对象，通过 sender.send_message，可以自动判断，不需要手动 bot.onebot 之类了
+
+当然，我们在指令中也是可以继续使用 bot.xxx 风格的 api 的，见`arbitrary API`
+
 ## 完整指令
 
 import CodeBlock from "@theme/CodeBlock";
