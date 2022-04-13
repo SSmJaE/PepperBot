@@ -12,6 +12,45 @@
         to_wxid: "wxid_adgwlc0cyazt22",
         msg: "zzzzzz",
     },
+    // @
+    {
+        event: "EventSendOutMsg",
+        robot_wxid: "wxid_opwzinl7jovm21",
+        robot_name: "",
+        type: 1,
+        from_wxid: "wxid_opwzinl7jovm21",
+        from_name: "",
+        final_from_wxid: "wxid_opwzinl7jovm21",
+        final_from_name: "",
+        to_wxid: "19521241254@chatroom",
+        msg: "@免费转码可乐[@emoji=/u2005]",
+    },
+    // 带文字@
+    {
+        event: "EventSendOutMsg",
+        robot_wxid: "wxid_opwzinl7jovm21",
+        robot_name: "",
+        type: 1,
+        from_wxid: "wxid_opwzinl7jovm21",
+        from_name: "",
+        final_from_wxid: "wxid_opwzinl7jovm21",
+        final_from_name: "",
+        to_wxid: "19521241254@chatroom",
+        msg: "@艾琳[@emoji=/u2005]测试一下",
+    },
+    // 引用，类似qq的回复
+    {
+        event: "EventSendOutMsg",
+        robot_wxid: "wxid_opwzinl7jovm21",
+        robot_name: "",
+        type: 49,
+        from_wxid: "wxid_opwzinl7jovm21",
+        from_name: "",
+        final_from_wxid: "wxid_opwzinl7jovm21",
+        final_from_name: "",
+        to_wxid: "19521241254@chatroom",
+        msg: '<msg>\r\n    <fromusername>wxid_opwzinl7jovm21</fromusername>\r\n    <scene>0</scene>\r\n    <commenturl></commenturl>\r\n    <appmsg appid="" sdkver="0">\r\n        <title>44444</title>\r\n        <des></des>\r\n        <action>view</action>\r\n        <type>57</type>\r\n        <showtype>0</showtype>\r\n        <content></content>\r\n        <url></url>\r\n        <dataurl></dataurl>\r\n        <lowurl></lowurl>\r\n        <lowdataurl></lowdataurl>\r\n        <recorditem>\r\n            <![CDATA[]]>\r\n        </recorditem>\r\n        <thumburl></thumburl>\r\n        <messageaction></messageaction>\r\n        <refermsg>\r\n            <type>1</type>\r\n            <svrid>2339411412641543516</svrid>\r\n            <fromusr>19521241254@chatroom</fromusr>\r\n            <chatusr />\r\n            <displayname>SSmJaE</displayname>\r\n            <msgsource>&lt;msgsource&gt;&lt;atuserlist&gt;&lt;![CDATA[wxid_evfqmz67txn722]]&gt;&lt;/atuserlist&gt;&lt;/msgsource&gt;</msgsource>\r\n            <content>@艾琳?测试一下</content>\r\n        </refermsg>\r\n        <extinfo></extinfo>\r\n        <sourceusername></sourceusername>\r\n        <sourcedisplayname></sourcedisplayname>\r\n        <commenturl></commenturl>\r\n        <appattach>\r\n            <totallen>0</totallen>\r\n            <attachid></attachid>\r\n            <emoticonmd5></emoticonmd5>\r\n            <fileext></fileext>\r\n            <aeskey></aeskey>\r\n        </appattach>\r\n        <weappinfo>\r\n            <pagepath></pagepath>\r\n            <username></username>\r\n            <appid></appid>\r\n            <appservicetype>0</appservicetype>\r\n        </weappinfo>\r\n        <websearch />\r\n        <finderFeed>\r\n            <objectId>0</objectId>\r\n            <objectNonceId>0</objectNonceId>\r\n            <feedType>-1</feedType>\r\n            <nickname></nickname>\r\n            <username></username>\r\n            <avatar></avatar>\r\n            <desc></desc>\r\n            <mediaCount>0</mediaCount>\r\n            <localId>0</localId>\r\n            <mediaList />\r\n        </finderFeed>\r\n        <finderLive>\r\n            <finderLiveID>0</finderLiveID>\r\n            <finderUsername></finderUsername>\r\n            <finderObjectID>0</finderObjectID>\r\n            <nickname></nickname>\r\n            <desc></desc>\r\n            <finderNonceID>0</finderNonceID>\r\n            <headUrl></headUrl>\r\n            <liveStatus>-1</liveStatus>\r\n            <media>\r\n                <thumbUrl></thumbUrl>\r\n                <videoPlayDuration>0</videoPlayDuration>\r\n                <url></url>\r\n                <coverUrl></coverUrl>\r\n                <height>0</height>\r\n                <width>0</width>\r\n                <mediaType>-1</mediaType>\r\n            </media>\r\n        </finderLive>\r\n    </appmsg>\r\n    <appinfo>\r\n        <version>1</version>\r\n        <appname>Window wechat</appname>\r\n    </appinfo>\r\n</msg>\r\n',
+    },
     // 官方表情
     {
         event: "EventFriendMsg",
@@ -50,6 +89,32 @@
         final_from_name: "SSmJaE",
         to_wxid: "wxid_adgwlc0cyazt22",
         msg: "D:/WeChat/savefiles/wxid_adgwlc0cyazt22/1063460014.jpg",
+    },
+    //语音
+    {
+        event: "EventSendOutMsg",
+        robot_wxid: "wxid_opwzinl7jovm21",
+        robot_name: "",
+        type: 34,
+        from_wxid: "wxid_opwzinl7jovm21",
+        from_name: "",
+        final_from_wxid: "wxid_opwzinl7jovm21",
+        final_from_name: "",
+        to_wxid: "19521241254@chatroom",
+        msg: "D:/WeChat/savefiles/wxid_opwzinl7jovm21/41363539353437316463373533336500512034041322610bc67803c102.silk",
+    },
+    // 视频
+    {
+        event: "EventSendOutMsg",
+        robot_wxid: "wxid_opwzinl7jovm21",
+        robot_name: "",
+        type: 43,
+        from_wxid: "wxid_opwzinl7jovm21",
+        from_name: "",
+        final_from_wxid: "wxid_opwzinl7jovm21",
+        final_from_name: "",
+        to_wxid: "19521241254@chatroom",
+        msg: "D:/WeChat/savefiles/wxid_opwzinl7jovm21/3349489492321336597.mp4",
     },
     //文件
     {

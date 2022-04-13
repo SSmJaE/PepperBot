@@ -3,6 +3,7 @@
 
 from typing import TYPE_CHECKING
 from pepperbot.core.bot.api_caller import ApiCaller
+from pepperbot.exceptions import EventHandleError
 from pepperbot.store.meta import get_onebot_caller
 from pepperbot.types import BaseBot
 
@@ -13,7 +14,10 @@ if TYPE_CHECKING:
 class OnebotV11Api:
     @staticmethod
     async def get_login_info():
-        return (await get_onebot_caller()("get_login_info")).json()["data"]
+        try:
+            return (await get_onebot_caller()("get_login_info")).json()["data"]
+        except:
+            raise EventHandleError(f"无法获取onebot机器人登录信息，请确认onebot服务是否正常运行")
 
     @staticmethod
     async def group_message(group_id: str, *segments: "T_SegmentInstance"):

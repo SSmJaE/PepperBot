@@ -20,9 +20,13 @@ from pepperbot.core.message.segment import (
     Text,
     keaimao_image_factory,
     keaimao_text_factory,
+    keaimao_video_factory,
     onebot_at_factory,
+    onebot_audio_factory,
     onebot_image_factory,
+    onebot_poke_factory,
     onebot_text_factory,
+    onebot_video_factory,
 )
 from pepperbot.exceptions import EventHandleError
 from pepperbot.types import T_BotProtocol, T_RouteMode
@@ -45,11 +49,15 @@ ONEBOT_SEGMENT_FACTORY_MAPPING: Dict[str, Callable[[Dict], T_SegmentInstance]] =
     "image": onebot_image_factory,
     "face": onebot_face_factory,
     "at": onebot_at_factory,
+    "poke": onebot_poke_factory,
+    "record": onebot_audio_factory,
+    "video": onebot_video_factory,
 }
 
 KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] = {
     1: keaimao_text_factory,
     3: keaimao_image_factory,
+    43: keaimao_video_factory,
 }
 
 

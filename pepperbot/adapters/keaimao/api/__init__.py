@@ -54,14 +54,16 @@ if TYPE_CHECKING:
     from pepperbot.core.message.segment import T_SegmentInstance
 
 from pepperbot.core.bot.api_caller import ApiCaller
-from pepperbot.core.message.segment import Image, T_SegmentClass, Text
-from pepperbot.exceptions import BackendApiError
+from pepperbot.core.message.segment import Image, Music, T_SegmentClass, Text, Video
+from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.store.meta import get_bot_id, get_keaimao_caller
 from pepperbot.types import BaseBot
 
 KEAIMAO_SEGMENT_ACTION_MAPPING: Dict[T_SegmentClass, str] = {
     Text: "SendTextMsg",
     Image: "SendImageMsg",
+    Video: "SendVideoMsg",
+    Music: "SendMusicMsg",
 }
 
 
@@ -72,7 +74,10 @@ class KeaimaoApi:
 
     @staticmethod
     async def get_login_accounts():
-        return (await get_keaimao_caller()("GetLoggedAccountList")).json()["data"]
+        try:
+            return (await get_keaimao_caller()("GetLoggedAccountList")).json()["data"]
+        except:
+            raise EventHandleError(f"无法获取可爱猫机器人登录信息，请确认可爱猫正常运行")
 
     @staticmethod
     async def group_message(group_id: str, *segments: "T_SegmentInstance"):

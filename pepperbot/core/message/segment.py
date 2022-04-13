@@ -1,4 +1,4 @@
-from random import random
+from random import randint, random
 from typing import (
     Any,
     Dict,
@@ -21,34 +21,24 @@ from devtools import debug
 
 
 class At(BaseMessageSegment):
-    universal = ("onebot", "keaimao")
+    universal = ("onebot",)
     __slots__ = (
         "onebot",
-        "keaimao",
+        # "keaimao",
         "user_id",
     )
 
     def __init__(self, user_id: str):
 
         self.user_id = user_id
+        super().__init__(**{"identifier": user_id})
 
         self.onebot = {"type": "at", "data": {"qq": user_id}}
 
-        super().__init__(**{"identifier": user_id})
-
 
 def onebot_at_factory(raw_segment: Dict):
-    content: str = raw_segment["data"]["qq"]
+    content = str(raw_segment["data"]["qq"])
     return At(content)
-
-
-def onebot_text_factory(raw_segment: Dict):
-    content: str = raw_segment["data"]["text"]
-    return Text(content)
-
-
-def keaimao_text_factory(raw_event: Dict):
-    return Text(raw_event["msg"])
 
 
 class Text(BaseMessageSegment):
@@ -62,6 +52,7 @@ class Text(BaseMessageSegment):
     def __init__(self, content: str):
 
         self.content = content
+        super().__init__(**{"identifier": content})
 
         self.onebot = {
             "type": "text",
@@ -69,34 +60,14 @@ class Text(BaseMessageSegment):
         }
         self.keaimao = content
 
-        super().__init__(**{"identifier": content})
+
+def onebot_text_factory(raw_segment: Dict):
+    content: str = raw_segment["data"]["text"]
+    return Text(content)
 
 
-def validate_onebot_image_file_path(path: str):
-    prefix = path.split("://")[0]
-    if prefix not in ("file", "http", "https", "base64"):
-        if ":/" in path:  # 微信会直接将收到的图片保存至本地
-            return f"file:///{path}"
-        else:
-            raise EventHandleError(f"无法解析的图片路径 {path}")
-
-    return path
-
-
-def onebot_image_factory(raw_segment: Dict):
-    file_path = raw_segment["data"].get("url")
-    if not file_path:
-        raise Exception("无法解析图片地址")
-
-    file_path = validate_onebot_image_file_path(file_path)
-
-    return Image(file_path)
-
-
-def keaimao_image_factory(raw_event: Dict):
-    file_path = raw_event["msg"]
-    file_path = validate_onebot_image_file_path(file_path)
-    return Image(file_path)
+def keaimao_text_factory(raw_event: Dict):
+    return Text(raw_event["msg"])
 
 
 class Image(BaseMessageSegment):
@@ -114,12 +85,17 @@ class Image(BaseMessageSegment):
     """
 
     universal = ("onebot", "keaimao")
-    __slots__ = ("onebot",)
+    __slots__ = (
+        "onebot",
+        "file_path",
+        "mode",
+    )
 
     def __init__(self, file_path: str, mode: Optional[Literal["flash"]] = None):
 
         self.file_path = file_path
         self.mode = mode
+        super().__init__(**{"identifier": file_path})
 
         # debug(file_path)
         self.onebot = {
@@ -130,12 +106,10 @@ class Image(BaseMessageSegment):
             },
         }
 
-        super().__init__(**{"identifier": file_path})
-
     @property
     def keaimao(self):
-        if not self.file_path and not self.file_path.startswith("http"):
-            raise EventHandleError(f"可爱猫仅支持发送URL格式的图片")
+        if not self.file_path.startswith("http"):
+            raise EventHandleError(f"可爱猫仅支持通过URL发送图片")
 
         return {
             "name": f"{random()}.png",
@@ -146,99 +120,148 @@ class Image(BaseMessageSegment):
         # todo download
         pass
 
-    def to_flash(self):
+    def onebot_to_flash(self):
         self.onebot["data"]["type"] = "flash"
 
         return self
 
-    def un_flash(self):
+    def onebot_un_flash(self):
         if self.onebot["data"].get("type"):
             del self.onebot["data"]["type"]
 
         return self
 
 
-class Poke(BaseMessageSegment):
-    universal = ("onebot", "keaimao")
-
-    @overload
-    def __init__(
-        self,
-        qq: int,
-    ):
-        ...
-
-    @overload
-    def __init__(self, qq: Dict):
-        ...
-
-    def __init__(
-        self,
-        qq: Union[Dict, int],
-    ):
-
-        data = qq
-
-        if isinstance(data, dict):
-            identifier = data["data"]["url"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
+def validate_image_path(path: str):
+    prefix = path.split("://")[0]
+    if prefix not in ("file", "http", "https", "base64"):
+        if ":/" in path:  # 微信会直接将收到的图片保存至本地
+            return f"file:///{path}"
         else:
-            identifier = data
+            raise EventHandleError(f"无法解析的图片路径 {path}")
 
-            self.formatted = {
-                "type": "poke",
-                "data": {"qq": qq},
-            }
+    return path
 
+
+def onebot_image_factory(raw_segment: Dict):
+    file_path = raw_segment["data"].get("url")
+    if not file_path:
+        raise Exception("无法解析图片地址")
+
+    file_path = validate_image_path(file_path)
+
+    return Image(file_path)
+
+
+def keaimao_image_factory(raw_event: Dict):
+    file_path = raw_event["msg"]
+    file_path = validate_image_path(file_path)
+    return Image(file_path)
+
+
+class Poke(BaseMessageSegment):
+    universal = ("onebot",)
+
+    def __init__(self, user_id: str):
+
+        identifier = user_id
         super().__init__(**{"identifier": identifier})
 
+        self.onebot = {
+            "type": "poke",
+            "data": {"qq": user_id},
+        }
 
-# class Poke(BaseMessageSegment):
-#     @overload
-#     def __init__(self, data: Dict):
-#         ...
 
-#     @overload
-#     def __init__(
-#         self,
-#         data: int,
-#         id: int,
-#     ):
-#         ...
+def onebot_poke_factory(raw_segment: Dict):
+    user_id = str(raw_segment["data"]["qq"])
+    return Poke(user_id)
 
-#     def __init__(
-#         self,
-#         data: Union[Dict, int],
-#         id: Optional[int] = None,
-#     ):
 
-#         if isinstance(data, dict):
-#             url = data["url"]
+class Audio(BaseMessageSegment):
+    universal = ("onebot",)
 
-#             for key, value in data.items():
-#                 setattr(self, key, value)
-#         else:
-#             if not (data or id):
-#                 raise Exception("必须提供mode和id")
+    def __init__(self, path: str):
 
-#             url = data
+        identifier = path
+        super().__init__(**{"identifier": identifier})
 
-#         super().__init__(**{"identifier": url})
+        self.onebot = {
+            "type": "record",
+            "data": {
+                "file": path,
+            },
+        }
 
-#         kwargs = DictNoNone()
-#         kwargs["type"] = data
-#         kwargs["id"] = id
 
-#         self.formatted = {
-#             "type": "poke",
-#             "data": {
-#                 **kwargs,
-#             },
-#         }
+def onebot_audio_factory(raw_segment: Dict):
+    path: str = raw_segment["data"]["file"]
+    return Audio(path)
+
+
+class Video(BaseMessageSegment):
+    universal = ("onebot", "keaimao")
+
+    def __init__(self, file_path: str):
+
+        identifier = file_path
+        super().__init__(**{"identifier": identifier})
+        self.file_path = file_path
+
+        self.onebot = {"type": "video", "data": {"file": file_path}}
+
+    @property
+    def keaimao(self):
+        if not self.file_path.startswith("http"):
+            raise EventHandleError(f"可爱猫仅支持通过URL发送视频")
+
+        return {
+            "name": f"{random()}.mp4",
+            "url": self.file_path,
+        }
+
+
+def onebot_video_factory(raw_segment: Dict):
+    path: str = raw_segment["data"]["file"]
+    return Video(path)
+
+
+def keaimao_video_factory(raw_segment: Dict):
+    path: str = raw_segment["msg"]
+    return Video(validate_image_path(path))
+
+
+class Music(BaseMessageSegment):
+    universal = ("onebot",)
+
+    def __init__(self, music_id: str, source: Literal["qq", "163", "xm"] = "qq"):
+
+        identifier = music_id + source
+        super().__init__(**{"identifier": identifier})
+
+        self.onebot = {
+            "type": "music",
+            "data": {
+                "type": source,
+                "id": music_id,
+            },
+        }
+
+        self.keaimao = {
+            "name": "\u6211\u8981\u4f60",
+            "type": 0,
+        }
+
+
+def onebot_music_factory(raw_segment: Dict):
+    music_id = str(raw_segment["data"]["id"])
+    source: str = raw_segment["data"]["type"]
+    return Music(music_id, source)  # type:ignore
+
+
+def keaimao_music_factory(raw_segment: Dict):
+    path: str = raw_segment["msg"]
+    return Music(validate_image_path(path))
 
 
 class Reply(BaseMessageSegment):
@@ -269,102 +292,11 @@ class Reply(BaseMessageSegment):
         super().__init__(**{"identifier": identifier})
 
 
-class Audio(BaseMessageSegment):
-    @overload
-    def __init__(
-        self,
-        path: str,
-    ):
-        ...
-
-    @overload
-    def __init__(self, path: Dict):
-        ...
-
-    def __init__(self, path: Union[dict, str]):
-
-        data = path
-
-        if isinstance(data, dict):
-            identifier = data["data"]["file"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
-        else:
-            identifier = data
-
-            self.formatted = {"type": "record", "data": {"file": data}}
-
-        super().__init__(**{"identifier": identifier})
-
-
-class Video(BaseMessageSegment):
-    @overload
-    def __init__(
-        self,
-        path: str,
-    ):
-        ...
-
-    @overload
-    def __init__(self, path: Dict):
-        ...
-
-    def __init__(self, path: Union[dict, str]):
-
-        data = path
-
-        if isinstance(data, dict):
-            identifier = data["data"]["file"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
-        else:
-            identifier = data
-
-            self.formatted = {"type": "video", "data": {"file": data}}
-
-        super().__init__(**{"identifier": identifier})
-
-
-class Music(BaseMessageSegment):
-    @overload
-    def __init__(self, id: str, source: Literal["qq", "163", "xm"] = "qq"):
-        ...
-
-    @overload
-    def __init__(self, id: Dict):
-        ...
-
-    def __init__(self, id: Union[dict, str], source: Literal["qq", "163", "xm"] = "qq"):
-
-        data = id
-
-        if isinstance(data, dict):
-            identifier = data["data"]["id"] + data["data"]["type"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
-        else:
-            identifier = data + source
-
-            self.formatted = {"type": "music", "data": {"type": source, "id": id}}
-
-        super().__init__(**{"identifier": identifier})
-
-
 T_SegmentClass = Union[
     Type[At],
     Type[Music],
     Type[Audio],
     Type[Image],
-    Type[Reply],
     Type[Text],
     Type[OnebotFace],
     Type[Video],
@@ -374,26 +306,24 @@ T_SegmentClass = Union[
 T_SegmentInstance = Union[
     At,
     Text,
-    OnebotFace,
     Music,
     Audio,
     Image,
-    Reply,
     Video,
     Poke,
+    OnebotFace,
     OnebotShare,
 ]
 GT_SegmentInstance = TypeVar(
     "GT_SegmentInstance",
     At,
     Text,
-    OnebotFace,
     Music,
     Audio,
     Image,
-    Reply,
     Video,
     Poke,
+    OnebotFace,
     OnebotShare,
 )
 T_SegmentClassOrInstance = Union[T_SegmentClass, T_SegmentInstance]
