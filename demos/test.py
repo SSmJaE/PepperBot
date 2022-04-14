@@ -45,13 +45,13 @@ bot.register_adapter(
     backend_host="127.0.0.1",
     backend_port=5700,
 )
-bot.register_adapter(
-    bot_protocol="keaimao",
-    receive_protocol="http",
-    backend_protocol="http",
-    backend_host="192.168.1.107",
-    backend_port=8090,
-)
+# bot.register_adapter(
+#     bot_protocol="keaimao",
+#     receive_protocol="http",
+#     backend_protocol="http",
+#     backend_host="192.168.1.107",
+#     backend_port=8090,
+# )
 
 
 # str_arg = PatternArg(str)  # type:ignore
@@ -119,27 +119,30 @@ class homepage:
         chain: MessageChain,
         # test,
     ):
-        if chain.pure_text == "芜湖":
-            await bot.group_message(
-                Text("起飞"),
-                # Video(
-                #     # "https://vd4.bdstatic.com/mda-ndanb298u2300y8k/sc/cae_h264_delogo/1649692023013941959/mda-ndanb298u2300y8k.mp4?v_from_s=hkapp-haokan-nanjing&auth_key=1649858900-0-0-bc4b573bb34a510ee61f7de7c9bd76b3&bcevod_channel=searchbox_feed&pd=1&cd=0&pt=3&logid=2300806737&vid=782171143428199568&abtest=100815_2-101454_5-17451_2&klogid=2300806737"
-                #     r"file:///F:\wx\WeChat Files\wxid_opwzinl7jovm21\FileStorage\Video\2022-04\f945d6043bed5d72283f882e43ca092c.mp4"
-                # ),
-                Music("28949129", "qq"),
-            )
 
-            await bot.arbitrary.keaimao.group_message(
-                "19521241254@chatroom",
-                Music("28949129", "163"),
-                # Image(
-                # "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
-                # r"C:\Users\16939201\Desktop\download.jpg"
-                # ),
-                # Video(
-                #     "https://vd4.bdstatic.com/mda-ndanb298u2300y8k/sc/cae_h264_delogo/1649692023013941959/mda-ndanb298u2300y8k.mp4?v_from_s=hkapp-haokan-nanjing&auth_key=1649858900-0-0-bc4b573bb34a510ee61f7de7c9bd76b3&bcevod_channel=searchbox_feed&pd=1&cd=0&pt=3&logid=2300806737&vid=782171143428199568&abtest=100815_2-101454_5-17451_2&klogid=2300806737"
-                # ),
-            )
+        debug(chain.segments)
+        if chain.pure_text == "芜湖":
+            await chain.onebot_reply(Text("直接回复消息链"))
+            # await bot.group_message(
+            #     Text("起飞"),
+            #     # Video(
+            #     #     # "https://vd4.bdstatic.com/mda-ndanb298u2300y8k/sc/cae_h264_delogo/1649692023013941959/mda-ndanb298u2300y8k.mp4?v_from_s=hkapp-haokan-nanjing&auth_key=1649858900-0-0-bc4b573bb34a510ee61f7de7c9bd76b3&bcevod_channel=searchbox_feed&pd=1&cd=0&pt=3&logid=2300806737&vid=782171143428199568&abtest=100815_2-101454_5-17451_2&klogid=2300806737"
+            #     #     r"file:///F:\wx\WeChat Files\wxid_opwzinl7jovm21\FileStorage\Video\2022-04\f945d6043bed5d72283f882e43ca092c.mp4"
+            #     # ),
+            #     Music("28949129", "qq"),
+            # )
+
+            # await bot.arbitrary.keaimao.group_message(
+            #     "19521241254@chatroom",
+            #     Music("28949129", "163"),
+            #     # Image(
+            #     # "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
+            #     # r"C:\Users\16939201\Desktop\download.jpg"
+            #     # ),
+            #     # Video(
+            #     #     "https://vd4.bdstatic.com/mda-ndanb298u2300y8k/sc/cae_h264_delogo/1649692023013941959/mda-ndanb298u2300y8k.mp4?v_from_s=hkapp-haokan-nanjing&auth_key=1649858900-0-0-bc4b573bb34a510ee61f7de7c9bd76b3&bcevod_channel=searchbox_feed&pd=1&cd=0&pt=3&logid=2300806737&vid=782171143428199568&abtest=100815_2-101454_5-17451_2&klogid=2300806737"
+            #     # ),
+            # )
         # debug(bot)
         # # debug(raw_event)
         # debug(chain)
@@ -150,20 +153,20 @@ class homepage:
         # #     Text("一条跨平台消息"),
         # # )
 
-        if bot.onebot:
-            #     await bot.arbitrary.keaimao.group_message(
-            #         "19521241254@chatroom", *chain.segments
-            #     )
-            await bot.arbitrary.keaimao.group_message(
-                "19521241254@chatroom",
-                # Image(
-                # "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
-                # r"C:\Users\16939201\Desktop\download.jpg"
-                # ),
-                # Video(
-                #     "https://vd4.bdstatic.com/mda-ndanb298u2300y8k/sc/cae_h264_delogo/1649692023013941959/mda-ndanb298u2300y8k.mp4?v_from_s=hkapp-haokan-nanjing&auth_key=1649858900-0-0-bc4b573bb34a510ee61f7de7c9bd76b3&bcevod_channel=searchbox_feed&pd=1&cd=0&pt=3&logid=2300806737&vid=782171143428199568&abtest=100815_2-101454_5-17451_2&klogid=2300806737"
-                # ),
-            )
+        # if bot.onebot:
+        #     #     await bot.arbitrary.keaimao.group_message(
+        #     #         "19521241254@chatroom", *chain.segments
+        #     #     )
+        #     await bot.arbitrary.keaimao.group_message(
+        #         "19521241254@chatroom",
+        #         # Image(
+        #         # "http://pic.5tu.cn/uploads/allimg/1901/pic_5tu_big_201901170106566711.jpg"
+        #         # r"C:\Users\16939201\Desktop\download.jpg"
+        #         # ),
+        #         # Video(
+        #         #     "https://vd4.bdstatic.com/mda-ndanb298u2300y8k/sc/cae_h264_delogo/1649692023013941959/mda-ndanb298u2300y8k.mp4?v_from_s=hkapp-haokan-nanjing&auth_key=1649858900-0-0-bc4b573bb34a510ee61f7de7c9bd76b3&bcevod_channel=searchbox_feed&pd=1&cd=0&pt=3&logid=2300806737&vid=782171143428199568&abtest=100815_2-101454_5-17451_2&klogid=2300806737"
+        #         # ),
+        #     )
 
         # if bot.keaimao:
         #     await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)

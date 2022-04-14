@@ -25,6 +25,7 @@ from pepperbot.core.message.segment import (
     onebot_audio_factory,
     onebot_image_factory,
     onebot_poke_factory,
+    onebot_reply_factory,
     onebot_text_factory,
     onebot_video_factory,
 )
@@ -52,6 +53,7 @@ ONEBOT_SEGMENT_FACTORY_MAPPING: Dict[str, Callable[[Dict], T_SegmentInstance]] =
     "poke": onebot_poke_factory,
     "record": onebot_audio_factory,
     "video": onebot_video_factory,
+    "reply": onebot_reply_factory,
 }
 
 KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] = {
@@ -287,7 +289,7 @@ class MessageChain:
 
         return await api(
             self.source_id,
-            *(segment.onebot for segment in [Reply(self.onebot_message_id), *segments]),
+            *[Reply(self.onebot_message_id), *segments],
         )
 
     async def onebot_withdraw(

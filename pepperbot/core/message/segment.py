@@ -265,31 +265,24 @@ def keaimao_music_factory(raw_segment: Dict):
 
 
 class Reply(BaseMessageSegment):
-    @overload
-    def __init__(self, messageId: str):
-        ...
+    universal = ("onebot",)
 
-    @overload
-    def __init__(self, messageId: Dict):
-        ...
+    def __init__(self, message_id: str):
 
-    def __init__(self, messageId: Union[dict, str]):
-
-        data = messageId
-
-        if isinstance(data, dict):
-            identifier = data["data"]["id"]
-
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            self.formatted = {**data}
-        else:
-            identifier = data
-
-            self.formatted = {"type": "reply", "data": {"id": f"{data}"}}
-
+        identifier = message_id
         super().__init__(**{"identifier": identifier})
+
+        self.onebot = {
+            "type": "reply",
+            "data": {
+                "id": message_id,
+            },
+        }
+
+
+def onebot_reply_factory(raw_segment: Dict):
+    message_id = str(raw_segment["data"]["id"])
+    return Reply(message_id)
 
 
 T_SegmentClass = Union[
@@ -300,6 +293,7 @@ T_SegmentClass = Union[
     Type[Text],
     Type[OnebotFace],
     Type[Video],
+    Type[Reply],
     Type[Poke],
     Type[OnebotShare],
 ]
@@ -311,6 +305,7 @@ T_SegmentInstance = Union[
     Image,
     Video,
     Poke,
+    Reply,
     OnebotFace,
     OnebotShare,
 ]
@@ -323,6 +318,7 @@ GT_SegmentInstance = TypeVar(
     Image,
     Video,
     Poke,
+    Reply,
     OnebotFace,
     OnebotShare,
 )
