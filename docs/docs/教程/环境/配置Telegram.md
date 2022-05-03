@@ -70,7 +70,7 @@ class MyHandler:
 
 ## 直接使用`pyrogram`的参数
 
-仔细查看`pyrogram`的[`update filters`](https://docs.pyrogram.org/api/handlers#pyrogram.handlers.MessageHandler)文档，我们可以发现，每个`filter`都有一个特殊的参数，比如`MessageHandler`中的`Message`，我们在`PepperBot`的时间参数中，也可以访问到，名称和类型都和`pyrogram`的一致
+仔细查看`pyrogram`的[`update handlers`](https://docs.pyrogram.org/api/handlers#pyrogram.handlers.MessageHandler)文档，我们可以发现，每个`handler`都有一个特殊的参数，比如`MessageHandler`中的`Message`，我们在`PepperBot`的事件参数中，也可以访问到，名称和类型都和`pyrogram`的一致
 
 所以`Message`对象上，绑定的`send_message`，`reply_message`等方法，也可以直接调用，不用非得通过`PepperBot`的`bot`对象或者`chain`对象
 

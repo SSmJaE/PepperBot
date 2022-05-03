@@ -292,7 +292,6 @@ async def run_class_commands(
 ):
     # todo kwargs pydantic化
 
-    logger.info(f"开始执行指令")
     chain = await chain_factory(protocol, mode, raw_event, source_id)
 
     for command_name in class_command_names:

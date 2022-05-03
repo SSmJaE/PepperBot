@@ -226,6 +226,12 @@ async def run_class_handlers(
     kwargs = await get_kwargs(protocol, mode, source_id, event_name, raw_event)
     logger.debug(pformat(kwargs))
 
+    if not class_handler_names:
+        logger.opt(colors=True).info(
+            f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 尚未注册class_handler"
+        )
+        return
+
     for class_handler_name in class_handler_names:
         class_handler_cache = class_handler_mapping[class_handler_name]
         logger.debug(pformat(class_handler_cache))
@@ -233,8 +239,15 @@ async def run_class_handlers(
         event_handler = class_handler_cache.event_handlers.get(event_name)
         # logger.debug(pformat(event_name, event_handler))
         if event_handler:
-            logger.info(f"开始执行 {class_handler_name} 的 {event_name} 事件响应")
+            logger.opt(colors=True).info(
+                f"开始执行class_handler <lc>{class_handler_name}</lc> 的事件响应 <lc>{event_name}</lc>",
+            )
             await await_or_sync(event_handler, **fit_kwargs(event_handler, kwargs))
+
+        else:
+            logger.opt(colors=True).info(
+                f"class_handler <lc>{class_handler_name}</lc> 未定义 <lc>{event_name}</lc>"
+            )
 
 
 async def with_validators(mode: T_RouteMode, source_id: str):
@@ -272,6 +285,7 @@ def get_source_id(protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict) -
 
     elif protocol == "telegram":
         callback_object = raw_event["callback_object"]
+        # ! 注意不是from_user.id，是来源id，比如群号
         source_id = callback_object.from_user.id
         debug(source_id)
         # ! str化？
@@ -287,7 +301,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
 
     if not route_mapping.has_initial:
         await initial_bot_info()
-        logger.info("成功获取bot元信息")
+        logger.success("成功获取bot元信息")
         route_mapping.has_initial = True
 
     adapter = get_adapter(protocol)
@@ -301,8 +315,6 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
                 return
 
         logger.info("onebot 心跳")
-
-    logger.info(f"{protocol}事件 {raw_event_name}")
 
     class_handler_names: Set[str] = set()
     # 对同一个消息来源，同一个class_handler也只应调用一次
@@ -328,6 +340,10 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     else:
         raise EventHandleError(f"无效/尚未实现的事件{protocol_event_name}")
 
+    logger.opt(colors=True).info(
+        f"接收到 <lc>{protocol}</lc> 的事件 <lc>{raw_event_name}</lc>，来自于 <lc>{mode}</lc> 模式的 <lc>{source_id}</lc>"
+    )
+
     if mode == "group":
         command_trigger_events = GROUP_COMMAND_TRIGGER_EVENTS
     elif mode == "private":
@@ -337,7 +353,6 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
 
     validator_handlers, validator_commands = await with_validators(mode, source_id)
 
-    debug(command_trigger_events)
     if protocol_event_name in command_trigger_events:
         # normal
         class_command_names |= route_mapping.global_commands[protocol][mode]
@@ -347,6 +362,9 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
         class_command_names |= validator_commands
 
         if class_command_names:
+            logger.opt(colors=True).info(
+                f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 存在注册的指令，开始执行"
+            )
             await run_class_commands(
                 protocol, mode, source_id, raw_event, class_command_names
             )
@@ -360,6 +378,8 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
         #     lock_source_mapping
 
         # lock_source
+    else:
+        logger.opt(colors=True).info(f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 尚未注册指令")
 
     class_handler_names |= route_mapping.global_handlers[protocol][mode]
     class_handler_names |= route_mapping.mapping[protocol][mode][source_id][
