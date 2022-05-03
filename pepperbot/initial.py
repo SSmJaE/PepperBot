@@ -23,7 +23,6 @@ from pepperbot.store.meta import (
     BotRoute,
     api_callers,
     clean_bot_instances,
-    get_telegram_caller,
     output_config,
     register_routes,
     route_mapping,
@@ -125,7 +124,7 @@ class PepperBot:
 
             register_telegram_event(pyrogram_client)
 
-            logger.success("Client created")
+            logger.success("telegram client created")
 
             await pyrogram_client.start()
 

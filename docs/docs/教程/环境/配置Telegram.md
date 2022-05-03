@@ -12,7 +12,9 @@
 
 ## 配置
 
-因为`pyrogram`也是基于python，而且已经分装好了，和`Telegram`主服务器的通信，所以没有必要再封装成协议端，配置`Telegram`时，我们使用的并不是一贯的`bot.register_adapter`，而是`bot.register_telegram`
+因为`pyrogram`也是基于python，而且已经封装好了和`Telegram`主服务器的通信，所以没有必要再抽象成协议端
+
+因此，配置`Telegram`时，我们使用的并不是一贯的`bot.register_adapter`，而是`bot.register_telegram`
 
 ```py
 bot.register_telegram(
@@ -32,9 +34,13 @@ proxy代理是可选的，不过一般需要，毕竟可能被墙
 
 `bot.register_telegram`其实只是转发了一下参数，转发给谁呢？`pyrogram`的[`Client`](https://docs.pyrogram.org/api/client)
 
-`pyrogram`中的`Client`，和`PepperBot`中的`api_caller`或者说`ProtocolApi`概念很像，封装了各种常用的api接口，比如`send_message`，`add_user`之类，既然`pyrogram`已经实现，那我们就直接拿来用，所以`bot.register_telegram`的参数，直接看`pyrogram`的文档即可
+`bot.register_telegram`的参数，直接看`Client`的文档即可
 
 常用参数，就是上方代码片段中所展现的
+
+`pyrogram`中的`Client`，和`PepperBot`中的`api_caller`或者说`ProtocolApi`概念很像，封装了各种常用的api接口，比如`send_message`，`add_user`之类
+
+既然`pyrogram`已经实现了这样的功能，那我们就直接拿来用
 
 ## 简单示例
 

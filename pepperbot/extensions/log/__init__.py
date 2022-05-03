@@ -45,4 +45,9 @@ logger.add(
     # enqueue=True, # 需要阻塞式的日志输出
     format=formatter,  # type:ignore
 )
+logger = logger.opt(colors=True)
+
 logging.getLogger("apscheduler").setLevel(global_config.logger.level)
+
+
+__all__ = ("logger",)

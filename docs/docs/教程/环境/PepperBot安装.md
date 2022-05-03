@@ -7,7 +7,7 @@ title: 安装
 :::
 
 :::warning
-如果你希望对接 QQ，需要同时运行 go-cqhttp 和 PepperBot
+如果你希望对接协议端，比如 QQ，需要同时运行 go-cqhttp 和 PepperBot
 
 简单来说，就是打开两个窗口，一个运行 go-cqhttp，一个运行 PepperBot，微信等其他平台同理
 :::
@@ -35,29 +35,41 @@ pip install pepperbot
 
 ## 安装最新版本
 
+一些新近开发的功能，可以通过使用github上的版本，提前使用
+
 ### 使用`git module`
 
-可以使用poetry的`git module`
+可以使用poetry的`git module`，这种方式比较方便，不需要手动添加`PYTHONPATH`
 
-在`pyproject.toml`中添加
+直接add
 
+```bash
+poetry add git+https://github.com/SSmJaE/PepperBot.git
 ```
+
+或者在`pyproject.toml`中添加
+
+```bash
 pepperbot = { git = "https://github.com/SSmJaE/PepperBot.git", branch = "master" }
 ```
 
-这种方式比较方便，不需要手动添加`PYTHONPATH`
-
 添加之后
 
-```
+```bash
 poetry install
 ```
 
 然后就像正常安装一样使用就行
 
+如果需要更新
+
+```bash
+poetry update
+```
+
 ### 直接clone
 
-```
+```bash
 git clone https://github.com/SSmJaE/PepperBot.git
 pip install poetry
 poetry install
@@ -65,7 +77,7 @@ poetry install
 
 如果你希望在本地使用最新版本的 PepperBot，在使用 poetry 安装好 PepperBot 的依赖之后，需要手动添加`PYTHONPATH`
 
-```
+```bash
 -pepperbot
     ...
     - pepperbot
