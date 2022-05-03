@@ -1,7 +1,7 @@
 from typing import Dict
 from pepperbot.core.bot.universal import UniversalGroupBot
 from pepperbot.core.event.universal import UniversalGroupEvent
-from pepperbot.core.message.chain import MessageChain
+from pepperbot.core.message.chain import MessageChain, chain_factory
 from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
 
 
@@ -14,9 +14,7 @@ UNIVERSAL_KWARGS_MAPPING: T_HandlerKwargMapping = {
         EventHandlerKwarg(
             name="chain",
             type_=MessageChain,
-            value=lambda protocol, mode, raw_event, source_id: MessageChain(
-                protocol, mode, raw_event, source_id
-            ),
+            value=chain_factory,
         ),
     ]
 }

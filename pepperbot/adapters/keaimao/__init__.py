@@ -1,9 +1,9 @@
 from typing import Dict
 
-from pepperbot.adapters.keaimao.event.event import (
+from pepperbot.adapters.keaimao.event import (
+    KeaimaoMetaEvent,
     KeaimaoCommonEvent,
     KeaimaoGroupEvent,
-    KeaimaoMetaEvent,
     KeaimaoPrivateEvent,
 )
 from pepperbot.adapters.keaimao.event.kwargs import KEAIMAO_KWARGS_MAPPING
@@ -28,6 +28,7 @@ class KeaimaoAdapter(BaseAdapater):
 
         return event_name
 
+    event_prefix = "keaimao_"
     meta_events = list(get_own_attributes(KeaimaoMetaEvent))
     common_events = list(get_own_attributes(KeaimaoCommonEvent))
     group_events = list(get_own_attributes(KeaimaoGroupEvent))

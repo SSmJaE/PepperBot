@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-from pepperbot.adapters.onebot.event.event import (
+from pepperbot.adapters.onebot.event import (
     OnebotV11CommonEvent,
     OnebotV11GroupEvent,
     OnebotV11MetaEvent,
@@ -74,7 +74,7 @@ class OnebotV11Adapter(BaseAdapater):
                 elif sub_type == "group":
                     # todo 临时会话可能获取不到groupId
                     # logger.info("群临时会话")
-                    event_name = OnebotV11GroupEvent.temp_message
+                    event_name = OnebotV11PrivateEvent.temp_message
 
             elif message_type == "group":
 
@@ -95,6 +95,7 @@ class OnebotV11Adapter(BaseAdapater):
 
         return event_name
 
+    event_prefix = "onebot_"
     meta_events = list(get_own_attributes(OnebotV11MetaEvent))
     common_events = list(get_own_attributes(OnebotV11CommonEvent))
     group_events = list(get_own_attributes(OnebotV11GroupEvent))

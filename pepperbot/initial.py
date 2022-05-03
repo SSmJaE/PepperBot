@@ -1,9 +1,10 @@
-from typing import Any, Callable, Iterable, Literal, Optional, Type
+from typing import Any, Callable, Coroutine, Iterable, Literal, Optional, Type
 
 from apscheduler.triggers.interval import IntervalTrigger
 from devtools import debug, pformat
 from sanic import Sanic
 
+from pepperbot.adapters.telegram import register_telegram_event
 from pepperbot.config import global_config
 from pepperbot.core.bot.api_caller import ApiCaller
 from pepperbot.core.route.utils import (
@@ -22,6 +23,7 @@ from pepperbot.store.meta import (
     BotRoute,
     api_callers,
     clean_bot_instances,
+    get_telegram_caller,
     output_config,
     register_routes,
     route_mapping,
@@ -29,18 +31,13 @@ from pepperbot.store.meta import (
 from pepperbot.types import T_BotProtocol, T_WebProtocol
 
 sanic_app = Sanic("PepperBot")
-
 sanic_app.config.WEBSOCKET_PING_TIMEOUT = None  # type:ignore
 
 
-# async def async_initial_wrapper():
-#     """ 在框架启动器只执行一次的异步任务 """
-#     await initial_bot_info()
+async_create_telegram_handler: Optional[Callable] = None
 
 
 class PepperBot:
-    adapters = {}
-
     def __init__(
         self,
         host: str = "0.0.0.0",
@@ -53,7 +50,7 @@ class PepperBot:
 
     def register_adapter(
         self,
-        bot_protocol: T_BotProtocol,
+        bot_protocol: Literal["onebot", "keaimao"],
         receive_protocol: T_WebProtocol,
         backend_protocol: T_WebProtocol,
         backend_port: int,
@@ -105,6 +102,36 @@ class PepperBot:
 
         api_callers[bot_protocol] = api_caller
 
+    def register_telegram(self, *args, **kwargs):
+        # sanic启动至少需要一个route，虽然这个route并不会被调用
+        create_web_routes(
+            sanic_app,
+            receive_protocol="http",
+            uri="/telegram/http",
+            request_handler=lambda request: 1,
+        )
+
+        async def create_client_under_async_context():
+            """
+            pyrogram client require to be created under same async context
+            for the reason that it interacts with sqlite
+
+            unnecessarily to invoke `idle()` as we have sanic
+            """
+            from pyrogram.client import Client
+
+            pyrogram_client = Client(*args, **kwargs)
+            api_callers["telegram"] = pyrogram_client
+
+            register_telegram_event(pyrogram_client)
+
+            logger.success("Client created")
+
+            await pyrogram_client.start()
+
+        global async_create_telegram_handler
+        async_create_telegram_handler = create_client_under_async_context
+
     def register_plugin(self):
         pass
 
@@ -115,9 +142,14 @@ class PepperBot:
         pass
 
     @staticmethod
-    def before_server_start(*args):
+    async def before_server_start(*args):
+        logger.success(f"successfully load .env config \n {pformat(global_config)}")
+
+        logger.success(f"successfully create bot routes")
         output_config()
-        logger.success(f"成功读取.env\n {pformat(global_config)}")
+
+        if async_create_telegram_handler:
+            async_scheduler.add_job(async_create_telegram_handler)
 
         async_scheduler.add_job(check_command_timeout, IntervalTrigger(seconds=10))
         # async_scheduler.add_job(clean_bot_instances)

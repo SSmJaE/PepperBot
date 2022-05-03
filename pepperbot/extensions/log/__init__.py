@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import os
 import sys
@@ -41,6 +42,7 @@ logger.add(
     colorize=True,
     backtrace=True,
     diagnose=True,
-    enqueue=True,
+    # enqueue=True, # 需要阻塞式的日志输出
     format=formatter,  # type:ignore
 )
+logging.getLogger("apscheduler").setLevel(global_config.logger.level)

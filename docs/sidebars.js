@@ -107,17 +107,21 @@ module.exports = {
             label: "事件参数",
             collapsed: false,
             items: [
-                "API/事件参数/已实现事件",
                 "API/事件参数/跨平台",
                 "API/事件参数/Onebot",
                 "API/事件参数/可爱猫",
+                "API/事件参数/Telegram",
             ],
         },
         {
             type: "category",
             label: "Arbitrary API",
             collapsed: false,
-            items: ["API/Arbitrary API/Onebot", "API/Arbitrary API/可爱猫"],
+            items: [
+                "API/Arbitrary API/Onebot",
+                "API/Arbitrary API/可爱猫",
+                "API/Arbitrary API/Telegram",
+            ],
         },
         {
             type: "category",
@@ -132,6 +136,7 @@ module.exports = {
                         "API/区分模式 API/群/跨平台",
                         "API/区分模式 API/群/Onebot",
                         "API/区分模式 API/群/可爱猫",
+                        "API/区分模式 API/群/Telegram",
                     ],
                 },
                 {
@@ -142,6 +147,7 @@ module.exports = {
                         "API/区分模式 API/私聊/跨平台",
                         "API/区分模式 API/私聊/Onebot",
                         "API/区分模式 API/私聊/可爱猫",
+                        "API/区分模式 API/私聊/Telegram",
                     ],
                 },
             ],

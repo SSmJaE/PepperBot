@@ -4,3 +4,6 @@ __version__ = "0.2.0"
 
 import better_exceptions
 from .initial import PepperBot
+
+
+better_exceptions.hook()

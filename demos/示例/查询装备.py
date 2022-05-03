@@ -28,7 +28,10 @@ class 查询装备:
         return self.choose_game
 
     async def choose_game(
-        self, sender: CommandSender, game: str = PatternArg(), npc: int = PatternArg()
+        self,
+        sender: CommandSender,
+        game: str = PatternArg(),
+        npc: int = PatternArg(),
     ):
         await sender.send_message(Text(f"你选择的是 {game} 的 {npc}，需要查询他的什么装备呢？稀有度为何？"))
 
@@ -55,8 +58,9 @@ class 查询装备:
 
         return self.whether_continue
 
-    async def whether_continue(self, chain: MessageChain):
+    async def whether_continue(self, sender: CommandSender, chain: MessageChain):
         if "继续" in chain:
+            await sender.send_message(Text("请按照 游戏名 人物序号 的格式输入\n"))
             return self.choose_game
 
         else:

@@ -17,6 +17,8 @@ pretty-errors = "^1.2.20"
 python-dotenv = "^0.19.2"
 devtools = "^0.6.1"
 better-exceptions = "^0.3.3"
+Pyrogram = "^2.0.14"
+TgCrypto = "^1.2.3"
 
 [tool.poetry.dev-dependencies]
 black = { version = "^21.4b2", allow-prereleases = true }

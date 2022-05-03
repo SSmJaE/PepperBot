@@ -20,18 +20,22 @@ from typing import (
 from devtools import debug, pformat
 from pepperbot.adapters.keaimao.api import KeaimaoApi
 from pepperbot.adapters.onebot.api import OnebotV11Api
-from pepperbot.core.message.chain import MessageChain
+from pepperbot.adapters.telegram.api import TelegramApi
+
+# from pepperbot.adapters.telegram.api import TelegramApi
+from pepperbot.core.message.chain import MessageChain, chain_factory
 from pepperbot.core.message.segment import T_SegmentInstance
 from pepperbot.exceptions import (
     ClassCommandDefinitionError,
     ClassCommandOnExit,
     ClassCommandOnFinish,
     ClassCommandOnTimeout,
+    EventHandleError,
 )
 from pepperbot.extensions.command.pattern import parse_pattern
 from pepperbot.extensions.command.utils import meet_command_exit, meet_command_prefix
 from pepperbot.extensions.log import logger
-from pepperbot.store.meta import EventHandlerKwarg
+from pepperbot.store.meta import EventHandlerKwarg, get_telegram_caller
 from pepperbot.store.command import (
     ClassCommandStatus,
     CommandConfig,
@@ -56,11 +60,20 @@ class CommandSender:
             else:
                 self.message_sender = partial(OnebotV11Api.private_message, source_id)
 
-        else:
+        elif protocol == "keaimao":
             if mode == "group":
                 self.message_sender = partial(KeaimaoApi.group_message, source_id)
             else:
                 self.message_sender = partial(KeaimaoApi.private_message, source_id)
+
+        elif protocol == "telegram":
+            if mode == "group":
+                self.message_sender = partial(TelegramApi.group_message, source_id)
+            else:
+                self.message_sender = partial(TelegramApi.private_message, source_id)
+
+        else:
+            raise EventHandleError(f"")
 
     async def send_message(self, *segments: T_SegmentInstance):
         """自动识别消息来源并发送，不需要指定协议，不需要指定是私聊还是群"""
@@ -280,7 +293,7 @@ async def run_class_commands(
     # todo kwargs pydantic化
 
     logger.info(f"开始执行指令")
-    chain = MessageChain(protocol, mode, raw_event, source_id)
+    chain = await chain_factory(protocol, mode, raw_event, source_id)
 
     for command_name in class_command_names:
         logger.info(f"-" * 50)

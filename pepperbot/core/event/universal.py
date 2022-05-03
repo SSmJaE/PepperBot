@@ -1,15 +1,17 @@
 """ 大多数机器人协议共有的事件 """
 
 from pepperbot.adapters.keaimao import KeaimaoAdapter
-from pepperbot.adapters.keaimao.event.event import (
+from pepperbot.adapters.keaimao.event import (
     KeaimaoGroupEvent,
     KeaimaoPrivateEvent,
 )
 from pepperbot.adapters.onebot import OnebotV11Adapter
-from pepperbot.adapters.onebot.event.event import (
+from pepperbot.adapters.onebot.event import (
     OnebotV11GroupEvent,
     OnebotV11PrivateEvent,
 )
+from pepperbot.adapters.telegram import TelegramAdapter
+from pepperbot.adapters.telegram.event import TelegramGroupEvent, TelegramPrivateEvent
 from pepperbot.utils.common import get_own_attributes
 
 
@@ -25,14 +27,14 @@ class UniversalGroupEvent:
     """群事件"""
 
     group_message = "group_message"
-    request_to_enter_the_group = "request_to_enter_the_group"
+    someone_request_join_group = "someone_request_join_group"
     been_invited_to_group = "been_invited_to_group"
     group_member_increased = "group_member_increased"
     group_member_declined = "group_member_declined"
 
 
 class UniversalPrivateEvent:
-    friend_message = "friend_message"
+    private_message = "private_message"
     been_added_by_stranger = "been_added_by_stranger"
 
 
@@ -47,12 +49,14 @@ ALL_UNIVERSAL_EVENTS = [
     *UNIVERSAL_GROUP_EVENTS,
     *UNIVERSAL_PRIVATE_EVENTS,
 ]
+
 ALL_ONEBOTV11_EVENTS = [
     *OnebotV11Adapter.meta_events,
     *OnebotV11Adapter.common_events,
     *OnebotV11Adapter.group_events,
     *OnebotV11Adapter.private_events,
 ]
+
 ALL_KEAIMAO_EVENTS = [
     *KeaimaoAdapter.meta_events,
     *KeaimaoAdapter.common_events,
@@ -60,47 +64,71 @@ ALL_KEAIMAO_EVENTS = [
     *KeaimaoAdapter.private_events,
 ]
 
-ALL_META_EVENTS = [
-    *UNIVERSAL_META_EVENTS,
-    *["onebot_" + event_name for event_name in OnebotV11Adapter.meta_events],
-    *["keaimao_" + event_name for event_name in KeaimaoAdapter.meta_events],
-]
-ALL_COMMON_EVENTS = [
-    *UNIVERSAL_COMMON_EVENTS,
-    *["onebot_" + event_name for event_name in OnebotV11Adapter.common_events],
-    *["keaimao_" + event_name for event_name in KeaimaoAdapter.common_events],
-]
-ALL_GROUP_EVENTS = [
-    *UNIVERSAL_GROUP_EVENTS,
-    *["onebot_" + event_name for event_name in OnebotV11Adapter.group_events],
-    *["keaimao_" + event_name for event_name in KeaimaoAdapter.group_events],
-]
-ALL_PRIVATE_EVENTS = [
-    *UNIVERSAL_PRIVATE_EVENTS,
-    *["onebot_" + event_name for event_name in OnebotV11Adapter.private_events],
-    *["keaimao_" + event_name for event_name in KeaimaoAdapter.private_events],
+available_adapters = [
+    OnebotV11Adapter,
+    KeaimaoAdapter,
+    TelegramAdapter,
 ]
 
-# todo
-GROUP_COMMAND_TRIGGER_EVENTS = [
-    "group_message",
-    "onebot_" + OnebotV11GroupEvent.group_message,
-    "keaimao_" + KeaimaoGroupEvent.group_message,
+ALL_META_EVENTS = [
+    *UNIVERSAL_META_EVENTS,
+    *[
+        adapter.event_prefix + event_name
+        for adapter in available_adapters
+        for event_name in adapter.meta_events
+    ],
 ]
-PRIVATE_COMMAND_TRIGGER_EVENTS = [
-    "friend_message",
-    "onebot_" + OnebotV11PrivateEvent.friend_message,
-    "onebot_" + OnebotV11PrivateEvent.temp_message,
-    "keaimao_" + KeaimaoPrivateEvent.friend_message,
+
+ALL_COMMON_EVENTS = [
+    *UNIVERSAL_COMMON_EVENTS,
+    *[
+        adapter.event_prefix + event_name
+        for adapter in available_adapters
+        for event_name in adapter.common_events
+    ],
 ]
+
+ALL_GROUP_EVENTS = [
+    *UNIVERSAL_GROUP_EVENTS,
+    *[
+        adapter.event_prefix + event_name
+        for adapter in available_adapters
+        for event_name in adapter.group_events
+    ],
+]
+
+ALL_PRIVATE_EVENTS = [
+    *UNIVERSAL_PRIVATE_EVENTS,
+    *[
+        adapter.event_prefix + event_name
+        for adapter in available_adapters
+        for event_name in adapter.private_events
+    ],
+]
+
 
 UNIVERSAL_PROTOCOL_EVENT_MAPPING = {
     UniversalGroupEvent.group_message: [
-        "onebot_" + OnebotV11GroupEvent.group_message,
-        "keaimao_" + KeaimaoGroupEvent.group_message,
+        OnebotV11Adapter.event_prefix + OnebotV11GroupEvent.group_message,
+        KeaimaoAdapter.event_prefix + KeaimaoGroupEvent.group_message,
     ],
-    UniversalPrivateEvent.friend_message: [
-        "onebot_" + OnebotV11PrivateEvent.friend_message,
-        "keaimao_" + KeaimaoPrivateEvent.friend_message,
+    UniversalPrivateEvent.private_message: [
+        OnebotV11Adapter.event_prefix + OnebotV11PrivateEvent.friend_message,
+        KeaimaoAdapter.event_prefix + KeaimaoPrivateEvent.private_message,
     ],
 }
+
+GROUP_COMMAND_TRIGGER_EVENTS = [
+    UniversalGroupEvent.group_message,
+    OnebotV11Adapter.event_prefix + OnebotV11GroupEvent.group_message,
+    KeaimaoAdapter.event_prefix + KeaimaoGroupEvent.group_message,
+    TelegramAdapter.event_prefix + TelegramGroupEvent.group_message,
+]
+
+PRIVATE_COMMAND_TRIGGER_EVENTS = [
+    UniversalPrivateEvent.private_message,
+    OnebotV11Adapter.event_prefix + OnebotV11PrivateEvent.friend_message,
+    OnebotV11Adapter.event_prefix + OnebotV11PrivateEvent.temp_message,
+    KeaimaoAdapter.event_prefix + KeaimaoPrivateEvent.private_message,
+    TelegramAdapter.event_prefix + TelegramPrivateEvent.private_message,
+]

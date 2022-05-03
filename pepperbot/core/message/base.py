@@ -1,15 +1,12 @@
 from typing import Any, Dict, Tuple
 
 from pepperbot.types import T_BotProtocol
+from pepperbot.extensions.log import logger
 
 
 class BaseMessageSegment:
     identifier: Any
     """ 用来判断两个segment是否一致 """
-    universal: Tuple[T_BotProtocol, ...]
-
-    onebot: Dict[str, Any]
-    keaimao: Any
 
     def __init__(self, identifier: Any):
         self.identifier = identifier
@@ -25,3 +22,12 @@ class BaseMessageSegment:
             if self.identifier == other.identifier:
                 return True
         return False
+
+    async def onebot(self):
+        raise NotImplementedError
+
+    async def keaimao(self):
+        raise NotImplementedError
+
+    async def telegram(self):
+        raise NotImplementedError

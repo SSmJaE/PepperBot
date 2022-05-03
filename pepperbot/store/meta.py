@@ -11,26 +11,28 @@ from typing import (
     Set,
     Tuple,
     Type,
+    TypedDict,
     Union,
+    cast,
 )
-from typing_extensions import Annotated
 
-from pydantic import BaseModel, Field
 from pepperbot.core.bot.api_caller import ApiCaller
 from pepperbot.exceptions import InitializationError
-from pepperbot.utils.common import deepawait_or_sync, fit_kwargs
-from rich.tree import Tree
-from rich import print as rich_print
-
 from pepperbot.types import (
     BaseBot,
     BaseClassCommand,
     T_BotProtocol,
-    T_RouteRelation,
     T_RouteMode,
+    T_RouteRelation,
     T_RouteValidator,
     T_WebProtocol,
 )
+from pepperbot.utils.common import deepawait_or_sync, fit_kwargs
+from pydantic import BaseModel, Field
+from pyrogram.client import Client
+from rich import print as rich_print
+from rich.tree import Tree
+from typing_extensions import Annotated, NotRequired
 
 
 class BotRoute(BaseModel):
@@ -204,6 +206,15 @@ async def initial_bot_info():
                 bot_id = (await KeaimaoApi.get_login_accounts())[0]["wxid"]
                 route_mapping.bot_info["keaimao"]["bot_id"] = bot_id
 
+        elif protocol == "telegram":
+            if not route_mapping.bot_info.get("telegram"):
+                # from pepperbot.adapters.telegram.api import TelegramApi
+                client = get_telegram_caller()
+
+                me = await client.get_me()
+                bot_id = str(me.id)
+                route_mapping.bot_info["telegram"]["bot_id"] = bot_id
+
         else:
             raise InitializationError()
 
@@ -229,7 +240,15 @@ route_validator_mapping: Dict[str, T_RouteValidator] = {}
 
 route_mapping = RouteMapping()
 
-api_callers: Dict[T_BotProtocol, ApiCaller] = {}
+
+class ApiCallerTypeMap(TypedDict):
+    onebot: NotRequired[ApiCaller]
+    keaimao: NotRequired[ApiCaller]
+    telegram: NotRequired[Client]
+
+
+# api_callers: Dict[T_BotProtocol, ApiCaller] = {}
+api_callers: ApiCallerTypeMap = {}
 
 register_routes: List[BotRoute] = []
 """ 通过register装饰器注册的class_handler """
@@ -266,7 +285,7 @@ def get_keaimao_caller():
     return get_api_caller("keaimao")
 
 
-def get_telegram_caller():
+def get_telegram_caller() -> Client:
     return get_api_caller("telegram")
 
 
@@ -298,10 +317,11 @@ def has_validator():
 DEFAULT_URI = {
     "onebot": "/onebot",
     "keaimao": "/keaimao",
+    "telegram": "/telegram",
 }
 
 
-ALL_AVAILABLE_BOT_PROTOCOLS: Iterable[T_BotProtocol] = ["onebot", "keaimao"]
+ALL_AVAILABLE_BOT_PROTOCOLS: Iterable[T_BotProtocol] = ["onebot", "keaimao", "telegram"]
 ALL_AVAILABLE_ROUTE_MODES: Iterable[T_RouteMode] = ["group", "private", "channel"]
 
 
@@ -320,7 +340,7 @@ async def get_event_handler_kwargs(
     mapping: Dict[str, List[EventHandlerKwarg]],
     event_name: str,
     *,
-    default_kwargs: List[EventHandlerKwarg] = None,
+    default_kwargs: Optional[List[EventHandlerKwarg]] = None,
     **injected_kwargs: Annotated[Any, "必须提供bot和raw_event"],
 ):
     kwarg_list: List[EventHandlerKwarg] = mapping.get(event_name, default_kwargs or [])
@@ -355,9 +375,13 @@ def output_config():
 
     for protocol, api_caller in api_callers.items():
         caller_tree = tree.add(protocol)
-        caller_tree.add(f"[green]API调用协议").add(api_caller.protocol)
-        caller_tree.add(f"[green]API ip").add(api_caller.host)
-        caller_tree.add(f"[green]API端口").add(str(api_caller.port))
+        if protocol != "telegram":
+            api_caller = cast(ApiCaller, api_caller)
+
+            caller_tree.add(f"[green]API调用协议").add(api_caller.protocol)
+            caller_tree.add(f"[green]API ip").add(api_caller.host)
+            caller_tree.add(f"[green]API端口").add(str(api_caller.port))
+        # else:
 
     rich_print(tree)
 
@@ -369,9 +393,9 @@ def output_config():
         for route_mode in ALL_AVAILABLE_ROUTE_MODES:
             route_name = get_route_chinese(route_mode)
 
-            global_commands = route_mapping.global_handlers[protocol][route_mode]
+            global_commands = route_mapping.global_commands[protocol][route_mode]
             if global_commands:
-                global_commands_tree = protocol_tree.add(f"全局{route_name}响应器")
+                global_commands_tree = protocol_tree.add(f"全局{route_name}指令")
                 for command_name in global_commands:
                     global_commands_tree.add(command_name)
 

@@ -1,5 +1,6 @@
 import httpx
 from pepperbot.config import global_config
+from pepperbot.exceptions import InitializationError
 from pepperbot.types import T_BotProtocol, T_WebProtocol
 from devtools import debug
 
@@ -19,6 +20,9 @@ class ApiCaller:
 
         elif bot_protocol == "keaimao":
             self.caller = self.to_keaimao
+
+        else:
+            raise InitializationError()
 
         self.protocol = backend_protocol
         self.host = backend_host

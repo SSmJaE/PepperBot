@@ -1,4 +1,6 @@
+import logging
 from typing import Union
+
 from pydantic import BaseModel, BaseSettings
 
 
@@ -14,7 +16,7 @@ class Debug(BaseModel):
 
 
 class Logger(BaseModel):
-    level: Union[str, int] = "INFO"
+    level: int = logging.INFO
     write_to_log: bool = False
 
 

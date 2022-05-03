@@ -36,9 +36,12 @@ def meet_text_prefix(
     for alias in aliases:
         for prefix in prefixes:
             final_prefix = prefix + alias
-            logger.debug(pformat(final_prefix))
+            # logger.debug(pformat(final_prefix))
             if re.search(f"^{final_prefix}", chain.pure_text):
+                logger.debug(f"^{final_prefix} 满足 {command_name} 的执行条件")
                 return True, final_prefix
+            else:
+                logger.debug(f"{final_prefix} 不满足 {command_name} 的执行条件")
 
     return False, ""
 

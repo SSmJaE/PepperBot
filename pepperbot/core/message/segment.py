@@ -1,4 +1,5 @@
-from random import randint, random
+import os
+from random import random
 from typing import (
     Any,
     Dict,
@@ -9,31 +10,47 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    overload,
 )
 
-from pepperbot.adapters.onebot.message.segment import OnebotFace, OnebotShare
+from devtools import debug
 from pepperbot.core.message.base import BaseMessageSegment
 from pepperbot.exceptions import EventHandleError
+from pepperbot.store.meta import get_telegram_caller
+from pyrogram.enums.parse_mode import ParseMode
+from pyrogram.types import Message
 
-from pepperbot.utils.common import DictNoNone
-from devtools import debug
+
+async def telegram_download_media(file_id: str, file_name: str):
+    """
+    通过client.download_media，获取到文件的filepath，实现跨平台转发
+
+    https://docs.pyrogram.org/api/methods/download_media?highlight=download_media#pyrogram.Client.download_media
+    """
+    client = get_telegram_caller()
+
+    await client.download_media(file_id, file_name=file_name)
+
+    file_path = f"file:///{os.getcwd()}/downloads/{file_name}"
+
+    return file_path
 
 
 class At(BaseMessageSegment):
-    universal = ("onebot",)
-    __slots__ = (
-        "onebot",
-        # "keaimao",
-        "user_id",
-    )
+    __slots__ = ("user_id",)
 
     def __init__(self, user_id: str):
 
         self.user_id = user_id
+
         super().__init__(**{"identifier": user_id})
 
-        self.onebot = {"type": "at", "data": {"qq": user_id}}
+    async def onebot(self):
+        return {
+            "type": "at",
+            "data": {
+                "qq": self.user_id,
+            },
+        }
 
 
 def onebot_at_factory(raw_segment: Dict):
@@ -41,33 +58,57 @@ def onebot_at_factory(raw_segment: Dict):
     return At(content)
 
 
-class Text(BaseMessageSegment):
-    universal = ("onebot", "keaimao")
+class Audio(BaseMessageSegment):
     __slots__ = (
-        "onebot",
-        "keaimao",
-        "content",
+        "temporary_file_path",
+        "telegram_lazy_download",
+        "file_path",
     )
 
-    def __init__(self, content: str):
+    def __init__(
+        self,
+        file_path: str,
+        telegram_lazy_download=False,
+    ):
 
-        self.content = content
-        super().__init__(**{"identifier": content})
+        self.temporary_file_path = file_path
+        self.telegram_lazy_download = telegram_lazy_download
+        self.file_path = ""
 
-        self.onebot = {
-            "type": "text",
-            "data": {"text": content},
+        super().__init__(**{"identifier": file_path})
+
+    async def get_file_path(self):
+        # only when protocol is telegram, we need to lazy download
+        if not self.telegram_lazy_download:
+            return self.temporary_file_path
+
+        # file_path is actually pyrogram file_id now
+        if self.file_path:
+            return self.file_path
+
+        file_name = f"{random()}.wav"
+
+        # lazy download when transfering to other platfrom for better performance
+        # download huge file with delay the execution of event handler
+        # unless using separate process or thread for downloading
+        file_path = await telegram_download_media(self.temporary_file_path, file_name)
+        self.file_path = file_path
+        return file_path
+
+    async def onebot(self):
+        await self.get_file_path()
+
+        return {
+            "type": "record",
+            "data": {
+                "file": self.file_path,
+            },
         }
-        self.keaimao = content
 
 
-def onebot_text_factory(raw_segment: Dict):
-    content: str = raw_segment["data"]["text"]
-    return Text(content)
-
-
-def keaimao_text_factory(raw_event: Dict):
-    return Text(raw_event["msg"])
+def onebot_audio_factory(raw_segment: Dict):
+    path: str = raw_segment["data"]["file"]
+    return Audio(path)
 
 
 class Image(BaseMessageSegment):
@@ -84,36 +125,75 @@ class Image(BaseMessageSegment):
 
     """
 
-    universal = ("onebot", "keaimao")
     __slots__ = (
-        "onebot",
-        "file_path",
         "mode",
+        "temporary_file_path",
+        "telegram_lazy_download",
+        "file_path",
     )
 
-    def __init__(self, file_path: str, mode: Optional[Literal["flash"]] = None):
+    def __init__(
+        self,
+        file_path: str,
+        mode: Optional[Literal["flash"]] = None,
+        telegram_lazy_download=False,
+    ):
 
-        self.file_path = file_path
+        self.temporary_file_path = file_path
         self.mode = mode
+        self.telegram_lazy_download = telegram_lazy_download
+        self.file_path = ""
+
         super().__init__(**{"identifier": file_path})
 
-        # debug(file_path)
-        self.onebot = {
+    async def get_file_path(self):
+        # only when protocol is telegram, we need to lazy download
+        if not self.telegram_lazy_download:
+            return self.temporary_file_path
+
+        # file_path is actually pyrogram file_id now
+        if self.file_path:
+            return self.file_path
+
+        file_name = f"{random()}.jpg"
+
+        # lazy download when transfering to other platfrom for better performance
+        # download huge file with delay the execution of event handler
+        # unless using separate process or thread for downloading
+        file_path = await telegram_download_media(self.temporary_file_path, file_name)
+        self.file_path = file_path
+        return file_path
+
+    async def onebot(self):
+        await self.get_file_path()
+
+        temp = {
             "type": "image",
             "data": {
-                "file": file_path,
-                "url": file_path,
+                "file": self.file_path,
+                "url": self.file_path,
             },
         }
 
-    @property
-    def keaimao(self):
+        if self.mode == "flash":
+            temp["data"]["type"] = "flash"
+
+    async def keaimao(self):
+        await self.get_file_path()
+
         if not self.file_path.startswith("http"):
             raise EventHandleError(f"可爱猫仅支持通过URL发送图片")
 
         return {
-            "name": f"{random()}.png",
+            "name": f"{random()}.jpg",
             "url": self.file_path,
+        }
+
+    async def telegram(self):
+        await self.get_file_path()
+
+        return {
+            "photo": self.file_path,
         }
 
     def download(self):
@@ -121,15 +201,17 @@ class Image(BaseMessageSegment):
         pass
 
     def onebot_to_flash(self):
-        self.onebot["data"]["type"] = "flash"
+        self.mode = "flash"
 
         return self
 
     def onebot_un_flash(self):
-        if self.onebot["data"].get("type"):
-            del self.onebot["data"]["type"]
+        self.mode = None
 
         return self
+
+    def onebot_is_flash(self) -> bool:
+        return self.mode == "flash"
 
 
 def validate_image_path(path: str):
@@ -159,95 +241,35 @@ def keaimao_image_factory(raw_event: Dict):
     return Image(file_path)
 
 
-class Poke(BaseMessageSegment):
-    universal = ("onebot",)
-
-    def __init__(self, user_id: str):
-
-        identifier = user_id
-        super().__init__(**{"identifier": identifier})
-
-        self.onebot = {
-            "type": "poke",
-            "data": {"qq": user_id},
-        }
-
-
-def onebot_poke_factory(raw_segment: Dict):
-    user_id = str(raw_segment["data"]["qq"])
-    return Poke(user_id)
-
-
-class Audio(BaseMessageSegment):
-    universal = ("onebot",)
-
-    def __init__(self, path: str):
-
-        identifier = path
-        super().__init__(**{"identifier": identifier})
-
-        self.onebot = {
-            "type": "record",
-            "data": {
-                "file": path,
-            },
-        }
-
-
-def onebot_audio_factory(raw_segment: Dict):
-    path: str = raw_segment["data"]["file"]
-    return Audio(path)
-
-
-class Video(BaseMessageSegment):
-    universal = ("onebot", "keaimao")
-
-    def __init__(self, file_path: str):
-
-        identifier = file_path
-        super().__init__(**{"identifier": identifier})
-        self.file_path = file_path
-
-        self.onebot = {"type": "video", "data": {"file": file_path}}
-
-    @property
-    def keaimao(self):
-        if not self.file_path.startswith("http"):
-            raise EventHandleError(f"可爱猫仅支持通过URL发送视频")
-
-        return {
-            "name": f"{random()}.mp4",
-            "url": self.file_path,
-        }
-
-
-def onebot_video_factory(raw_segment: Dict):
-    path: str = raw_segment["data"]["file"]
-    return Video(path)
-
-
-def keaimao_video_factory(raw_segment: Dict):
-    path: str = raw_segment["msg"]
-    return Video(validate_image_path(path))
+async def telegram_image_factory(raw_event: Dict):
+    message: Message = raw_event["callback_object"]
+    return Image(message.photo.file_id, telegram_lazy_download=True)
 
 
 class Music(BaseMessageSegment):
-    universal = ("onebot",)
+    __slots__ = (
+        "music_id",
+        "source",
+    )
 
     def __init__(self, music_id: str, source: Literal["qq", "163", "xm"] = "qq"):
 
-        identifier = music_id + source
-        super().__init__(**{"identifier": identifier})
+        self.music_id = music_id
+        self.source = source
 
-        self.onebot = {
+        super().__init__(**{"identifier": music_id + source})
+
+    async def onebot(self):
+        return {
             "type": "music",
             "data": {
-                "type": source,
-                "id": music_id,
+                "type": self.source,
+                "id": self.music_id,
             },
         }
 
-        self.keaimao = {
+    async def keaimao(self):
+        return {
             "name": "\u6211\u8981\u4f60",
             "type": 0,
         }
@@ -264,18 +286,101 @@ def keaimao_music_factory(raw_segment: Dict):
     return Music(validate_image_path(path))
 
 
+class OnebotFace(BaseMessageSegment):
+    __slots__ = ("face_id",)
+
+    def __init__(self, face_id: int):
+
+        self.face_id = face_id
+
+        super().__init__(**{"identifier": face_id})
+
+    async def onebot(self):
+        return {
+            "type": "face",
+            "data": {
+                "id": self.face_id,
+            },
+        }
+
+
+def onebot_face_factory(raw_segment: Dict):
+    content = raw_segment["data"]["id"]
+    return OnebotFace(int(content))
+
+
+class OnebotShare(BaseMessageSegment):
+    __slots__ = (
+        "url",
+        "title",
+        "content",
+        "image_url",
+    )
+
+    def __init__(
+        self,
+        url: str,
+        title: str = "",
+        content: Optional[str] = None,
+        image_url: Optional[str] = None,
+    ):
+
+        self.url = url
+        self.title = title
+        self.content = content
+        self.image_url = image_url
+
+        super().__init__(**{"identifier": url})
+
+    async def onebot(self):
+        return {
+            "type": "share",
+            "data": {
+                "file": self.url,
+                "title": self.title,
+                "content": self.content,
+                "image_url": self.image_url,
+            },
+        }
+
+
+class Poke(BaseMessageSegment):
+    __slots__ = ("user_id",)
+
+    def __init__(self, user_id: str):
+
+        self.user_id = user_id
+
+        super().__init__(**{"identifier": user_id})
+
+    async def onebot(self):
+        return {
+            "type": "poke",
+            "data": {
+                "qq": self.user_id,
+            },
+        }
+
+
+def onebot_poke_factory(raw_segment: Dict):
+    user_id = str(raw_segment["data"]["qq"])
+    return Poke(user_id)
+
+
 class Reply(BaseMessageSegment):
-    universal = ("onebot",)
+    __slots__ = ("message_id",)
 
     def __init__(self, message_id: str):
 
-        identifier = message_id
-        super().__init__(**{"identifier": identifier})
+        self.message_id = message_id
 
-        self.onebot = {
+        super().__init__(**{"identifier": message_id})
+
+    async def onebot(self):
+        return {
             "type": "reply",
             "data": {
-                "id": message_id,
+                "id": self.message_id,
             },
         }
 
@@ -285,60 +390,181 @@ def onebot_reply_factory(raw_segment: Dict):
     return Reply(message_id)
 
 
+class Text(BaseMessageSegment):
+    __slots__ = ("content",)
+
+    def __init__(self, content: str):
+
+        self.content = content
+
+        super().__init__(**{"identifier": content})
+
+    async def onebot(self):
+        return {
+            "type": "text",
+            "data": {
+                "text": self.content,
+            },
+        }
+
+    async def keaimao(self):
+        return self.content
+
+    async def telegram(self):
+        return {
+            "text": self.content,
+            "parse_mode": ParseMode.MARKDOWN,
+        }
+
+
+def onebot_text_factory(raw_segment: Dict):
+    content: str = raw_segment["data"]["text"]
+    return Text(content)
+
+
+def keaimao_text_factory(raw_event: Dict):
+    return Text(raw_event["msg"])
+
+
+def telegram_text_factory(raw_event: Dict):
+    message: Message = raw_event["callback_object"]
+    return Text(message.text)
+
+
+class Video(BaseMessageSegment):
+    __slots__ = (
+        "temporary_file_path",
+        "telegram_lazy_download",
+        "file_path",
+    )
+
+    def __init__(
+        self,
+        file_path: str,
+        telegram_lazy_download=False,
+    ):
+
+        self.temporary_file_path = file_path
+        self.telegram_lazy_download = telegram_lazy_download
+        self.file_path = ""
+
+        super().__init__(**{"identifier": file_path})
+
+    async def get_file_path(self):
+        # only when protocol is telegram, we need to lazy download
+        if not self.telegram_lazy_download:
+            return self.temporary_file_path
+
+        # file_path is actually pyrogram file_id now
+        if self.file_path:
+            return self.file_path
+
+        file_name = f"{random()}.mp4"
+
+        # lazy download when transfering to other platfrom for better performance
+        # download huge file with delay the execution of event handler
+        # unless using separate process or thread for downloading
+        file_path = await telegram_download_media(self.temporary_file_path, file_name)
+        self.file_path = file_path
+        return file_path
+
+    async def onebot(self):
+        await self.get_file_path()
+
+        return {
+            "type": "video",
+            "data": {
+                "file": self.file_path,
+            },
+        }
+
+    async def keaimao(self):
+        await self.get_file_path()
+
+        if not self.file_path.startswith("http"):
+            raise EventHandleError(f"可爱猫仅支持通过URL发送视频")
+
+        return {
+            "name": f"{random()}.mp4",
+            "url": self.file_path,
+        }
+
+    async def telegram(self):
+        await self.get_file_path()
+
+        return {
+            "video": self.file_path,
+        }
+
+
+def onebot_video_factory(raw_segment: Dict):
+    path: str = raw_segment["data"]["file"]
+    return Video(path)
+
+
+def keaimao_video_factory(raw_segment: Dict):
+    path: str = raw_segment["msg"]
+    return Video(validate_image_path(path))
+
+
+def telegram_video_factory(raw_event: Dict):
+    message: Message = raw_event["callback_object"]
+    return Video(message.video.file_id)
+
+
+class Voice(BaseMessageSegment):
+    pass
+
+
+# def telegram_sticker_factory(raw_event: Dict):
+#     # message: Message = raw_event["callback_object"]
+#     # return Text(message.text)
+#     return None
+
+
 T_SegmentClass = Union[
     Type[At],
-    Type[Music],
     Type[Audio],
     Type[Image],
-    Type[Text],
+    Type[Music],
     Type[OnebotFace],
-    Type[Video],
-    Type[Reply],
-    Type[Poke],
     Type[OnebotShare],
+    Type[Poke],
+    Type[Reply],
+    Type[Text],
+    Type[Video],
+    Type[Voice],
 ]
 T_SegmentInstance = Union[
     At,
-    Text,
-    Music,
     Audio,
     Image,
-    Video,
-    Poke,
-    Reply,
+    Music,
     OnebotFace,
     OnebotShare,
+    Poke,
+    Reply,
+    Text,
+    Video,
+    Voice,
 ]
 GT_SegmentInstance = TypeVar(
     "GT_SegmentInstance",
     At,
-    Text,
-    Music,
     Audio,
     Image,
-    Video,
-    Poke,
-    Reply,
+    Music,
     OnebotFace,
     OnebotShare,
+    Poke,
+    Reply,
+    Text,
+    Video,
+    Voice,
 )
 T_SegmentClassOrInstance = Union[T_SegmentClass, T_SegmentInstance]
 GT_SegmentClassOrInstance = TypeVar(
     "GT_SegmentClassOrInstance",
     T_SegmentClass,
-    T_SegmentInstance
-    # At,
-    # Text,
-    # Face,
-    # Music,
-    # Audio,
-    # Image,
-    # Reply,
-    # Type[At],
-    # Type[Music],
-    # Type[Audio],
-    # Type[Image],
-    # Type[Reply],
-    # Type[Text],
-    # Type[Face],
+    T_SegmentInstance,
 )

@@ -67,6 +67,7 @@ def parse_routes(routes: Iterable[BotRoute]):
         elif route.groups and type(route.groups) == dict:
             for protocol, group_ids in route.groups.items():
                 if group_ids == "*":
+                    route_mapping.global_commands[protocol]["group"] |= command_names
                     route_mapping.global_handlers[protocol]["group"] |= handler_names
 
                 else:

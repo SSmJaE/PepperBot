@@ -17,5 +17,5 @@ class KeaimaoGroupEvent:
 
 
 class KeaimaoPrivateEvent:
-    friend_message = "friend_message"
+    private_message = "private_message"
     FriendVerify = "EventFriendVerify"

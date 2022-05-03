@@ -1,9 +1,15 @@
 import os
 import sys
 from os import path
-from typing import Any, Union, get_origin
+from typing import Any, Iterable, Union, get_origin
 from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
 from pepperbot.adapters.keaimao.event.kwargs import KEAIMAO_KWARGS_MAPPING
+from pepperbot.adapters.telegram.api import (
+    TelegramApi,
+    TelegramGroupApi,
+    TelegramPrivateApi,
+)
+from pepperbot.adapters.telegram.event.kwargs import TELEGRAM_KWARGS_MAPPING
 
 from pepperbot.core.bot.universal import UniversalGroupApi, UniversalPrivateApi
 from pepperbot.core.event.kwargs import UNIVERSAL_KWARGS_MAPPING
@@ -60,10 +66,17 @@ def gen_api_markdown(
             if isinstance(parameter.annotation, str):
                 row.append(parameter.annotation)
             else:
-                if get_origin(parameter.annotation) is Union:
+                # ! todo auto determine if is generic type like Iterable, List
+                if get_origin(parameter.annotation) in [Union, Iterable]:
                     # group_msg = group_message
                     continue
 
+                if "Iterable" in repr(parameter):
+                    row.append(parameter.annotation)
+                    continue
+
+                # debug(repr(parameter))
+                # debug(parameter.annotation)
                 row.append(parameter.annotation.__name__)
 
             if parameter.default == inspect._empty:
@@ -91,21 +104,26 @@ def gen_api_markdown(
     print(f"成功生成{output_file_path}文件")
 
 
+# ! clean before recreate
+
 api_prefix = "./docs/docs/API"
 os.makedirs(f"{api_prefix}/Arbitrary API/", exist_ok=True)
 gen_api_markdown(OnebotV11Api, f"{api_prefix}/Arbitrary API/Onebot")
 gen_api_markdown(KeaimaoApi, f"{api_prefix}/Arbitrary API/可爱猫")
+gen_api_markdown(TelegramApi, f"{api_prefix}/Arbitrary API/Telegram")
 
 os.makedirs(f"{api_prefix}/区分模式 API/", exist_ok=True)
 os.makedirs(f"{api_prefix}/区分模式 API/群/", exist_ok=True)
 gen_api_markdown(UniversalGroupApi, f"{api_prefix}/区分模式 API/群/跨平台")
 gen_api_markdown(OnebotV11GroupApi, f"{api_prefix}/区分模式 API/群/Onebot")
 gen_api_markdown(KeaimaoGroupApi, f"{api_prefix}/区分模式 API/群/可爱猫")
+gen_api_markdown(TelegramGroupApi, f"{api_prefix}/区分模式 API/群/Telegram")
 
 os.makedirs(f"{api_prefix}/区分模式 API/私聊/", exist_ok=True)
 gen_api_markdown(UniversalPrivateApi, f"{api_prefix}/区分模式 API/私聊/跨平台")
 gen_api_markdown(OnebotV11PrivateApi, f"{api_prefix}/区分模式 API/私聊/Onebot")
 gen_api_markdown(KeaimaoPrivateApi, f"{api_prefix}/区分模式 API/私聊/可爱猫")
+gen_api_markdown(TelegramPrivateApi, f"{api_prefix}/区分模式 API/私聊/Telegram")
 
 
 def gen_kwargs_markdown(
@@ -156,3 +174,4 @@ os.makedirs(f"{api_prefix}/事件参数/", exist_ok=True)
 gen_kwargs_markdown(UNIVERSAL_KWARGS_MAPPING, f"{api_prefix}/事件参数/跨平台")
 gen_kwargs_markdown(ONEBOTV11_KWARGS_MAPPING, f"{api_prefix}/事件参数/Onebot")
 gen_kwargs_markdown(KEAIMAO_KWARGS_MAPPING, f"{api_prefix}/事件参数/可爱猫")
+gen_kwargs_markdown(TELEGRAM_KWARGS_MAPPING, f"{api_prefix}/事件参数/Telegram")

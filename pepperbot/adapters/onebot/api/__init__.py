@@ -1,9 +1,9 @@
 # https://docs.go-cqhttp.org/api/#%E5%A4%84%E7%90%86%E5%8A%A0%E7%BE%A4%E8%AF%B7%E6%B1%82-%E9%82%80%E8%AF%B7
 # from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from pepperbot.core.bot.api_caller import ApiCaller
-from pepperbot.exceptions import EventHandleError
+from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.store.meta import get_onebot_caller
 from pepperbot.types import BaseBot
 
@@ -17,11 +17,11 @@ class OnebotV11Api:
         try:
             return (await get_onebot_caller()("get_login_info")).json()["data"]
         except:
-            raise EventHandleError(f"无法获取onebot机器人登录信息，请确认onebot服务是否正常运行")
+            raise BackendApiError(f"无法获取onebot机器人登录信息，请确认onebot服务是否正常运行")
 
     @staticmethod
     async def group_message(group_id: str, *segments: "T_SegmentInstance"):
-        message = [segment.onebot for segment in segments]
+        message = [await segment.onebot() for segment in segments]
 
         return await get_onebot_caller()(
             "send_group_msg",
@@ -32,11 +32,22 @@ class OnebotV11Api:
         )
 
     @staticmethod
+    async def private_message(user_id: str, *segments: "T_SegmentInstance"):
+        await get_onebot_caller()(
+            "send_msg",
+            **{
+                "message_type": "private",
+                "user_id": user_id,
+                "message": [await segment.onebot() for segment in segments],
+            },
+        )
+
+    @staticmethod
     async def upload_group_file(
         group_id: str,
         path: str,
         display_name: str,
-        folder_id: str = None,
+        folder_id: Optional[str] = None,
     ):
         return (
             await get_onebot_caller()(
@@ -80,17 +91,6 @@ class OnebotV11Api:
                 "group_id": group_id,
                 "user_id": user_id,
                 "reject_add_request": permenant,
-            },
-        )
-
-    @staticmethod
-    async def private_message(user_id: str, *segments: "T_SegmentInstance"):
-        await get_onebot_caller()(
-            "send_msg",
-            **{
-                "message_type": "private",
-                "user_id": user_id,
-                "message": [segment.onebot for segment in segments],
             },
         )
 
@@ -174,7 +174,7 @@ class OnebotV11GroupApi(OnebotV11Properties):
         self,
         path: str,
         display_name: str,
-        folder_id: str = None,
+        folder_id: Optional[str] = None,
     ):
         return await OnebotV11Api.upload_group_file(
             self.group_id,

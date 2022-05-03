@@ -60,18 +60,14 @@ from pepperbot.store.meta import get_bot_id, get_keaimao_caller
 from pepperbot.types import BaseBot
 
 KEAIMAO_SEGMENT_ACTION_MAPPING: Dict[T_SegmentClass, str] = {
-    Text: "SendTextMsg",
     Image: "SendImageMsg",
-    Video: "SendVideoMsg",
     Music: "SendMusicMsg",
+    Text: "SendTextMsg",
+    Video: "SendVideoMsg",
 }
 
 
 class KeaimaoApi:
-    # @property
-    # def api_caller(self):
-    #     return get_keaimao_caller()  # 获取api_caller时，一定已经实例化了对应的api_caller
-
     @staticmethod
     async def get_login_accounts():
         try:
@@ -91,7 +87,7 @@ class KeaimaoApi:
                     action,
                     robot_wxid=get_bot_id("keaimao"),
                     to_wxid=group_id,
-                    msg=segment.keaimao,
+                    msg=await segment.keaimao(),
                 )
 
             else:

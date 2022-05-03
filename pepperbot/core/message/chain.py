@@ -1,10 +1,19 @@
 import re
 from pprint import pprint
 from random import random
-from typing import TYPE_CHECKING, Callable, Dict, List, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from devtools import debug
-from pepperbot.adapters.onebot.message.segment import OnebotFace, OnebotShare
 from pepperbot.core.message.base import BaseMessageSegment
 
 # if TYPE_CHECKING:
@@ -13,57 +22,67 @@ from pepperbot.core.message.segment import (
     Audio,
     Image,
     Music,
+    OnebotFace,
+    OnebotShare,
+    Poke,
     Reply,
     T_SegmentClass,
     T_SegmentClassOrInstance,
     T_SegmentInstance,
     Text,
+    Video,
+    Voice,
     keaimao_image_factory,
     keaimao_text_factory,
     keaimao_video_factory,
     onebot_at_factory,
     onebot_audio_factory,
+    onebot_face_factory,
     onebot_image_factory,
     onebot_poke_factory,
     onebot_reply_factory,
     onebot_text_factory,
     onebot_video_factory,
+    telegram_image_factory,
+    telegram_text_factory,
+    telegram_video_factory,
 )
 from pepperbot.exceptions import EventHandleError
+from pepperbot.extensions.log import logger
 from pepperbot.types import T_BotProtocol, T_RouteMode
-
-# ONEBOT_SEGMENT_NAME_MAPPING: Dict[str, T_SegmentClass] = {
-#     "text": Text,
-#     "image": Image,
-#     "face": OnebotFace,
-#     # "share": OnebotShare,
-# }
-
-
-def onebot_face_factory(raw_segment: Dict):
-    content = raw_segment["data"]["id"]
-    return OnebotFace(int(content))
+from pepperbot.utils.common import await_or_sync
+from pyrogram.enums.message_media_type import MessageMediaType
 
 
 ONEBOT_SEGMENT_FACTORY_MAPPING: Dict[str, Callable[[Dict], T_SegmentInstance]] = {
-    "text": onebot_text_factory,
+    "at": onebot_at_factory,
+    "record": onebot_audio_factory,
     "image": onebot_image_factory,
     "face": onebot_face_factory,
-    "at": onebot_at_factory,
     "poke": onebot_poke_factory,
-    "record": onebot_audio_factory,
-    "video": onebot_video_factory,
     "reply": onebot_reply_factory,
+    "text": onebot_text_factory,
+    "video": onebot_video_factory,
 }
 
 KEAIMAO_SEGMENT_FACTORY_MAPPING: Dict[int, Callable[[Dict], T_SegmentInstance]] = {
-    1: keaimao_text_factory,
     3: keaimao_image_factory,
+    1: keaimao_text_factory,
     43: keaimao_video_factory,
 }
 
+TELEGRAM_SEGMENT_FACTORY_MAPPING: Dict[
+    Optional[MessageMediaType],
+    Callable[[Dict], Union[T_SegmentInstance, Coroutine[Any, Any, T_SegmentInstance]]],
+] = {
+    MessageMediaType.PHOTO: telegram_image_factory,
+    None: telegram_text_factory,
+    MessageMediaType.VIDEO: telegram_video_factory,
+    # MessageMediaType.STICKER: telegram_sticker_factory,
+}
 
-def construct_segments(
+
+async def construct_segments(
     protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict
 ) -> List[T_SegmentInstance]:
 
@@ -76,7 +95,9 @@ def construct_segments(
 
             segment_factory = ONEBOT_SEGMENT_FACTORY_MAPPING.get(segment_type)
             if not segment_factory:
-                raise EventHandleError(f"尚未适配的onebot消息类型 {segment_type}")
+                # raise EventHandleError()
+                logger.error(f"尚未适配的 {protocol} 消息类型 {segment_type}，将忽略该消息片段")
+                continue
 
             segment_instance = segment_factory(raw_segment)
             result.append(segment_instance)
@@ -85,9 +106,24 @@ def construct_segments(
         message_type: int = raw_event["type"]
         message_factory = KEAIMAO_SEGMENT_FACTORY_MAPPING.get(message_type)
         if not message_factory:
-            raise EventHandleError(f"尚未适配的可爱猫消息类型")
+            # raise EventHandleError(f"尚未适配的可爱猫消息类型")
+            logger.error(f"尚未适配的 {protocol} 消息类型 {message_type}，将忽略该消息片段")
+            return []
 
         segment_instance = message_factory(raw_event)
+        result.append(segment_instance)
+
+    elif protocol == "telegram":
+        telegram_message_type: Optional[MessageMediaType] = getattr(
+            raw_event["callback_object"], "media", None
+        )
+        message_factory = TELEGRAM_SEGMENT_FACTORY_MAPPING.get(telegram_message_type)
+        if not message_factory:
+            # raise EventHandleError(f"尚未适配的 telegram 消息类型")
+            logger.error(f"尚未适配的 {protocol} 消息类型 {telegram_message_type}，将忽略该消息片段")
+            return []
+
+        segment_instance = await await_or_sync(message_factory, raw_event)
         result.append(segment_instance)
 
     else:
@@ -95,6 +131,17 @@ def construct_segments(
 
     # debug(result)
     return result
+
+
+async def chain_factory(
+    protocol: T_BotProtocol,
+    mode: T_RouteMode,
+    raw_event: Dict,
+    source_id: str,
+):
+    chain = MessageChain(protocol, mode, raw_event, source_id)
+    await chain.construct()
+    return chain
 
 
 class MessageChain:
@@ -137,9 +184,14 @@ class MessageChain:
         self.protocol = protocol
         self.mode = mode
 
-        self.segments = construct_segments(protocol, mode, raw_event)
-
         self.onebot_message_id = raw_event.get("message_id", "")
+
+    async def construct(self):
+        self.segments = await construct_segments(
+            self.protocol,  # type:ignore
+            self.mode,  # type:ignore
+            self.raw_event,
+        )
 
     # def __repr__(self) -> str:
     #     json.dumps

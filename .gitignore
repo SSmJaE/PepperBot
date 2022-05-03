@@ -11,3 +11,5 @@ docs/.vitepress/dist
 dist
 htmlcov
 bot
+
+demos/*.session

@@ -1,18 +1,30 @@
 import os
-from typing import Dict
+import time
+from typing import Dict, cast
 
 from devtools import debug
 from pepperbot import PepperBot
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot
-from pepperbot.adapters.onebot.event.event import OnebotV11GroupEvent
-from pepperbot.adapters.onebot.message.segment import OnebotFace
+from pepperbot.adapters.onebot.event import OnebotV11GroupEvent
+from pepperbot.adapters.telegram.api import TelegramGroupBot, TelegramPrivateBot
 from pepperbot.core.bot.universal import UniversalGroupBot
 from pepperbot.core.message.chain import MessageChain
-from pepperbot.core.message.segment import Image, Music, Text, Video
+from pepperbot.core.message.segment import Image, Music, Text, Video, OnebotFace
 from pepperbot.core.route import BotRoute
 from pepperbot.extensions.command import PatternArg, as_command
 from pepperbot.extensions.command.handle import CommandSender
+from pyrogram.client import Client
+from pyrogram.types import (
+    InlineQuery,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    Message,
+    ReplyKeyboardMarkup,
+)
 
 # class DefaultConfig_Logger:
 #     level: str = "debug"
@@ -38,13 +50,13 @@ bot = PepperBot(
     debug=True,
 )
 
-bot.register_adapter(
-    bot_protocol="onebot",
-    receive_protocol="websocket",
-    backend_protocol="http",
-    backend_host="127.0.0.1",
-    backend_port=5700,
-)
+# bot.register_adapter(
+#     bot_protocol="onebot",
+#     receive_protocol="websocket",
+#     backend_protocol="http",
+#     backend_host="127.0.0.1",
+#     backend_port=5700,
+# )
 # bot.register_adapter(
 #     bot_protocol="keaimao",
 #     receive_protocol="http",
@@ -52,6 +64,17 @@ bot.register_adapter(
 #     backend_host="192.168.1.107",
 #     backend_port=8090,
 # )
+bot.register_telegram(
+    "telegram",
+    api_id=16355308,
+    api_hash="e54d4b8ffdb632f290bd97fd2c530602",
+    bot_token="5349474918:AAHS7rk0cAkHZp6Ete5VvDflWftEG84XmMA",
+    proxy={
+        "scheme": "http",
+        "hostname": "127.0.0.1",
+        "port": 1080,
+    },
+)
 
 
 # str_arg = PatternArg(str)  # type:ignore
@@ -174,6 +197,126 @@ class homepage:
         # if bot.keaimao:
         #     await bot.keaimao.group_message("一条跨平台消息")
 
+    async def telegram_private_message(
+        self,
+        raw_event: Dict,
+        client: Client,
+        message: Message,
+        chain: MessageChain,
+        bot: TelegramPrivateBot,
+    ):
+        debug(raw_event)
+        debug(client, message)
+        debug(chain.segments)
+
+        await bot.private_message(
+            Text("test"),
+            Text("test2"),
+        )
+
+        # await message.reply(message.text)
+
+        # await bot.group_message(Text("hello telegram"))
+
+    async def telegram_group_message(
+        self,
+        raw_event: Dict,
+        client: Client,
+        message: Message,
+    ):
+        debug(raw_event)
+        debug(client, message)
+
+        # await message.reply(message.text)
+        await client.send_message(
+            message.from_user.id,  # Edit this
+            "This is a InlineKeyboardMarkup example",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [  # First row
+                        InlineKeyboardButton(  # Generates a callback query when pressed
+                            "Button", callback_data="data"
+                        ),
+                        InlineKeyboardButton(  # Opens a web URL
+                            "URL", url="https://docs.pyrogram.org"
+                        ),
+                    ],
+                    [  # Second row
+                        InlineKeyboardButton(  # Opens the inline interface
+                            "Choose chat", switch_inline_query="pyrogram"
+                        ),
+                        InlineKeyboardButton(  # Opens the inline interface in the current chat
+                            "Inline here", switch_inline_query_current_chat="pyrogram"
+                        ),
+                    ],
+                ]
+            ),
+        )
+
+        # await bot.group_message(Text("hello telegram"))
+
+    async def telegram_callback_query(
+        self,
+        raw_event: Dict,
+        client: Client,
+        callback_query: CallbackQuery,
+    ):
+        await callback_query.answer(
+            f"Button contains: '{callback_query.data}'",
+            show_alert=True,
+        )
+
+    async def telegram_inline_query(
+        self,
+        raw_event: Dict,
+        client: Client,
+        inline_query: InlineQuery,
+    ):
+        debug(raw_event)
+        debug(client, inline_query)
+
+        await inline_query.answer(
+            results=[
+                InlineQueryResultArticle(
+                    title="Installation",
+                    input_message_content=InputTextMessageContent(
+                        "Here's how to install **Pyrogram**"
+                    ),
+                    url="https://docs.pyrogram.org/intro/install",
+                    description="How to install Pyrogram",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "Open website",
+                                    url="https://docs.pyrogram.org/intro/install",
+                                )
+                            ]
+                        ]
+                    ),
+                ),
+                InlineQueryResultArticle(
+                    title="Usage",
+                    input_message_content=InputTextMessageContent(
+                        "Here's how to use **Pyrogram**"
+                    ),
+                    url="https://docs.pyrogram.org/start/invoking",
+                    description="How to use Pyrogram",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "Open website",
+                                    url="https://docs.pyrogram.org/start/invoking",
+                                )
+                            ]
+                        ]
+                    ),
+                ),
+            ],
+            cache_time=1,
+        )
+
 
 class HandlerForDynamicGroup:
     pass
@@ -184,6 +327,7 @@ def whether_available(mode, source_id):
 
 
 from bot.faq import 常见问题
+
 from demos.示例.查询装备 import 查询装备
 
 bot.apply_routes(
@@ -205,6 +349,7 @@ bot.apply_routes(
             groups={
                 "onebot": ["1041902989"],
                 "keaimao": ["19521241254@chatroom"],
+                "telegram": "*",
             },
             friends="*",
         ),

@@ -1,6 +1,6 @@
 from typing import Dict
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
-from pepperbot.adapters.onebot.event.event import (
+from pepperbot.adapters.onebot.event import (
     OnebotV11GroupEvent,
     OnebotV11PrivateEvent,
 )
@@ -21,9 +21,9 @@ from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
 
 
 def construct_chain(protocol, mode, raw_event, source_id):
-    from pepperbot.core.message.chain import MessageChain
+    from pepperbot.core.message.chain import chain_factory
 
-    return MessageChain(protocol, mode, raw_event, source_id)
+    return chain_factory(protocol, mode, raw_event, source_id)
 
 
 # def construct_sender(event: Dict[str, Any]):
@@ -54,6 +54,7 @@ common_chain = EventHandlerKwarg(
     name="chain",
     type_="MessageChain",
     value=construct_chain,
+    # value=chain_factory,
 )
 
 # 所有handler都注入raw_event，所以就不重复写了，最后统一注入

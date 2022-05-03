@@ -3,14 +3,19 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Set, Union, cas
 
 import arrow
 from devtools import debug, pformat
+from pyrogram.enums.chat_type import ChatType
+from pyrogram.types import CallbackQuery
 from pepperbot.adapters.keaimao import KeaimaoAdapter
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot, KeaimaoPrivateBot
 from pepperbot.adapters.onebot import OnebotV11Adapter
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
+from pepperbot.adapters.telegram import TelegramAdapter
+from pepperbot.adapters.telegram.api import TelegramGroupBot, TelegramPrivateBot
 from pepperbot.core.bot.universal import UniversalGroupBot, UniversalPrivateBot
 from pepperbot.core.event.base_adapter import BaseAdapater
 from pepperbot.core.event.kwargs import UNIVERSAL_KWARGS_MAPPING
 from pepperbot.core.event.universal import (
+    ALL_COMMON_EVENTS,
     ALL_GROUP_EVENTS,
     ALL_KEAIMAO_EVENTS,
     ALL_META_EVENTS,
@@ -48,7 +53,7 @@ from pepperbot.utils.common import await_or_sync, fit_kwargs
 PROTOCOL_ADAPTER_MAPPING: Dict[T_BotProtocol, Any] = {
     "onebot": OnebotV11Adapter,
     "keaimao": KeaimaoAdapter,
-    # "telegram":Telegram
+    "telegram": TelegramAdapter,
 }
 
 
@@ -85,16 +90,16 @@ def get_bot_instance(
                     bot_instance = OnebotV11GroupBot(bot_id, identifier)
                 elif protocol == "keaimao":
                     bot_instance = KeaimaoGroupBot(bot_id, identifier)
-                # elif protocol == "telegram":
-                #     bot_instance = TelegramGroupBot(bot_id, identifier)
+                elif protocol == "telegram":
+                    bot_instance = TelegramGroupBot(bot_id, identifier)
 
             elif mode == "private":
                 if protocol == "onebot":
                     bot_instance = OnebotV11PrivateBot(bot_id, identifier)
                 elif protocol == "keaimao":
                     bot_instance = KeaimaoPrivateBot(bot_id, identifier)
-                # elif protocol == "telegram":
-                #     bot_instance = TelegramPrivateBot(bot_id, identifier)
+                elif protocol == "telegram":
+                    bot_instance = TelegramPrivateBot(bot_id, identifier)
 
         if not bot_instance:
             raise EventHandleError(f"未能创建bot实例 {protocol} {mode} {identifier}")
@@ -107,6 +112,28 @@ def get_bot_instance(
     return bot_instance
 
 
+def figure_telegram_route_mode(raw_event: Dict) -> T_RouteMode:
+
+    callback_object = raw_event["callback_object"]
+
+    debug(callback_object)
+
+    if isinstance(callback_object, CallbackQuery):
+        chat_type: ChatType = callback_object.message.chat.type
+
+    else:
+        chat_type: ChatType = callback_object.chat_type
+
+    if chat_type in [ChatType.BOT, ChatType.PRIVATE]:
+        mode = "private"
+    elif chat_type == ChatType.GROUP:
+        mode = "group"
+    else:
+        raise EventHandleError(f"")
+
+    return mode
+
+
 async def get_kwargs(
     protocol: T_BotProtocol,
     mode: T_RouteMode,
@@ -117,7 +144,7 @@ async def get_kwargs(
     """event_name已经校验过存在，不需要再校验"""
     mapping: T_HandlerKwargMapping
     real_event_name: str = event_name
-    bot_instance: BaseBot
+    bot_instance: Optional[BaseBot]
 
     if event_name in ALL_UNIVERSAL_EVENTS:  # 不包含meta event, common + group + private
         mapping = UNIVERSAL_KWARGS_MAPPING
@@ -154,12 +181,25 @@ async def get_kwargs(
         mapping = KeaimaoAdapter.kwargs
         real_event_name = event_name.replace("keaimao_", "")
 
-        if real_event_name in KeaimaoAdapter.group_events:
+        if real_event_name in TelegramAdapter.group_events:
             bot_instance = get_bot_instance(protocol, mode, source_id)
-        elif real_event_name in KeaimaoAdapter.private_events:
+        elif real_event_name in TelegramAdapter.private_events:
             bot_instance = get_bot_instance(protocol, mode, source_id)
         else:  # common events
             raise EventHandleError(f"尚未实现的keaimao事件 {real_event_name}")
+
+    elif protocol == "telegram":
+        # elif event_name in ALL_KEAIMAO_EVENTS:
+        mapping = TelegramAdapter.kwargs
+        real_event_name = event_name.replace("telegram_", "")
+
+        if real_event_name in TelegramAdapter.group_events:
+            bot_instance = get_bot_instance(protocol, mode, source_id)
+        elif real_event_name in TelegramAdapter.private_events:
+            bot_instance = get_bot_instance(protocol, mode, source_id)
+        else:  # common events
+            raise EventHandleError(f"尚未实现的telegram事件 {real_event_name}")
+        # bot_instance = None
 
     else:
         raise EventHandleError(f"尚未实现的事件 {real_event_name}")
@@ -230,6 +270,12 @@ def get_source_id(protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict) -
         elif mode == "private":
             source_id = raw_event["final_from_wxid"]
 
+    elif protocol == "telegram":
+        callback_object = raw_event["callback_object"]
+        source_id = callback_object.from_user.id
+        debug(source_id)
+        # ! str化？
+
     if not source_id:
         raise EventHandleError(f"未能获取source_id")
 
@@ -270,18 +316,28 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     if protocol_event_name in ALL_GROUP_EVENTS:
         mode = "group"
         source_id = get_source_id(protocol, mode, raw_event)
-        command_trigger_events = GROUP_COMMAND_TRIGGER_EVENTS
 
     elif protocol_event_name in ALL_PRIVATE_EVENTS:
         mode = "private"
         source_id = get_source_id(protocol, mode, raw_event)
-        command_trigger_events = PRIVATE_COMMAND_TRIGGER_EVENTS
+
+    elif protocol == "telegram":
+        mode = figure_telegram_route_mode(raw_event)
+        source_id = get_source_id(protocol, mode, raw_event)
 
     else:
         raise EventHandleError(f"无效/尚未实现的事件{protocol_event_name}")
 
+    if mode == "group":
+        command_trigger_events = GROUP_COMMAND_TRIGGER_EVENTS
+    elif mode == "private":
+        command_trigger_events = PRIVATE_COMMAND_TRIGGER_EVENTS
+    else:
+        raise EventHandleError(f"")
+
     validator_handlers, validator_commands = await with_validators(mode, source_id)
 
+    debug(command_trigger_events)
     if protocol_event_name in command_trigger_events:
         # normal
         class_command_names |= route_mapping.global_commands[protocol][mode]

@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Sequence, Union, get_args, get_ori
 from devtools import debug
 from pepperbot.adapters.keaimao.event.kwargs import KEAIMAO_KWARGS_MAPPING
 from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
+from pepperbot.adapters.telegram.event.kwargs import TELEGRAM_KWARGS_MAPPING
 from pepperbot.core.event.kwargs import UNIVERSAL_KWARGS_MAPPING
 from pepperbot.core.event.universal import (
     ALL_COMMON_EVENTS,
@@ -116,6 +117,10 @@ def is_handler_method_args_valid(
     elif "keaimao" in method_name:
         mapping = KEAIMAO_KWARGS_MAPPING
         event_name = method_name.replace("keaimao_", "")
+
+    elif "telegram" in method_name:
+        mapping = TELEGRAM_KWARGS_MAPPING
+        event_name = method_name.replace("telegram_", "")
 
     else:
         mapping = UNIVERSAL_KWARGS_MAPPING
