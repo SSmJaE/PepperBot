@@ -4,7 +4,7 @@
 <img  src="./archive/icon.png" width="200">
 </p>
 
-<p align="center">一个符合直觉的跨社交平台机器人框架，轻松地在平台间传递消息，支持QQ、微信</p>
+<p align="center">一个符合直觉的跨社交平台机器人框架，轻松地在平台间传递消息，支持QQ、微信、Telegram</p>
 <p align="center">
 <a href="https://ssmjae.github.io/PepperBot/">文档</a> ·
 <a href="https://jq.qq.com/?_wv=1027&k=EPhcRRib">QQ交流群</a>  
@@ -18,9 +18,9 @@
 
 ## 生而跨平台
 
-- QQ 基于 Onebot
-- 微信基于可爱猫
-<!-- - Telegram基于官方接口 -->
+- QQ 基于 `Onebot`
+- 微信基于`可爱猫`
+- Telegram基于`Pyrogram`
 - 提供了跨平台、易用的消息类型(片段)
 - 通用事件，比如群消息、私聊消息等，提供了统一的接口，只需要写一次代码，就可以无缝应用到各个平台上，跨平台的消息传递从未如此轻松随意
 - [ ] 可以跨群、跨平台共享指令(的状态)
@@ -37,7 +37,7 @@
 - 定时任务
 - 日志支持
 - [ ] 数据库连接(内置 sqlite)
-- [ ] 链式调用 api(行为链)
+- [ ] 链式调用 api(行为链，自动跨平台事件等待)
 - [ ] cli，快速创建项目，安装社区指令
 
 ## 接口合语义
@@ -46,10 +46,11 @@
 - 基于 python3.6 之后的类型注解，提供了完全的类型提示
 - 大部分可以自动获取的参数，都会自动获取，不需要每次手动提供了
 - 只会动态注入用到的参数，没必要每次写一长串用不到的参数了！
+- API均有可直接复制使用的代码片段，快速开发
 
 ## 测试文档全
 
-- 文档正在写
+- 文档比较全
 - 测试在补了
 - 大量官方示例/指令
 - 来自作者的 QA(加群以获取)
@@ -74,11 +75,13 @@ pip install pepperbot
 ```py
 class WhateverNameYouWant:
     async def group_message(self, bot: UniversalGroupBot, chain: MessageChain):
-        if bot.onebot: # 转发qq消息至微信
+        if bot.onebot: # 转发qq消息至微信、TG
             await bot.arbitrary.keaimao.group_message("19521241254@chatroom", *chain.segments)
+            await bot.arbitrary.telegram.group_message("bot_father", *chain.segments)
 
-        if bot.keaimao: # 转发微信消息至qq
+        if bot.keaimao: # 转发微信消息至qq、TG
             await bot.arbitrary.onebot.group_message("1041902989", *chain.segments)
+            await bot.arbitrary.telegram.group_message("bot_father", *chain.segments)
 ```
 
 只需要非常少的代码，就可以实现**跨平台**的群消息的响应
