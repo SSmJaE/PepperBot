@@ -1,4 +1,4 @@
-const iconPath = "/img/icon.png"
+const iconPath = "/img/icon.png";
 
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
@@ -53,9 +53,9 @@ module.exports = {
                 // {to: 'blog', label: 'Blog', position: 'left'},
                 {
                     href: "https://github.com/SSmJaE/PepperBot",
-                    label: " ",
                     position: "right",
                     className: "header-github-link",
+                    "aria-label": "GitHub repository",
                 },
             ],
         },
@@ -105,7 +105,31 @@ module.exports = {
         //     copyright: `Built with Docusaurus.`,
         // },
         prism: {
-            theme: require("prism-react-renderer/themes/vsDark"),
+            theme: require("prism-react-renderer/themes/github"),
+            darkTheme: require("prism-react-renderer/themes/vsDark"),
+        },
+        algolia: {
+            // The application ID provided by Algolia
+            appId: "8N3XA8QBNT",
+
+            // Public API key: it is safe to commit it
+            apiKey: "d4e23dd444f993658aa433078c4e0d7c",
+
+            indexName: "PepperBot Docs",
+
+            // Optional: see doc section below
+            contextualSearch: true,
+
+            // Optional: Specify domains where the navigation should occur through window.location instead on history.push. Useful when our Algolia config crawls multiple documentation sites and we want to navigate with window.location.href to them.
+            externalUrlRegex: "external\\.com|domain\\.com",
+
+            // Optional: Algolia search parameters
+            searchParameters: {},
+
+            // Optional: path for search page that enabled by default (`false` to disable it)
+            searchPagePath: "search",
+
+            //... other Algolia params
         },
     },
     presets: [

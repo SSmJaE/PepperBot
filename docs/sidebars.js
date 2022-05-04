@@ -86,12 +86,12 @@ module.exports = {
             collapsed: false,
             items: ["进阶/直接操作Sanic", "进阶/数据库"],
         },
-        {
-            type: "category",
-            label: "插件",
-            collapsed: false,
-            items: [],
-        },
+        // {
+        //     type: "category",
+        //     label: "插件",
+        //     collapsed: false,
+        //     items: [],
+        // },
         {
             type: "category",
             label: "部署",
