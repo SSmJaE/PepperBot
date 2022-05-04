@@ -34,7 +34,7 @@ from pepperbot.exceptions import (
 )
 from pepperbot.extensions.command.pattern import parse_pattern
 from pepperbot.extensions.command.utils import meet_command_exit, meet_command_prefix
-from pepperbot.extensions.log import logger
+from pepperbot.extensions.log import debug_log, logger
 from pepperbot.store.meta import EventHandlerKwarg, get_telegram_caller
 from pepperbot.store.command import (
     ClassCommandStatus,
@@ -139,7 +139,8 @@ COMMAND_DEFAULT_KWARGS = {
 
 
 async def run_command_method(method_name, method, all_locals: Dict) -> Any:
-    logger.debug(pformat(all_locals))
+    debug_log(all_locals, title="当前可用变量")
+
     injected_kwargs = dict(
         raw_event=all_locals["raw_event"],
         chain=all_locals["chain"],
@@ -156,9 +157,12 @@ async def run_command_method(method_name, method, all_locals: Dict) -> Any:
             injected_kwargs = {**injected_kwargs, **all_locals["patterns"]}
 
     # 参数和group_message/friend_message事件参数一致
-    logger.debug(f"将被注入 {method_name} 的参数\n{pformat(injected_kwargs)}")
+    debug_log(injected_kwargs, title=f"将被注入 <lc>{method_name}</lc> 的参数")
+
     result = await await_or_sync(method, **fit_kwargs(method, injected_kwargs))
-    logger.debug(pformat(result))
+
+    debug_log("", title=f"方法 <lc>{method_name}</lc> 返回的下一步指向 <lc>{result}</lc>")
+
     return result
 
 
@@ -313,9 +317,13 @@ async def run_class_commands(
                 chain, command_name, command_config
             )
             if meet_prefix:
-                logger.info(f"{chain.pure_text} 满足指令 {command_name} 的执行条件")
+                logger.info(
+                    f"<y>{chain.pure_text}</y> 满足指令 <lc>{command_name}</lc> 的执行条件"
+                )
             else:
-                logger.info(f"{chain.pure_text} 不满足指令 {command_name} 的执行条件")
+                logger.info(
+                    f"<y>{chain.pure_text}</y> 不满足指令 <lc>{command_name}</lc> 的执行条件"
+                )
                 continue
 
         sender = CommandSender(protocol, mode, source_id)

@@ -1,10 +1,9 @@
-from __future__ import annotations
 import logging
-
 import os
 import sys
-from typing import Dict
+from typing import Any, Dict
 
+from devtools.prettier import pformat
 from loguru import logger
 from pepperbot.config import global_config
 
@@ -12,7 +11,6 @@ from pepperbot.config import global_config
 def formatter(record: Dict):
     level = record["level"].name
 
-    # todo 显示对应的bot_protocol
     file_path: str = record["file"].path
     if "pepperbot" in file_path:
         displayed_path = "pepperbot"
@@ -21,20 +19,22 @@ def formatter(record: Dict):
 
     if level == "DEBUG":
         return (
-            "<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level}</lvl>\n"
+            "<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level:^7}</lvl> | "
+            + f"{record['extra']['title']}\n"
             + f"{file_path}:{record['line']}\n"
-            + "{message}\n"
+            # + "{message}\n"
         )
 
     else:
         return (
             "<g>{time:MM-DD HH:mm:ss}</g> | <lvl>{level:^7}</lvl> | "
-            + f"{displayed_path} | "
-            + "{message}"
-            + "\n{exception}"
+            # + f"{displayed_path} | "
+            + "{message}\n"
+            + "{exception}"
         )
 
 
+logger.configure(extra={"title": "", "message": ""})
 logger.remove()
 logger.add(
     sys.stdout,  # type:ignore
@@ -47,7 +47,17 @@ logger.add(
 )
 logger = logger.opt(colors=True)
 
+
+def debug_log(message: Any, title: str = ""):
+    logger.bind(title=title).debug("")
+
+    if global_config.logger.level <= 10:  # DEBUG
+        print(pformat(message, highlight=True))
+
+
 logging.getLogger("apscheduler").setLevel(global_config.logger.level)
 
-
-__all__ = ("logger",)
+__all__ = (
+    "logger",
+    "debug_log",
+)

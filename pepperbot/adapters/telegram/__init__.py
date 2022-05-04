@@ -27,8 +27,6 @@ from pyrogram.types import Message
 class TelegramAdapter(BaseAdapater):
     @staticmethod
     def get_event_name(raw_event: Dict):
-        debug(raw_event)
-
         return raw_event["event_name"]
 
     event_prefix = "telegram_"

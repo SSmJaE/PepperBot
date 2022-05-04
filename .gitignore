@@ -12,4 +12,4 @@ dist
 htmlcov
 bot
 
-demos/*.session
+demos/*.session*
