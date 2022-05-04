@@ -7,7 +7,7 @@ from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import At
 from pepperbot.store.command import CommandConfig
 from pepperbot.store.meta import get_bot_id
-from pepperbot.extensions.log import logger
+from pepperbot.extensions.log import debug_log, logger
 
 
 from devtools import debug
@@ -29,14 +29,14 @@ def meet_text_prefix(
     else:  # 保证下方循环至少执行一次
         prefixes = [""]
 
-    logger.debug(pformat(command_name))
-    logger.debug(pformat(prefixes))
-    logger.debug(pformat(aliases))
+    debug_log(command_name, "指令名")
+    debug_log(prefixes, "所有前缀")
+    debug_log(aliases, "所有别名")
 
     for alias in aliases:
         for prefix in prefixes:
             final_prefix = prefix + alias
-            # logger.debug(pformat(final_prefix))
+            # debug_log(final_prefix)
             if re.search(f"^{final_prefix}", chain.pure_text):
                 logger.debug(f"^{final_prefix} 满足 {command_name} 的执行条件")
                 return True, final_prefix
@@ -75,9 +75,9 @@ def meet_command_prefix(
 def meet_command_exit(chain: MessageChain, command_config: CommandConfig):
     """退出判断"""
 
-    logger.debug(pformat(command_config.exit_patterns))
+    debug_log(command_config.exit_patterns, "退出正则")
     for pattern in command_config.exit_patterns:
-        logger.debug(pformat(re.search(pattern, chain.pure_text)))
+        # debug_log(re.search(pattern, chain.pure_text))
         if re.search(pattern, chain.pure_text):
             return True
 

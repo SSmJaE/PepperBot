@@ -76,7 +76,9 @@ def skip_current_onebot_event(raw_event: Dict, event_name: str):
     event_time: int = raw_event["time"]
 
     if currentTime - event_time < 10:
-        logger.success(f"已跳过{onebot_event_meta.buffered_message_count}条缓存的事件")
+        logger.success(
+            f"已跳过 <lc>{onebot_event_meta.buffered_message_count}</lc> 条缓存的事件"
+        )
         onebot_event_meta.has_skip_buffered_event = True
         return True
     else:

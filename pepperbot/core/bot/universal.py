@@ -83,9 +83,9 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
 
         self.arbitrary = ArbitraryApi
 
-        from pepperbot.core.event.handle import get_bot_instance
+        from pepperbot.core.event.handle import get_or_create_bot
 
-        bot_instance = get_bot_instance(protocol, "group", group_id)
+        bot_instance = get_or_create_bot(protocol, "group", group_id)
 
         self.onebot = (
             cast(OnebotV11GroupBot, bot_instance) if protocol == "onebot" else None

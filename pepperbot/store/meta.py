@@ -459,3 +459,10 @@ def output_config():
     #     name=f"事件",
     #     node=[method for method in groupCache.methods.keys()],
     # )
+
+
+class EventMeta(BaseModel):
+    protocol: T_BotProtocol
+    mode: T_RouteMode
+    source_id: str
+    raw_event: Dict

@@ -1,4 +1,4 @@
-from typing import Callable, Dict
+from typing import Any, Callable, Dict
 
 from devtools import debug
 from pepperbot.adapters.telegram.event import (
@@ -38,24 +38,33 @@ class TelegramAdapter(BaseAdapater):
     kwargs = TELEGRAM_KWARGS_MAPPING
 
 
-async def private_message_handler(client: Client, message: Message, handle_event):
+async def private_message_handler(client: Client, callback_object: Any, handle_event):
     await handle_event(
         "telegram",
-        dict(event_name=TelegramPrivateEvent.private_message, callback_object=message),
+        dict(
+            event_name=TelegramPrivateEvent.private_message,
+            callback_object=callback_object,
+        ),
     )
 
 
-async def group_message_handler(client: Client, message: Message, handle_event):
+async def group_message_handler(client: Client, callback_object: Any, handle_event):
     await handle_event(
         "telegram",
-        dict(event_name=TelegramGroupEvent.group_message, callback_object=message),
+        dict(
+            event_name=TelegramGroupEvent.group_message,
+            callback_object=callback_object,
+        ),
     )
 
 
-async def callback_query_handler(client: Client, message: Message, handle_event):
+async def callback_query_handler(client: Client, callback_object: Any, handle_event):
     await handle_event(
         "telegram",
-        dict(event_name=TelegramCommonEvent.callback_query, callback_object=message),
+        dict(
+            event_name=TelegramCommonEvent.callback_query,
+            callback_object=callback_object,
+        ),
     )
 
 
@@ -66,19 +75,25 @@ async def callback_query_handler(client: Client, message: Message, handle_event)
 #     )
 
 
-async def chosen_inline_result_handler(client: Client, message: Message, handle_event):
+async def chosen_inline_result_handler(
+    client: Client, callback_object: Any, handle_event
+):
     await handle_event(
         "telegram",
         dict(
-            event_name=TelegramCommonEvent.chosen_inline_result, callback_object=message
+            event_name=TelegramCommonEvent.chosen_inline_result,
+            callback_object=callback_object,
         ),
     )
 
 
-async def inline_query_handler(client: Client, message: Message, handle_event):
+async def inline_query_handler(client: Client, callback_object: Any, handle_event):
     await handle_event(
         "telegram",
-        dict(event_name=TelegramCommonEvent.inline_query, callback_object=message),
+        dict(
+            event_name=TelegramCommonEvent.inline_query,
+            callback_object=callback_object,
+        ),
     )
 
     raise ContinuePropagation
@@ -110,6 +125,12 @@ def register_telegram_event(pyrogram_client: Client):
         MessageHandler(
             with_handle_event(handle_event, group_message_handler),
             filters.group,
+        )
+    )
+    pyrogram_client.add_handler(
+        MessageHandler(
+            with_handle_event(handle_event, group_message_handler),
+            filters.channel,
         )
     )
     pyrogram_client.add_handler(

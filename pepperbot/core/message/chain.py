@@ -49,6 +49,7 @@ from pepperbot.core.message.segment import (
 )
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import logger
+from pepperbot.store.meta import EventMeta
 from pepperbot.types import T_BotProtocol, T_RouteMode
 from pepperbot.utils.common import await_or_sync
 from pyrogram.enums.message_media_type import MessageMediaType
@@ -133,13 +134,13 @@ async def construct_segments(
     return result
 
 
-async def chain_factory(
-    protocol: T_BotProtocol,
-    mode: T_RouteMode,
-    raw_event: Dict,
-    source_id: str,
-):
-    chain = MessageChain(protocol, mode, raw_event, source_id)
+async def chain_factory(event_meta: EventMeta):
+    chain = MessageChain(
+        event_meta.protocol,
+        event_meta.mode,
+        event_meta.raw_event,
+        event_meta.source_id,
+    )
     await chain.construct()
     return chain
 

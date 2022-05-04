@@ -33,9 +33,10 @@ from pepperbot.core.event.utils import skip_current_onebot_event
 # from pepperbot.core.event.utils import get_bot_instance
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.command.handle import run_class_commands
-from pepperbot.extensions.log import logger
+from pepperbot.extensions.log import debug_log, logger
 from pepperbot.store.meta import (
     EventHandlerKwarg,
+    EventMeta,
     RouteMapping,
     T_HandlerKwargMapping,
     class_handler_mapping,
@@ -61,7 +62,7 @@ def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
     return PROTOCOL_ADAPTER_MAPPING[protocol]
 
 
-def get_bot_instance(
+def get_or_create_bot(
     protocol: T_BotProtocol,
     mode: T_RouteMode,
     identifier: str,
@@ -134,14 +135,14 @@ def figure_telegram_route_mode(raw_event: Dict) -> T_RouteMode:
     return mode
 
 
-async def get_kwargs(
-    protocol: T_BotProtocol,
-    mode: T_RouteMode,
-    source_id: str,
-    event_name: str,
-    raw_event: Dict,
-) -> Dict[str, Any]:
+async def get_kwargs(event_meta: EventMeta, event_name: str) -> Dict[str, Any]:
     """event_name已经校验过存在，不需要再校验"""
+
+    protocol = event_meta.protocol
+    mode = event_meta.mode
+    source_id = event_meta.source_id
+    raw_event = event_meta.raw_event
+
     mapping: T_HandlerKwargMapping
     real_event_name: str = event_name
     bot_instance: Optional[BaseBot]
@@ -153,11 +154,11 @@ async def get_kwargs(
             # universal内部会根据protocol创建对应的bot实例，并挂载
             # 比如self.onebot == OnebotV11GroupBot
             # todo 现在这个实现，handle_event到get_kwargs，有些地方还是不符合直觉，有空重构一下
-            bot_instance = get_bot_instance(
+            bot_instance = get_or_create_bot(
                 protocol, "group", source_id, universal=True
             )
         elif event_name in UNIVERSAL_PRIVATE_EVENTS:
-            bot_instance = get_bot_instance(
+            bot_instance = get_or_create_bot(
                 protocol, "private", source_id, universal=True
             )
         else:  # common events
@@ -170,9 +171,9 @@ async def get_kwargs(
 
         # 不直接mode == "group", 因为即使这样，还是要判断event_name是否在group_events中
         if real_event_name in OnebotV11Adapter.group_events:
-            bot_instance = get_bot_instance(protocol, mode, source_id)
+            bot_instance = get_or_create_bot(protocol, mode, source_id)
         elif real_event_name in OnebotV11Adapter.private_events:
-            bot_instance = get_bot_instance(protocol, mode, source_id)
+            bot_instance = get_or_create_bot(protocol, mode, source_id)
         else:  # common events
             raise EventHandleError(f"尚未实现的onebot事件 {real_event_name}")
 
@@ -182,9 +183,9 @@ async def get_kwargs(
         real_event_name = event_name.replace("keaimao_", "")
 
         if real_event_name in TelegramAdapter.group_events:
-            bot_instance = get_bot_instance(protocol, mode, source_id)
+            bot_instance = get_or_create_bot(protocol, mode, source_id)
         elif real_event_name in TelegramAdapter.private_events:
-            bot_instance = get_bot_instance(protocol, mode, source_id)
+            bot_instance = get_or_create_bot(protocol, mode, source_id)
         else:  # common events
             raise EventHandleError(f"尚未实现的keaimao事件 {real_event_name}")
 
@@ -194,9 +195,9 @@ async def get_kwargs(
         real_event_name = event_name.replace("telegram_", "")
 
         if real_event_name in TelegramAdapter.group_events:
-            bot_instance = get_bot_instance(protocol, mode, source_id)
+            bot_instance = get_or_create_bot(protocol, mode, source_id)
         elif real_event_name in TelegramAdapter.private_events:
-            bot_instance = get_bot_instance(protocol, mode, source_id)
+            bot_instance = get_or_create_bot(protocol, mode, source_id)
         else:  # common events
             raise EventHandleError(f"尚未实现的telegram事件 {real_event_name}")
         # bot_instance = None
@@ -212,25 +213,23 @@ async def get_kwargs(
         raw_event=raw_event,
         source_id=source_id,
         bot=bot_instance,
+        event_meta=event_meta,
     )
 
 
 async def run_class_handlers(
-    protocol: T_BotProtocol,
-    mode: T_RouteMode,
-    source_id: str,
-    raw_event: Dict,
+    event_meta: EventMeta,
     event_name: str,
     class_handler_names: Set[str],
 ):
-    kwargs = await get_kwargs(protocol, mode, source_id, event_name, raw_event)
-    logger.debug(pformat(kwargs))
-
     if not class_handler_names:
-        logger.opt(colors=True).info(
-            f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 尚未注册class_handler"
+        logger.info(
+            f"<lc>{event_meta.mode}</lc> 模式的 <lc>{event_meta.source_id}</lc> 尚未注册class_handler"
         )
         return
+
+    kwargs = await get_kwargs(event_meta, event_name)
+    debug_log(kwargs, "当前事件可用的参数")
 
     for class_handler_name in class_handler_names:
         class_handler_cache = class_handler_mapping[class_handler_name]
@@ -239,13 +238,13 @@ async def run_class_handlers(
         event_handler = class_handler_cache.event_handlers.get(event_name)
         # logger.debug(pformat(event_name, event_handler))
         if event_handler:
-            logger.opt(colors=True).info(
+            logger.info(
                 f"开始执行class_handler <lc>{class_handler_name}</lc> 的事件响应 <lc>{event_name}</lc>",
             )
             await await_or_sync(event_handler, **fit_kwargs(event_handler, kwargs))
 
         else:
-            logger.opt(colors=True).info(
+            logger.info(
                 f"class_handler <lc>{class_handler_name}</lc> 未定义 <lc>{event_name}</lc>"
             )
 
@@ -285,19 +284,26 @@ def get_source_id(protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict) -
 
     elif protocol == "telegram":
         callback_object = raw_event["callback_object"]
-        # ! 注意不是from_user.id，是来源id，比如群号
-        source_id = callback_object.from_user.id
-        debug(source_id)
-        # ! str化？
+        if mode == "group":
+            # 注意不是from_user.id，是来源id，比如群号
+            source_id = callback_object.chat.id
+
+        elif mode == "private":
+            source_id = callback_object.from_user.id
+
+        elif mode == "channel":
+            source_id = callback_object.chat.id
 
     if not source_id:
         raise EventHandleError(f"未能获取source_id")
+
+    debug_log(source_id, "source_id")  # ! str化？
 
     return str(source_id)
 
 
 async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
-    logger.info("*" * 50)
+    logger.info("-" * 50)
 
     if not route_mapping.has_initial:
         await initial_bot_info()
@@ -351,6 +357,13 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     else:
         raise EventHandleError(f"")
 
+    event_meta = EventMeta(
+        protocol=protocol,
+        mode=mode,
+        source_id=source_id,
+        raw_event=raw_event,
+    )
+
     validator_handlers, validator_commands = await with_validators(mode, source_id)
 
     if protocol_event_name in command_trigger_events:
@@ -362,12 +375,8 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
         class_command_names |= validator_commands
 
         if class_command_names:
-            logger.opt(colors=True).info(
-                f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 存在注册的指令，开始执行"
-            )
-            await run_class_commands(
-                protocol, mode, source_id, raw_event, class_command_names
-            )
+            logger.info(f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 存在注册的指令，开始执行")
+            await run_class_commands(event_meta, class_command_names)
 
         # lock_user
         # for rule_id, rule in lock_user_mapping.items():
@@ -379,7 +388,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
 
         # lock_source
     else:
-        logger.opt(colors=True).info(f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 尚未注册指令")
+        logger.info(f"<lc>{mode}</lc> 模式的 <lc>{source_id}</lc> 尚未注册指令")
 
     class_handler_names |= route_mapping.global_handlers[protocol][mode]
     class_handler_names |= route_mapping.mapping[protocol][mode][source_id][
@@ -387,16 +396,12 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     ]
     class_handler_names |= validator_handlers
 
-    logger.debug(pformat(class_handler_names))
+    debug_log(class_handler_names, "所有可用class_handler")
 
     # 比如group_message这样的实现了统一事件的事件
     # 如果用户同时定义了group_message和onebot_group_message，应该执行两次
     event_mapping = UNIVERSAL_PROTOCOL_EVENT_MAPPING.get(raw_event_name)
     if event_mapping and protocol_event_name in event_mapping:
-        await run_class_handlers(
-            protocol, mode, source_id, raw_event, raw_event_name, class_handler_names
-        )
+        await run_class_handlers(event_meta, raw_event_name, class_handler_names)
 
-    await run_class_handlers(
-        protocol, mode, source_id, raw_event, protocol_event_name, class_handler_names
-    )
+    await run_class_handlers(event_meta, protocol_event_name, class_handler_names)
