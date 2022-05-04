@@ -20,8 +20,11 @@ from pyrogram.handlers.chat_join_request_handler import ChatJoinRequestHandler
 from pyrogram.handlers.chat_member_updated_handler import ChatMemberUpdatedHandler
 from pyrogram.handlers.chosen_inline_result_handler import ChosenInlineResultHandler
 from pyrogram.handlers.inline_query_handler import InlineQueryHandler
+from pyrogram.handlers.raw_update_handler import RawUpdateHandler
+from pyrogram.handlers.edited_message_handler import EditedMessageHandler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Message
+from pyrogram.types import ChatEventFilter
 
 
 class TelegramAdapter(BaseAdapater):
@@ -38,6 +41,20 @@ class TelegramAdapter(BaseAdapater):
     kwargs = TELEGRAM_KWARGS_MAPPING
 
 
+async def any_handler(client: Client, update: Any, handle_event, users, chats):
+    await handle_event(
+        "telegram",
+        dict(
+            event_name=TelegramMetaEvent.raw_update,
+            callback_object=update,
+            users=users,
+            chats=chats,
+        ),
+    )
+
+    raise ContinuePropagation
+
+
 async def private_message_handler(client: Client, callback_object: Any, handle_event):
     await handle_event(
         "telegram",
@@ -46,6 +63,8 @@ async def private_message_handler(client: Client, callback_object: Any, handle_e
             callback_object=callback_object,
         ),
     )
+
+    raise ContinuePropagation
 
 
 async def group_message_handler(client: Client, callback_object: Any, handle_event):
@@ -57,6 +76,20 @@ async def group_message_handler(client: Client, callback_object: Any, handle_eve
         ),
     )
 
+    raise ContinuePropagation
+
+
+async def edited_message_handler(client: Client, callback_object: Any, handle_event):
+    await handle_event(
+        "telegram",
+        dict(
+            event_name=TelegramCommonEvent.edited_message,
+            callback_object=callback_object,
+        ),
+    )
+
+    raise ContinuePropagation
+
 
 async def callback_query_handler(client: Client, callback_object: Any, handle_event):
     await handle_event(
@@ -66,6 +99,8 @@ async def callback_query_handler(client: Client, callback_object: Any, handle_ev
             callback_object=callback_object,
         ),
     )
+
+    raise ContinuePropagation
 
 
 # async def chat_member_updated_handler(client: Client, message: Message, handle_event):
@@ -85,6 +120,8 @@ async def chosen_inline_result_handler(
             callback_object=callback_object,
         ),
     )
+
+    raise ContinuePropagation
 
 
 async def inline_query_handler(client: Client, callback_object: Any, handle_event):
@@ -106,8 +143,8 @@ def with_handle_event(handle_event: Callable, handler: Callable):
     pass `handle_event` as parameter to avoid multiple times import
     """
 
-    async def wrapper(client, callback_object):
-        return await handler(client, callback_object, handle_event)
+    async def wrapper(client, callback_object, *args):
+        return await handler(client, callback_object, handle_event, *args)
 
     return wrapper
 
@@ -115,6 +152,11 @@ def with_handle_event(handle_event: Callable, handler: Callable):
 def register_telegram_event(pyrogram_client: Client):
     from pepperbot.core.event.handle import handle_event
 
+    # pyrogram_client.add_handler(
+    #     RawUpdateHandler(
+    #         with_handle_event(handle_event, any_handler),
+    #     )
+    # )
     pyrogram_client.add_handler(
         MessageHandler(
             with_handle_event(handle_event, private_message_handler),
@@ -131,6 +173,11 @@ def register_telegram_event(pyrogram_client: Client):
         MessageHandler(
             with_handle_event(handle_event, group_message_handler),
             filters.channel,
+        )
+    )
+    pyrogram_client.add_handler(
+        EditedMessageHandler(
+            with_handle_event(handle_event, edited_message_handler),
         )
     )
     pyrogram_client.add_handler(

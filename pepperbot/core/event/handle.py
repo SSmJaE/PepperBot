@@ -3,8 +3,6 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Set, Union, cas
 
 import arrow
 from devtools import debug, pformat
-from pyrogram.enums.chat_type import ChatType
-from pyrogram.types import CallbackQuery
 from pepperbot.adapters.keaimao import KeaimaoAdapter
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot, KeaimaoPrivateBot
 from pepperbot.adapters.onebot import OnebotV11Adapter
@@ -21,6 +19,7 @@ from pepperbot.core.event.universal import (
     ALL_META_EVENTS,
     ALL_ONEBOTV11_EVENTS,
     ALL_PRIVATE_EVENTS,
+    ALL_TELEGRAM_EVENTS,
     ALL_UNIVERSAL_EVENTS,
     GROUP_COMMAND_TRIGGER_EVENTS,
     PRIVATE_COMMAND_TRIGGER_EVENTS,
@@ -29,8 +28,6 @@ from pepperbot.core.event.universal import (
     UNIVERSAL_PROTOCOL_EVENT_MAPPING,
 )
 from pepperbot.core.event.utils import skip_current_onebot_event
-
-# from pepperbot.core.event.utils import get_bot_instance
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.command.handle import run_class_commands
 from pepperbot.extensions.log import debug_log, logger
@@ -50,6 +47,8 @@ from pepperbot.store.meta import (
 )
 from pepperbot.types import BaseBot, T_BotProtocol, T_RouteMode
 from pepperbot.utils.common import await_or_sync, fit_kwargs
+from pyrogram.enums.chat_type import ChatType
+from pyrogram.types import CallbackQuery, Message
 
 PROTOCOL_ADAPTER_MAPPING: Dict[T_BotProtocol, Any] = {
     "onebot": OnebotV11Adapter,
@@ -121,6 +120,9 @@ def figure_telegram_route_mode(raw_event: Dict) -> T_RouteMode:
 
     if isinstance(callback_object, CallbackQuery):
         chat_type: ChatType = callback_object.message.chat.type
+
+    elif isinstance(callback_object, Message):
+        chat_type: ChatType = callback_object.chat.type
 
     else:
         chat_type: ChatType = callback_object.chat_type
@@ -194,9 +196,7 @@ async def get_kwargs(event_meta: EventMeta, event_name: str) -> Dict[str, Any]:
         mapping = TelegramAdapter.kwargs
         real_event_name = event_name.replace("telegram_", "")
 
-        if real_event_name in TelegramAdapter.group_events:
-            bot_instance = get_or_create_bot(protocol, mode, source_id)
-        elif real_event_name in TelegramAdapter.private_events:
+        if real_event_name in ALL_TELEGRAM_EVENTS:
             bot_instance = get_or_create_bot(protocol, mode, source_id)
         else:  # common events
             raise EventHandleError(f"尚未实现的telegram事件 {real_event_name}")
@@ -344,7 +344,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
         source_id = get_source_id(protocol, mode, raw_event)
 
     else:
-        raise EventHandleError(f"无效/尚未实现的事件{protocol_event_name}")
+        raise EventHandleError(f"无效或尚未适配的事件 <lc>{protocol_event_name}</lc>")
 
     logger.opt(colors=True).info(
         f"接收到 <lc>{protocol}</lc> 的事件 <lc>{raw_event_name}</lc>，来自于 <lc>{mode}</lc> 模式的 <lc>{source_id}</lc>"

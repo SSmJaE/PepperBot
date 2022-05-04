@@ -64,6 +64,13 @@ ALL_KEAIMAO_EVENTS = [
     *KeaimaoAdapter.private_events,
 ]
 
+ALL_TELEGRAM_EVENTS = [
+    *TelegramAdapter.meta_events,
+    *TelegramAdapter.common_events,
+    *TelegramAdapter.group_events,
+    *TelegramAdapter.private_events,
+]
+
 available_adapters = [
     OnebotV11Adapter,
     KeaimaoAdapter,

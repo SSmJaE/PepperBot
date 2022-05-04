@@ -1,10 +1,11 @@
+from multiprocessing import Event
 from typing import Dict
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
 from pepperbot.adapters.onebot.event import (
     OnebotV11GroupEvent,
     OnebotV11PrivateEvent,
 )
-from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
+from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping, EventMeta
 
 # # 双重awaitable，因为不支持async lambda
 # async def get_member_info(event: Dict[str, Any], userId: int):
@@ -20,10 +21,10 @@ from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping
 #     )
 
 
-def construct_chain(protocol, mode, raw_event, source_id):
+def construct_chain(event_meta: EventMeta):
     from pepperbot.core.message.chain import chain_factory
 
-    return chain_factory(protocol, mode, raw_event, source_id)
+    return chain_factory(event_meta)
 
 
 # def construct_sender(event: Dict[str, Any]):

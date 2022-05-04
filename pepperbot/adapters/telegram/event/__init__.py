@@ -2,13 +2,14 @@
 
 
 class TelegramMetaEvent:
-    pass
+    raw_update = "raw_update"
 
 
 class TelegramCommonEvent:
     chosen_inline_result = "chosen_inline_result"
     callback_query = "callback_query"
     inline_query = "inline_query"
+    edited_message = "edited_message"
 
 
 class TelegramGroupEvent:

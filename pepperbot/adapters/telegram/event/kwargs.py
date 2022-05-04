@@ -46,6 +46,31 @@ TELEGRAM_KWARGS_MAPPING: T_HandlerKwargMapping = {
             value=lambda raw_event: raw_event["callback_object"],
         ),
     ],
+    TelegramCommonEvent.edited_message: [
+        EventHandlerKwarg(
+            name="raw_event", type_=Dict, value=lambda raw_event: raw_event
+        ),
+        EventHandlerKwarg(
+            name="client",
+            type_=Client,
+            value=lambda: get_telegram_caller(),
+        ),
+        EventHandlerKwarg(
+            name="message",
+            type_=Message,
+            value=lambda raw_event: raw_event["callback_object"],
+        ),
+        EventHandlerKwarg(
+            name="bot",
+            type_=TelegramPrivateBot,
+            value=lambda bot: bot,
+        ),
+        EventHandlerKwarg(
+            name="chain",
+            type_=MessageChain,
+            value=chain_factory,
+        ),
+    ],
     TelegramPrivateEvent.private_message: [
         EventHandlerKwarg(
             name="raw_event", type_=Dict, value=lambda raw_event: raw_event

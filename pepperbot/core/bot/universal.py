@@ -6,7 +6,7 @@ from pepperbot.adapters.onebot.api import (
     OnebotV11GroupApi,
     OnebotV11GroupBot,
 )
-from pepperbot.adapters.telegram.api import TelegramGroupApi
+from pepperbot.adapters.telegram.api import TelegramApi, TelegramGroupApi
 from pepperbot.core.message.chain import T_SegmentInstance
 
 # from pepperbot.core.event.utils import get_bot_instance
@@ -17,6 +17,7 @@ from pepperbot.types import BaseBot, T_BotProtocol
 class ArbitraryApi:
     onebot = OnebotV11Api
     keaimao = KeaimaoApi
+    telegram = TelegramApi
 
 
 class UniversalProperties(BaseBot):

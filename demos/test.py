@@ -8,7 +8,7 @@ from pepperbot.adapters.keaimao.api import KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import OnebotV11GroupBot
 from pepperbot.adapters.onebot.event import OnebotV11GroupEvent
 from pepperbot.adapters.telegram.api import TelegramGroupBot, TelegramPrivateBot
-from pepperbot.core.bot.universal import UniversalGroupBot
+from pepperbot.core.bot.universal import ArbitraryApi, UniversalGroupBot
 from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import Image, Music, Text, Video, OnebotFace
 from pepperbot.core.route import BotRoute
@@ -25,6 +25,8 @@ from pyrogram.types import (
     Message,
     ReplyKeyboardMarkup,
 )
+
+from pepperbot.store.meta import get_telegram_caller
 
 # class DefaultConfig_Logger:
 #     level: str = "debug"
@@ -50,13 +52,13 @@ bot = PepperBot(
     debug=True,
 )
 
-# bot.register_adapter(
-#     bot_protocol="onebot",
-#     receive_protocol="websocket",
-#     backend_protocol="http",
-#     backend_host="127.0.0.1",
-#     backend_port=5700,
-# )
+bot.register_adapter(
+    bot_protocol="onebot",
+    receive_protocol="websocket",
+    backend_protocol="http",
+    backend_host="127.0.0.1",
+    backend_port=5700,
+)
 # bot.register_adapter(
 #     bot_protocol="keaimao",
 #     receive_protocol="http",
@@ -65,10 +67,10 @@ bot = PepperBot(
 #     backend_port=8090,
 # )
 bot.register_telegram(
-    "telegram",
+    "telegram_user",
     api_id=16355308,
     api_hash="e54d4b8ffdb632f290bd97fd2c530602",
-    bot_token="5349474918:AAHS7rk0cAkHZp6Ete5VvDflWftEG84XmMA",
+    # bot_token="5349474918:AAHS7rk0cAkHZp6Ete5VvDflWftEG84XmMA",
     proxy={
         "scheme": "http",
         "hostname": "127.0.0.1",
@@ -123,15 +125,10 @@ class 指令4:
     pass
 
 
-class homepage:
-    async def onebot_group_message(
-        self,
-        bot: OnebotV11GroupBot,
-        chain: MessageChain,
-    ):
-        debug("in group_message")
-        debug(bot)
+has_clicked_button = False
 
+
+class homepage:
     async def keaimao_group_message(self, bot: KeaimaoGroupBot):
         debug(bot)
 
@@ -197,6 +194,21 @@ class homepage:
         # if bot.keaimao:
         #     await bot.keaimao.group_message("一条跨平台消息")
 
+    async def onebot_group_message(
+        self,
+        bot: OnebotV11GroupBot,
+        chain: MessageChain,
+    ):
+        debug("in group_message")
+        debug(bot)
+
+        if "测试" in chain:
+            global has_clicked_button
+            has_clicked_button = False
+
+            client = get_telegram_caller()
+            await client.send_message("@zh_secretary_bot", "NSFW")
+
     async def telegram_private_message(
         self,
         raw_event: Dict,
@@ -209,14 +221,41 @@ class homepage:
         debug(client, message)
         debug(chain.segments)
 
-        await bot.private_message(
-            Text("test"),
-            Text("test2"),
-        )
+        # await bot.private_message(
+        #     Text("test"),
+        #     Text("test2"),
+        # )
+        global has_clicked_button
+
+        if message.from_user.username == "zh_secretary_bot":
+            if not has_clicked_button:
+                debug(message.reply_markup)
+
+                # await client.request_callback_answer(
+                #     chat_id=message.chat.id,
+                #     message_id=message.id,
+                #     callback_data=message.reply_markup.inline_keyboard[0][
+                #         0
+                #     ].callback_data,
+                # )
+                await message.click(0)
+
+                has_clicked_button = True
 
         # await message.reply(message.text)
 
         # await bot.group_message(Text("hello telegram"))
+
+    async def telegram_edited_message(
+        self,
+        raw_event: Dict,
+        client: Client,
+        message: Message,
+        chain: MessageChain,
+        bot: TelegramPrivateBot,
+    ):
+        debug(raw_event)
+        await ArbitraryApi.onebot.group_message("1041902989", Text("123"))
 
     async def telegram_group_message(
         self,
