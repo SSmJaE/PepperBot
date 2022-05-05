@@ -106,8 +106,8 @@ class WhateverNameYouWant:
         if chain.regex("有人(在|吗|嘛|在吗).?"):
             # 发送一条群消息
             # 接受任意个参数，必须是合法的消息片段，比如Text，Face，Image
-            await bot.group_msg(
+            await bot.group_message(
                 Text("没人"),
-                Face(150)
+                Image("http://123.jpg"),
             )
 ```

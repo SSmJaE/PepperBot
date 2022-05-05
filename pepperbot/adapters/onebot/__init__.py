@@ -101,4 +101,6 @@ class OnebotV11Adapter(BaseAdapater):
     group_events = list(get_own_attributes(OnebotV11GroupEvent))
     private_events = list(get_own_attributes(OnebotV11PrivateEvent))
 
+    all_events = [*meta_events, *common_events, *group_events, *private_events]
+
     kwargs = ONEBOTV11_KWARGS_MAPPING

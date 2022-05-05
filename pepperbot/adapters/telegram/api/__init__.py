@@ -13,6 +13,7 @@ from pepperbot.core.message.segment import (
     Video,
 )
 from pepperbot.exceptions import BackendApiError, EventHandleError
+from pepperbot.extensions.log import logger
 from pepperbot.store.meta import get_bot_id, get_telegram_caller
 from pepperbot.types import BaseBot
 from pyrogram.client import Client
@@ -44,7 +45,7 @@ class TelegramApi:
                 )
 
             else:
-                raise BackendApiError(f"尚未适配的消息类型 telegram-{segment_type}")
+                logger.error(f"尚未适配的消息类型 telegram {segment_type}")
 
     @staticmethod
     async def group_message(chat_id: str, *segments: "T_SegmentInstance"):

@@ -94,7 +94,9 @@ async def deepawait_or_sync(
 def fit_kwargs(method: Callable, kwargs: Dict[str, Any]):
     """
     刨除没有在函数中定义的，但是提供了的额外参数
+
     可以是lambda函数
+
     定义时是位置参数或者关键字参数都可以，因为位置参数也可以通过关键词参数的形式赋值
     """
     # validKwargNames = method.__annotations__.keys()

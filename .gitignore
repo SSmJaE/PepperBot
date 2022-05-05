@@ -13,3 +13,4 @@ htmlcov
 bot
 
 demos/*.session*
+demos/test.py

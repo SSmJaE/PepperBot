@@ -19,7 +19,7 @@ class KeaimaoAdapter(BaseAdapater):
         event = raw_event["event"]
 
         if event == "EventFriendMsg":
-            event_name = KeaimaoPrivateEvent.friend_message
+            event_name = KeaimaoPrivateEvent.private_message
         elif event == "EventGroupMsg":
             event_name = KeaimaoGroupEvent.group_message
 
@@ -33,5 +33,7 @@ class KeaimaoAdapter(BaseAdapater):
     common_events = list(get_own_attributes(KeaimaoCommonEvent))
     group_events = list(get_own_attributes(KeaimaoGroupEvent))
     private_events = list(get_own_attributes(KeaimaoPrivateEvent))
+
+    all_events = [*meta_events, *common_events, *group_events, *private_events]
 
     kwargs = KEAIMAO_KWARGS_MAPPING

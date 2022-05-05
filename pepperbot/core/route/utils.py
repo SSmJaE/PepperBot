@@ -43,7 +43,7 @@ async def http_receiver(request, protocol: T_BotProtocol):
         await handle_event(protocol, raw_event)
 
     except EventHandleError as e:
-        logger.error(e)
+        logger.exception(e)
 
     except Exception:
         logger.exception("事件处理异常")
@@ -62,7 +62,7 @@ async def websocket_receiver(request, ws, protocol: T_BotProtocol):
             await handle_event(protocol, raw_event)
 
         except EventHandleError as e:
-            logger.error(e)
+            logger.exception(e)
 
         except Exception:
             logger.exception("事件处理异常")

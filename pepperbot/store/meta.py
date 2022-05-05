@@ -331,28 +331,11 @@ class EventHandlerKwarg(BaseModel):
     value: Any
     """ 
     value可以为嵌套协程，会自动await直到不可await，以获取结果 
+
     也可以为函数，自动call到un callable，
+    
     协程嵌套同步函数再嵌套协程也没有问题
     """
-
-
-async def get_event_handler_kwargs(
-    mapping: Dict[str, List[EventHandlerKwarg]],
-    event_name: str,
-    *,
-    default_kwargs: Optional[List[EventHandlerKwarg]] = None,
-    **injected_kwargs: Annotated[Any, "必须提供bot和raw_event"],
-):
-    kwarg_list: List[EventHandlerKwarg] = mapping.get(event_name, default_kwargs or [])
-
-    kwargs: Dict[str, Any] = {}
-    for kwarg in kwarg_list:
-        kwargs[kwarg.name] = await deepawait_or_sync(
-            kwarg.value,
-            **fit_kwargs(kwarg.value, injected_kwargs),
-        )
-
-    return kwargs
 
 
 T_HandlerKwargMapping = Dict[str, List[EventHandlerKwarg]]
@@ -466,3 +449,5 @@ class EventMeta(BaseModel):
     mode: T_RouteMode
     source_id: str
     raw_event: Dict
+    raw_event_name: str
+    protocol_event_name: str

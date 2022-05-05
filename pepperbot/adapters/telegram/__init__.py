@@ -13,6 +13,7 @@ from pepperbot.core.event.base_adapter import BaseAdapater
 # from pepperbot.core.event.handle import handle_event
 from pepperbot.exceptions import EventHandleError
 from pepperbot.utils.common import get_own_attributes
+from pepperbot.extensions.log import logger
 from pyrogram import ContinuePropagation, filters
 from pyrogram.client import Client
 from pyrogram.handlers.callback_query_handler import CallbackQueryHandler
@@ -37,6 +38,8 @@ class TelegramAdapter(BaseAdapater):
     common_events = list(get_own_attributes(TelegramCommonEvent))
     group_events = list(get_own_attributes(TelegramGroupEvent))
     private_events = list(get_own_attributes(TelegramPrivateEvent))
+
+    all_events = [*meta_events, *common_events, *group_events, *private_events]
 
     kwargs = TELEGRAM_KWARGS_MAPPING
 
@@ -144,7 +147,14 @@ def with_handle_event(handle_event: Callable, handler: Callable):
     """
 
     async def wrapper(client, callback_object, *args):
-        return await handler(client, callback_object, handle_event, *args)
+        try:
+            return await handler(client, callback_object, handle_event, *args)
+
+        except ContinuePropagation:
+            raise ContinuePropagation
+
+        except Exception as e:
+            logger.exception(e)
 
     return wrapper
 

@@ -5,6 +5,7 @@ from typing import (
     Any,
     Callable,
     List,
+    Optional,
     OrderedDict,
     Tuple,
     Union,
@@ -294,7 +295,9 @@ def get_pattern_results(
 
 def pattern_config(
     with_formot_hint: bool = True,
-    on_format_error: Callable[[T_CompressedSegments, T_CompressedPatterns], str] = None,
+    on_format_error: Optional[
+        Callable[[T_CompressedSegments, T_CompressedPatterns], str]
+    ] = None,
     retry: int = 3,
 ):
     """装饰器，函数粒度的config"""
@@ -370,8 +373,8 @@ async def parse_pattern(
             Text(f"{e}\n{formot_hint}")
         )
 
-        logger.exception("指令解析失败")
-        raise e
+        logger.error("指令解析失败")
+        raise e  # 需要中断指令的执行
 
     else:
         # todo patternResults的maxSize
