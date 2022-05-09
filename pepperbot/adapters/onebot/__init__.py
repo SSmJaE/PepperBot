@@ -9,10 +9,21 @@ from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
 from pepperbot.core.event.base_adapter import BaseAdapater
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import logger
+from pepperbot.types import T_RouteMode
 from pepperbot.utils.common import get_own_attributes
 
 
 class OnebotV11Adapter(BaseAdapater):
+    event_prefix = "onebot_"
+    meta_events = list(get_own_attributes(OnebotV11MetaEvent))
+    common_events = list(get_own_attributes(OnebotV11CommonEvent))
+    group_events = list(get_own_attributes(OnebotV11GroupEvent))
+    private_events = list(get_own_attributes(OnebotV11PrivateEvent))
+
+    all_events = [*meta_events, *common_events, *group_events, *private_events]
+
+    kwargs = ONEBOTV11_KWARGS_MAPPING
+
     @staticmethod
     def get_event_name(raw_event: Dict):
         """onebot没有直接的事件名，而是post_type和sub_type，所以手动转发一下"""
@@ -95,12 +106,24 @@ class OnebotV11Adapter(BaseAdapater):
 
         return event_name
 
-    event_prefix = "onebot_"
-    meta_events = list(get_own_attributes(OnebotV11MetaEvent))
-    common_events = list(get_own_attributes(OnebotV11CommonEvent))
-    group_events = list(get_own_attributes(OnebotV11GroupEvent))
-    private_events = list(get_own_attributes(OnebotV11PrivateEvent))
+    @staticmethod
+    def get_route_mode(raw_event: Dict, raw_event_name: str):
+        mode: Optional[T_RouteMode] = None
 
-    all_events = [*meta_events, *common_events, *group_events, *private_events]
+        if raw_event_name in OnebotV11Adapter.group_events:
+            mode = "group"
+        elif raw_event_name in OnebotV11Adapter.private_events:
+            mode = "private"
 
-    kwargs = ONEBOTV11_KWARGS_MAPPING
+        return mode
+
+    @staticmethod
+    def get_source_id(raw_event: Dict, mode: T_RouteMode):
+        source_id: Optional[str] = None
+
+        if mode == "group":
+            source_id = raw_event["group_id"]
+        elif mode == "private":
+            source_id = raw_event["sender"]["user_id"]
+
+        return source_id

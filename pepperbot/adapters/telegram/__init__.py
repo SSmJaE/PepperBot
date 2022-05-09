@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from devtools import debug
 from pepperbot.adapters.telegram.event import (
@@ -9,30 +9,25 @@ from pepperbot.adapters.telegram.event import (
 )
 from pepperbot.adapters.telegram.event.kwargs import TELEGRAM_KWARGS_MAPPING
 from pepperbot.core.event.base_adapter import BaseAdapater
-
-# from pepperbot.core.event.handle import handle_event
 from pepperbot.exceptions import EventHandleError
+from pepperbot.extensions.log import debug_log, logger
+from pepperbot.types import T_RouteMode
 from pepperbot.utils.common import get_own_attributes
-from pepperbot.extensions.log import logger
 from pyrogram import ContinuePropagation, filters
 from pyrogram.client import Client
+from pyrogram.enums.chat_type import ChatType
 from pyrogram.handlers.callback_query_handler import CallbackQueryHandler
 from pyrogram.handlers.chat_join_request_handler import ChatJoinRequestHandler
 from pyrogram.handlers.chat_member_updated_handler import ChatMemberUpdatedHandler
 from pyrogram.handlers.chosen_inline_result_handler import ChosenInlineResultHandler
-from pyrogram.handlers.inline_query_handler import InlineQueryHandler
-from pyrogram.handlers.raw_update_handler import RawUpdateHandler
 from pyrogram.handlers.edited_message_handler import EditedMessageHandler
+from pyrogram.handlers.inline_query_handler import InlineQueryHandler
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Message
-from pyrogram.types import ChatEventFilter
+from pyrogram.handlers.raw_update_handler import RawUpdateHandler
+from pyrogram.types import CallbackQuery, ChatEventFilter, Message
 
 
 class TelegramAdapter(BaseAdapater):
-    @staticmethod
-    def get_event_name(raw_event: Dict):
-        return raw_event["event_name"]
-
     event_prefix = "telegram_"
     meta_events = list(get_own_attributes(TelegramMetaEvent))
     common_events = list(get_own_attributes(TelegramCommonEvent))
@@ -42,6 +37,51 @@ class TelegramAdapter(BaseAdapater):
     all_events = [*meta_events, *common_events, *group_events, *private_events]
 
     kwargs = TELEGRAM_KWARGS_MAPPING
+
+    @staticmethod
+    def get_event_name(raw_event: Dict):
+        return raw_event["event_name"]
+
+    @staticmethod
+    def get_route_mode(raw_event: Dict, raw_event_name: str):
+        callback_object = raw_event["callback_object"]
+
+        debug_log(callback_object)
+
+        if isinstance(callback_object, CallbackQuery):
+            chat_type: ChatType = callback_object.message.chat.type
+
+        elif isinstance(callback_object, Message):
+            chat_type: ChatType = callback_object.chat.type
+
+        else:
+            chat_type: ChatType = callback_object.chat_type
+
+        if chat_type in [ChatType.BOT, ChatType.PRIVATE]:
+            mode = "private"
+        elif chat_type == ChatType.GROUP:
+            mode = "group"
+        else:
+            raise EventHandleError(f"")
+
+        return mode
+
+    @staticmethod
+    def get_source_id(raw_event: Dict, mode: T_RouteMode):
+        source_id: Optional[str] = None
+
+        callback_object = raw_event["callback_object"]
+        if mode == "group":
+            # 注意不是from_user.id，是来源id，比如群号
+            source_id = callback_object.chat.id
+
+        elif mode == "private":
+            source_id = callback_object.from_user.id
+
+        elif mode == "channel":
+            source_id = callback_object.chat.id
+
+        return source_id
 
 
 async def any_handler(client: Client, update: Any, handle_event, users, chats):

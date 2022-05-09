@@ -65,25 +65,15 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
             if not flag:
                 return
 
-    mode: T_RouteMode
-    source_id: str
+    mode = adapter.get_route_mode(raw_event, raw_event_name)
+    source_id = adapter.get_source_id(raw_event, mode)
 
-    if protocol_event_name in ALL_GROUP_EVENTS:
-        mode = "group"
-        source_id = get_source_id(protocol, mode, raw_event)
+    debug_log("", f"mode {mode} source_id {source_id}")
 
-    elif protocol_event_name in ALL_PRIVATE_EVENTS:
-        mode = "private"
-        source_id = get_source_id(protocol, mode, raw_event)
-
-    elif protocol == "telegram":
-        # telegram的某些common事件，比如callback_query，可以细分到group或者private
-        # 不过从直觉上说，callback_query之类的事件，确实是common的
-        mode = figure_telegram_route_mode(raw_event)
-        source_id = get_source_id(protocol, mode, raw_event)
-
-    else:
-        raise EventHandleError(f"无效或尚未适配的事件 <lc>{protocol_event_name}</lc>")
+    if not (mode and source_id):
+        raise EventHandleError(
+            f"无效或尚未适配的事件 <lc>{protocol}</lc> 的事件 <lc>{raw_event_name}</lc>"
+        )
 
     logger.info(
         f"接收到 <lc>{protocol}</lc> 的事件 <lc>{raw_event_name}</lc>，来自于 <lc>{mode}</lc> 模式的 <lc>{source_id}</lc>"
@@ -111,68 +101,6 @@ PROTOCOL_ADAPTER_MAPPING: Dict[T_BotProtocol, Any] = {
 
 def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
     return PROTOCOL_ADAPTER_MAPPING[protocol]
-
-
-def get_source_id(protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict) -> str:
-    source_id: Optional[str] = None
-
-    if protocol == "onebot":
-        if mode == "group":
-            source_id = raw_event["group_id"]
-        elif mode == "private":
-            source_id = raw_event["sender"]["user_id"]
-
-    elif protocol == "keaimao":
-        if mode == "group":
-            source_id = raw_event["from_wxid"]
-            # from_wxid为群号
-            # final_from_wxid为发言群员id
-        elif mode == "private":
-            source_id = raw_event["final_from_wxid"]
-
-    elif protocol == "telegram":
-        callback_object = raw_event["callback_object"]
-        if mode == "group":
-            # 注意不是from_user.id，是来源id，比如群号
-            source_id = callback_object.chat.id
-
-        elif mode == "private":
-            source_id = callback_object.from_user.id
-
-        elif mode == "channel":
-            source_id = callback_object.chat.id
-
-    if not source_id:
-        raise EventHandleError(f"未能获取source_id")
-
-    debug_log(source_id, "source_id")  # ! str化？
-
-    return str(source_id)
-
-
-def figure_telegram_route_mode(raw_event: Dict) -> T_RouteMode:
-
-    callback_object = raw_event["callback_object"]
-
-    debug_log(callback_object)
-
-    if isinstance(callback_object, CallbackQuery):
-        chat_type: ChatType = callback_object.message.chat.type
-
-    elif isinstance(callback_object, Message):
-        chat_type: ChatType = callback_object.chat.type
-
-    else:
-        chat_type: ChatType = callback_object.chat_type
-
-    if chat_type in [ChatType.BOT, ChatType.PRIVATE]:
-        mode = "private"
-    elif chat_type == ChatType.GROUP:
-        mode = "group"
-    else:
-        raise EventHandleError(f"")
-
-    return mode
 
 
 async def dispatch_class_commands(event_meta: EventMeta):
