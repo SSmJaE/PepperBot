@@ -56,8 +56,14 @@ class EventHandlerDefineError(PepperBotBaseException):
 class InitializationError(PepperBotBaseException):
     pass
 
+
 class EventHandleError(PepperBotBaseException):
-    pass 
+    pass
+
 
 class BackendApiError(PepperBotBaseException):
+    pass
+
+
+class StopPropagation(PepperBotBaseException):
     pass

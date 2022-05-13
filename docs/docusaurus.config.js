@@ -110,12 +110,12 @@ module.exports = {
         },
         algolia: {
             // The application ID provided by Algolia
-            appId: "8N3XA8QBNT",
+            appId: "UEP361PJRS",
 
             // Public API key: it is safe to commit it
-            apiKey: "d4e23dd444f993658aa433078c4e0d7c",
+            apiKey: "9a05028bf5adffd680061446e2abb411",
 
-            indexName: "PepperBot Docs",
+            indexName: "pepperbot",
 
             // Optional: see doc section below
             contextualSearch: true,
