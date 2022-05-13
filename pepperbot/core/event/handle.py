@@ -22,7 +22,7 @@ from pepperbot.core.event.universal import (
     UNIVERSAL_PROTOCOL_EVENT_MAPPING,
 )
 from pepperbot.core.event.utils import skip_current_onebot_event
-from pepperbot.exceptions import EventHandleError
+from pepperbot.exceptions import EventHandleError, StopPropagation
 from pepperbot.extensions.command.handle import run_class_commands
 from pepperbot.extensions.log import debug_log, logger
 from pepperbot.store.meta import (
@@ -231,7 +231,16 @@ async def run_class_handlers(
         logger.info(
             f"开始执行class_handler <lc>{class_handler_name}</lc> 的事件响应 <lc>{target_event_name}</lc>",
         )
-        await await_or_sync(event_handler, **fit_kwargs(event_handler, kwargs))
+
+        try:
+            await await_or_sync(event_handler, **fit_kwargs(event_handler, kwargs))
+
+        except StopPropagation:
+            logger.info(f"用户抛出 StopPropagation，停止执行后续事件响应")
+            break
+
+        except:
+            logger.exception("当前事件响应执行异常，将继续执行下一个事件响应")
 
 
 async def get_event_handler_kwargs(
