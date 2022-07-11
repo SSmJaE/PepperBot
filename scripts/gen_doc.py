@@ -16,6 +16,7 @@ from pepperbot.adapters.onebot.api import (
     OnebotV11GroupApi,
     OnebotV11PrivateApi,
 )
+from pepperbot.adapters.onebot.event import OnebotV11EventComments
 from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
 from pepperbot.adapters.telegram.api import (
     TelegramApi,
@@ -136,7 +137,10 @@ gen_api_markdown(TelegramPrivateApi, f"{api_prefix}/区分模式 API/私聊/Tele
 
 
 def gen_kwargs_markdown(
-    mapping: T_HandlerKwargMapping, output_file_path: str, extra_head: str = ""
+    mapping: T_HandlerKwargMapping,
+    comments: Union[object, None],
+    output_file_path: str,
+    extra_head: str = "",
 ):
     # md_file = MdUtils(file_name=output_file_path)
     md_file = ""
@@ -146,6 +150,11 @@ def gen_kwargs_markdown(
 
     for event_name, kwargs in mapping.items():
         md_file += f"## {event_name}\n\n"
+
+        if comments:
+            comment = getattr(comments, event_name, None)
+            if comment:
+                md_file += f"> {comment}\n\n"
 
         parameter_table = [["参数名称", "类型"]]
 
@@ -208,7 +217,23 @@ class MyHandler:
 
 
 cleanup(f"{api_prefix}/事件参数/")
-gen_kwargs_markdown(UNIVERSAL_KWARGS_MAPPING, f"{api_prefix}/事件参数/跨平台")
-gen_kwargs_markdown(ONEBOTV11_KWARGS_MAPPING, f"{api_prefix}/事件参数/Onebot")
-gen_kwargs_markdown(KEAIMAO_KWARGS_MAPPING, f"{api_prefix}/事件参数/可爱猫")
-gen_kwargs_markdown(TELEGRAM_KWARGS_MAPPING, f"{api_prefix}/事件参数/Telegram")
+gen_kwargs_markdown(
+    UNIVERSAL_KWARGS_MAPPING,
+    None,
+    f"{api_prefix}/事件参数/跨平台",
+)
+gen_kwargs_markdown(
+    ONEBOTV11_KWARGS_MAPPING,
+    OnebotV11EventComments,
+    f"{api_prefix}/事件参数/Onebot",
+)
+gen_kwargs_markdown(
+    KEAIMAO_KWARGS_MAPPING,
+    None,
+    f"{api_prefix}/事件参数/可爱猫",
+)
+gen_kwargs_markdown(
+    TELEGRAM_KWARGS_MAPPING,
+    None,
+    f"{api_prefix}/事件参数/Telegram",
+)

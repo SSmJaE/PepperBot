@@ -114,6 +114,25 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
         #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
         #     ),
     ],
+    OnebotV11GroupEvent.new_file_uploaded: [
+        raw_event,
+        group_bot,
+        #     EventHandlerKwarg(
+        #         name="member",
+        #         type_=GroupMember,
+        #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        #     ),
+    ],
+    OnebotV11GroupEvent.group_join_request: [
+        raw_event,
+        group_bot
+        # 这样就可以通过用户名来判断，是否允许加群,
+        #     EventHandlerKwarg(
+        #         name="member",
+        #         type_=GroupMember,
+        #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        #     ),
+    ],
     OnebotV11GroupEvent.been_group_poked: [
         raw_event,
         group_bot,
@@ -128,6 +147,71 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
         #         value=lambda event, **kwargs: get_member_info(event, event["target_id"]),
         #     ),
     ],
+    OnebotV11GroupEvent.been_invited: [
+        raw_event,
+        group_bot,
+        #     EventHandlerKwarg(
+        #         name="sender",
+        #         type_=GroupMember,
+        #         value=lambda event, **kwargs: get_member_info(event, event["sender_id"]),
+        #     ),
+        #     EventHandlerKwarg(
+        #         name="target",
+        #         type_=GroupMember,
+        #         value=lambda event, **kwargs: get_member_info(event, event["target_id"]),
+        #     ),
+    ],
+    OnebotV11PrivateEvent.been_added: [
+        raw_event,
+        private_bot,
+        #     EventHandlerKwarg(
+        #         name="stranger",
+        #         type_=Stranger,
+        #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        #     ),
+        #     EventHandlerKwarg(
+        #         name="comment", type_=str, value=lambda event, **kwargs: event["comment"]
+        #     ),
+    ],
+    OnebotV11PrivateEvent.been_friend_poked: [
+        raw_event,
+        private_bot,
+        #     EventHandlerKwarg(
+        #         name="sender",
+        #         type_=GroupMember,
+        #         value=lambda event, **kwargs: get_member_info(event, event["sender_id"]),
+        #     ),
+        #     EventHandlerKwarg(
+        #         name="target",
+        #         type_=GroupMember,
+        #         value=lambda event, **kwargs: get_member_info(event, event["target_id"]),
+        #     ),
+    ],
+    OnebotV11PrivateEvent.temp_message: [
+        raw_event,
+        private_bot,
+        common_chain,
+        # EventHandlerKwarg(
+        #     name="friend",
+        #     type_=Friend,
+        #     value=lambda event, **kwargs: construct_friend(event),
+        # ),
+        #     EventHandlerKwarg(
+        #         name="chain",
+        #         type_=MessageChain,
+        #         value=lambda event, **kwargs: construct_chain(event, groupId=None),
+        #     ),
+        #     EventHandlerKwarg(
+        #         name="stranger",
+        #         type_=Stranger,
+        #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        #     ),
+        #     EventHandlerKwarg(
+        #         name="group_id",
+        #         type_=int,
+        #         value=lambda event, **_: event["sender"]["group_id"],
+        #     ),
+    ],
     OnebotV11PrivateEvent.friend_message: [
         raw_event,
         private_bot,
@@ -138,48 +222,14 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
         #     value=lambda event, **kwargs: construct_friend(event),
         # ),
     ],
-    # OnebotV11GroupEvent.temp_message: [
-    #     EventHandlerKwarg(
-    #         name="chain",
-    #         type_=MessageChain,
-    #         value=lambda event, **kwargs: construct_chain(event, groupId=None),
-    #     ),
-    #     EventHandlerKwarg(
-    #         name="stranger",
-    #         type_=Stranger,
-    #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
-    #     ),
-    #     EventHandlerKwarg(
-    #         name="group_id",
-    #         type_=int,
-    #         value=lambda event, **_: event["sender"]["group_id"],
-    #     ),
-    # ],
-    # OnebotV11GroupEvent.group_honor_change: [
-    #     EventHandlerKwarg(
-    #         name="member",
-    #         type_=GroupMember,
-    #         value=lambda event, **kwargs: get_member_info(event, event["user_id"]),
-    #     ),
-    # ],
-    OnebotV11GroupEvent.add_group: [
+    OnebotV11PrivateEvent.friend_message_been_withdraw: [
         raw_event,
-        group_bot,
-        # 这样就可以通过用户名来判断，是否允许加群
+        private_bot,
+        common_chain,
         # EventHandlerKwarg(
-        #     name="stranger",
-        #     type_=Stranger,
-        #     value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
+        #     name="friend",
+        #     type_=Friend,
+        #     value=lambda event, **kwargs: construct_friend(event),
         # ),
     ],
-    # OnebotV11GroupEvent.been_added: [
-    #     EventHandlerKwarg(
-    #         name="stranger",
-    #         type_=Stranger,
-    #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
-    #     ),
-    #     EventHandlerKwarg(
-    #         name="comment", type_=str, value=lambda event, **kwargs: event["comment"]
-    #     ),
-    # ],
 }

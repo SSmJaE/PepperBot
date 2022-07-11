@@ -44,6 +44,35 @@ class MyHandler:
         pass
 ```
 
+## edited_message
+
+|参数名称|类型|
+|:---:|:---:|
+|raw_event|`from typing import Dict`|
+|client|`from pyrogram.client import Client`|
+|message|`from pyrogram.types.messages_and_media.message import Message`|
+|bot|`from pepperbot.adapters.telegram.api import TelegramPrivateBot`|
+|chain|`from pepperbot.core.message.chain import MessageChain`|
+
+```py
+from typing import Dict
+from pyrogram.client import Client
+from pyrogram.types.messages_and_media.message import Message
+from pepperbot.adapters.telegram.api import TelegramPrivateBot
+from pepperbot.core.message.chain import MessageChain
+
+
+class MyHandler:
+    async def edited_message(
+        raw_event: Dict,
+        client: Client,
+        message: Message,
+        bot: TelegramPrivateBot,
+        chain: MessageChain,
+    ):
+        pass
+```
+
 ## private_message
 
 |参数名称|类型|

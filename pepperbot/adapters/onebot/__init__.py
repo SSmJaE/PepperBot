@@ -41,7 +41,7 @@ class OnebotV11Adapter(BaseAdapater):
             if request_type == "group":
                 if sub_type == "add":
                     # logger.info("加群请求")
-                    event_name = OnebotV11GroupEvent.add_group
+                    event_name = OnebotV11GroupEvent.group_join_request
 
                 elif sub_type == "invite":
                     # logger.info("机器人被邀请入群")
@@ -90,15 +90,12 @@ class OnebotV11Adapter(BaseAdapater):
             elif message_type == "group":
 
                 if sub_type == "normal":
-                    # logger.info("群普通消息")
                     event_name = OnebotV11GroupEvent.group_message
 
                 elif sub_type == "anonymous":
-                    # logger.info("群匿名消息")
                     event_name = OnebotV11GroupEvent.group_anonymous_message
 
                 elif sub_type == "notice":
-                    # logger.info("群通知消息")
                     event_name = OnebotV11GroupEvent.group_notice
 
         if not event_name:
