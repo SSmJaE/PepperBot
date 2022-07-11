@@ -25,7 +25,7 @@ class OnebotV11CommonEvent:
 class OnebotV11GroupEvent:
     # 针对群
     group_message = "group_message"
-    group_anonymous_essage = "group_anonymous_essage"
+    group_anonymous_message = "group_anonymous_message"
     group_notice = "group_notice"
     group_message_been_withdraw = "group_message_been_withdraw"
     group_honor_change = "group_honor_change"

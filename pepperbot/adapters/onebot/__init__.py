@@ -95,7 +95,7 @@ class OnebotV11Adapter(BaseAdapater):
 
                 elif sub_type == "anonymous":
                     # logger.info("群匿名消息")
-                    event_name = OnebotV11GroupEvent.group_anonymous_essage
+                    event_name = OnebotV11GroupEvent.group_anonymous_message
 
                 elif sub_type == "notice":
                     # logger.info("群通知消息")
