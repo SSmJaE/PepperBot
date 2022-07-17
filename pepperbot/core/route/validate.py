@@ -229,7 +229,7 @@ def is_command_method_args_valid(
             # kwargs == no default value
             if p.default != p.empty and p.default != "PatternArg":
                 raise InitializationError(
-                    common_prefix + f"不应为 {arg_name} 除pattern外的参数设置默认值"
+                    common_prefix + f"不应为 {method_name} 除pattern外的参数设置默认值"
                 )
 
             # type hint correct

@@ -30,6 +30,11 @@ module.exports = {
                     position: "left",
                 },
                 {
+                    to: "docs/事件/",
+                    label: "事件一览",
+                    position: "left",
+                },
+                {
                     to: "docs/API/",
                     label: "API",
                     position: "left",

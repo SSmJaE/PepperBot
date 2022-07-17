@@ -17,7 +17,7 @@ def meet_text_prefix(
     chain: MessageChain,
     command_name: str,
     command_config: CommandConfig,
-) -> Tuple[bool, str]:
+) -> Tuple[bool, str, str, str]:
 
     aliases: Set[str] = set(command_config.aliases)
     if command_config.include_class_name:
@@ -40,19 +40,19 @@ def meet_text_prefix(
             if re.search(f"^{final_prefix}", chain.pure_text):
                 debug_log(f"^{final_prefix} 满足 {command_name} 的执行条件")
 
-                return True, final_prefix
+                return True, final_prefix, prefix, alias
 
             else:
                 debug_log(f"{final_prefix} 不满足 {command_name} 的执行条件")
 
-    return False, ""
+    return False, "", "", ""
 
 
 def meet_command_prefix(
     chain: MessageChain,
     command_name: str,
     command_config: CommandConfig,
-) -> Tuple[bool, str]:
+) -> Tuple[bool, str, str, str]:
     """
     通过command_kwargs和messageChain的pure_text，判断是否触发命令的initial
     """
@@ -65,13 +65,15 @@ def meet_command_prefix(
         # debug(chain.has(At(bot_id)))
 
         if not chain.has(At(bot_id)):
-            return False, ""
+            return False, "", "", ""
 
-    meet_prefix, prefix = meet_text_prefix(chain, command_name, command_config)
+    meet_prefix, final_prefix, prefix, alias = meet_text_prefix(
+        chain, command_name, command_config
+    )
     if not meet_prefix:
-        return False, ""
+        return False, "", "", ""
 
-    return True, prefix
+    return True, final_prefix, prefix, alias
 
 
 def meet_command_exit(chain: MessageChain, command_config: CommandConfig):

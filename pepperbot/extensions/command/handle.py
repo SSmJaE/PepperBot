@@ -94,6 +94,7 @@ COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
     ClassCommandOnFinish.__name__: "finish",
     ClassCommandOnTimeout.__name__: "timeout",
 }
+""" 这些生命周期通过抛出异常触发 """
 
 LIFECYCLE_WITHOUT_PATTERNS = ("exit", "finish", "timeout", "catch")
 """ 这些生命周期不应支持pattern """
@@ -109,7 +110,11 @@ common_kwargs = (
 )
 
 COMMAND_DEFAULT_KWARGS = {
-    "initial": (*common_kwargs,),
+    "initial": (
+        *common_kwargs,
+        EventHandlerKwarg(name="prefix", type_=str),
+        EventHandlerKwarg(name="alias", type_=str),
+    ),
     "exit": (*common_kwargs,),
     "finish": (*common_kwargs,),
     "timeout": (*common_kwargs,),
@@ -118,6 +123,11 @@ COMMAND_DEFAULT_KWARGS = {
         EventHandlerKwarg(name="exception", type_=Exception),
     ),
 }
+"""
+用于检查用户定义的方法的参数的类型注解是否合法
+也就是说，所有用户在对应方法中(比如initial)可用的参数及其类型，都应该出现在此处
+这里并不需要像class_handler中一样，提供value，因为会在run_class_method中直接注入
+ """
 
 
 async def run_class_commands(event_meta: EventMeta, class_command_names: Set[str]):
@@ -141,12 +151,13 @@ async def run_class_commands(event_meta: EventMeta, class_command_names: Set[str
         command_config = class_command_config_mapping[target_command_name]["default"]
 
     else:
-        command_name, prefix = find_first_available_command(
+        # locals中需要prefix和alias，作为initial的可选参数
+        command_name, prefix_with_alias, prefix, alias = find_first_available_command(
             event_meta, class_command_names, chain
         )
         if command_name:
             target_command_name = command_name
-            final_prefix = prefix
+            final_prefix = prefix_with_alias
 
         else:
             logger.info(f"未满足任何指令的执行条件")
@@ -298,7 +309,7 @@ def find_first_available_command(
         final_prefix = ""
         pointer = status.pointer
         if pointer == "initial":
-            meet_prefix, final_prefix = meet_command_prefix(
+            meet_prefix, final_prefix, prefix, alias = meet_command_prefix(
                 chain,
                 command_name,
                 command_config,
@@ -307,7 +318,7 @@ def find_first_available_command(
                 logger.info(
                     f"<y>{chain.pure_text}</y> 满足指令 <lc>{command_name}</lc> 的执行条件"
                 )
-                return command_name, final_prefix
+                return command_name, final_prefix, prefix, alias
 
             else:
                 logger.info(
@@ -315,7 +326,7 @@ def find_first_available_command(
                 )
                 continue
 
-    return "", ""
+    return "", "", "", ""
 
 
 async def run_command_method(method_name, method, all_locals: Dict) -> Any:
@@ -329,10 +340,14 @@ async def run_command_method(method_name, method, all_locals: Dict) -> Any:
         # context=all_locals["context"],
     )
 
-    if method_name == "cache":
+    if method_name == "catch":
         injected_kwargs["exception"] = all_locals["exception"]
 
     else:
+        if method_name == "initial":
+            injected_kwargs["alias"] = all_locals["alias"]
+            injected_kwargs["prefix"] = all_locals["prefix"]
+
         if method_name not in COMMAND_LIFECYCLE_EXCEPTIONS.values():
             injected_kwargs = {**injected_kwargs, **all_locals["patterns"]}
 
