@@ -71,6 +71,14 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     debug_log("", f"mode {mode} source_id {source_id}")
 
     if not (mode and source_id):
+        if protocol == "onebot":
+            if raw_event_name == "meta_event":
+                if (meta_event_type := raw_event["meta_event_type"]) == "heartbeat":
+                    logger.info(
+                        f"接收到 <lc>{protocol}</lc> 的元事件 <lc>{meta_event_type}</lc>"
+                    )
+                    return
+
         raise EventHandleError(
             f"无效或尚未适配的事件 <lc>{protocol}</lc> 的事件 <lc>{raw_event_name}</lc>"
         )
