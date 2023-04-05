@@ -32,7 +32,9 @@ def get_own_attributes(instance: object):
             yield property
 
 
-async def await_or_sync(functionOrCoroutine: Union[Any, FunctionType], *args, **kwargs):
+async def await_or_sync(
+    functionOrCoroutine: Union[Any, FunctionType], *args, **kwargs
+) -> Any:
     """
     针对bound method，iscoroutine和isawaitable对bound method无效
 

@@ -1,18 +1,28 @@
 from multiprocessing import Event
-from typing import Dict
-from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
+from typing import Any, Dict, Union
+from pepperbot.adapters.onebot.api import (
+    OnebotV11Api,
+    OnebotV11GroupBot,
+    OnebotV11PrivateBot,
+)
 from pepperbot.adapters.onebot.event import (
     OnebotV11GroupEvent,
     OnebotV11PrivateEvent,
 )
-from pepperbot.store.meta import EventHandlerKwarg, T_HandlerKwargMapping, EventMeta
+from pepperbot.adapters.onebot.models.user import GroupMember
+from pepperbot.store.meta import (
+    EventHandlerKwarg,
+    T_HandlerKwargMapping,
+    EventMeta,
+    get_onebot_caller,
+)
 
-# # 双重awaitable，因为不支持async lambda
-# async def get_member_info(event: Dict[str, Any], userId: int):
-#     return await globalApi.member(
-#         groupId=event["group_id"],
-#         userId=userId,
-#     )
+
+async def get_group_member_info(raw_event: dict[str, Any]):
+    """lambda不支持async，所以得单独搞出来"""
+    return await OnebotV11Api.get_group_member_info(
+        raw_event["group_id"], raw_event["user_id"]
+    )
 
 
 # async def get_stranger_info(event: Dict[str, Any], userId: int):
@@ -39,7 +49,9 @@ def construct_chain(event_meta: EventMeta):
 #     return Stranger(event=event, api=globalApi.api)
 
 raw_event = EventHandlerKwarg(
-    name="raw_event", type_=Dict, value=lambda raw_event: raw_event
+    name="raw_event",
+    type_=Union[Dict, dict],
+    value=lambda raw_event: raw_event,
 )
 group_bot = EventHandlerKwarg(
     name="bot",
@@ -99,20 +111,21 @@ ONEBOTV11_KWARGS_MAPPING: T_HandlerKwargMapping = {
     OnebotV11GroupEvent.member_increased: [
         raw_event,
         group_bot,
-        #     EventHandlerKwarg(
-        #         name="member",
-        #         type_=GroupMember,
-        #         value=lambda event, **kwargs: get_member_info(event, event["user_id"]),
-        #     ),
+        EventHandlerKwarg(
+            name="member",
+            type_=GroupMember,
+            value=lambda raw_event, **kwargs: get_group_member_info(raw_event),
+        ),
     ],
     OnebotV11GroupEvent.member_declined: [
         raw_event,
         group_bot,
-        #     EventHandlerKwarg(
-        #         name="member",
-        #         type_=GroupMember,
-        #         value=lambda event, **kwargs: get_stranger_info(event, event["user_id"]),
-        #     ),
+        # 退群的时候，获取不到，或者说，该api返回的是None
+        # EventHandlerKwarg(
+        #     name="member",
+        #     type_=GroupMember,
+        #     value=lambda raw_event, **kwargs: get_group_member_info(raw_event),
+        # ),
     ],
     OnebotV11GroupEvent.new_file_uploaded: [
         raw_event,

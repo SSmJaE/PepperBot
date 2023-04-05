@@ -8,7 +8,7 @@ from pepperbot.adapters.telegram.event import (
     TelegramPrivateEvent,
 )
 from pepperbot.adapters.telegram.event.kwargs import TELEGRAM_KWARGS_MAPPING
-from pepperbot.core.event.base_adapter import BaseAdapater
+from pepperbot.core.event.base_adapter import BaseAdapter
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import debug_log, logger
 from pepperbot.types import T_RouteMode
@@ -27,7 +27,7 @@ from pyrogram.handlers.raw_update_handler import RawUpdateHandler
 from pyrogram.types import CallbackQuery, ChatEventFilter, Message
 
 
-class TelegramAdapter(BaseAdapater):
+class TelegramAdapter(BaseAdapter):
     event_prefix = "telegram_"
     meta_events = list(get_own_attributes(TelegramMetaEvent))
     common_events = list(get_own_attributes(TelegramCommonEvent))

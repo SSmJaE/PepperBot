@@ -45,21 +45,21 @@ class User(UserBase):
 
 
 class GroupMember(User):
-    age: int
-    area: str
-    card: str
-    card_changeable: bool
-    group_id: int
-    join_time: int
-    last_sent_time: int
-    level: str
-    nickname: str
-    role: str
-    sex: str
-    title: str
-    title_expire_time: int
-    unfriendly: bool
-    user_id: int
+    age: Optional[int]
+    area: Optional[str]
+    card: Optional[str]
+    card_changeable: Optional[bool]
+    group_id: Optional[int]
+    join_time: Optional[int]
+    last_sent_time: Optional[int]
+    level: Optional[str]
+    nickname: Optional[str]
+    role: Optional[str]
+    sex: Optional[str]
+    title: Optional[str]
+    title_expire_time: Optional[int]
+    unfriendly: Optional[bool]
+    user_id: Optional[int]
 
     def action_test(self):
         print(1)
