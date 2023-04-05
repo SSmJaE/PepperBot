@@ -17,7 +17,6 @@ from typing import (
     cast,
     final,
 )
-from click import Option
 
 from devtools import debug, pformat
 from pepperbot.adapters.keaimao.api import KeaimaoApi
