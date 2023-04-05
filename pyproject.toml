@@ -3,6 +3,8 @@ authors = [{ name = "SSmJaE", email = "ssmjae327@gmail.com" }]
 classifiers = ["Programming Language :: Python"]
 dependencies = [
     "APScheduler>=3.10.1",
+    "Pyrogram>=2.0.102",
+    "TgCrypto>=1.2.5",
     "arrow>=1.2.3",
     "better-exceptions>=0.3.3",
     "devtools>=0.10.0",
@@ -37,10 +39,11 @@ license = { text = "MIT" }
 name = "pepperbot"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.3.1"
+version = "0.3.2"
 
-[project.optional-dependencies]
-telegram = ["Pyrogram>=2.0.102", "TgCrypto>=1.2.5"]
+# TODO 之后再优化这个问题，现在和逻辑嵌套过深
+# [project.optional-dependencies]
+# telegram = ["Pyrogram>=2.0.102", "TgCrypto>=1.2.5"]
 
 [project.urls]
 documentation = "https://SSmJaE.github.io/PepperBot"
@@ -52,11 +55,11 @@ repository    = "https://github.com/SSmJaE/PepperBot"
 # pepperbot = "cli:main"
 
 [build-system]
-requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+requires      = ["pdm-backend"]
 
 [tool.pdm.build]
-includes = ["pepperbot", "cli"]
+includes = ["cli", "pepperbot"]
 
 [tool.pdm]
 [tool.pdm.dev-dependencies]
