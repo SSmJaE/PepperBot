@@ -260,33 +260,33 @@ class MessageChain:
         return results
 
     @property
-    def at(self):
+    def at(self)-> list[At]:
         return self.__getItems(At)
 
     @property
-    def onebot_faces(self):
+    def onebot_faces(self)-> list[OnebotFace]:
         return self.__getItems(OnebotFace)
 
     @property
-    def audio(self):
+    def audio(self)-> list[Audio]:
         return self.__getItems(Audio)
 
     @property
-    def images(self):
+    def images(self)-> list[Image]:
         return self.__getItems(Image)
 
     @property
-    def replies(self):
+    def replies(self)-> list[Reply]:
         return self.__getItems(Reply)
 
     @property
-    def music(self):
+    def music(self)-> list[Music]:
         return self.__getItems(Music)
 
     @property
     def text(
         self,
-    ) -> List[Text]:
+    ) -> list[Text]:
         return self.__getItems(Text)
 
     @property

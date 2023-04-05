@@ -117,7 +117,7 @@ class Image(BaseMessageSegment):
 
     QQ支持：
 
-    绝对路径，例如 file:///C:\\Users\\Richard\\Pictures\\1.png，格式使用 file URI
+    绝对路径，例如 file:///C:\\Users\\123\\Pictures\\1.png，格式使用 file URI
 
     网络 URL，例如 http://i1.piimg.com/567571/fdd6e7b6d93f1ef0.jpg
 
@@ -140,29 +140,33 @@ class Image(BaseMessageSegment):
     ):
 
         self.temporary_file_path = file_path
+        self.file_path = file_path
+
         self.mode = mode
         self.telegram_lazy_download = telegram_lazy_download
-        self.file_path = ""
 
         super().__init__(**{"identifier": file_path})
 
     async def get_file_path(self):
-        # only when protocol is telegram, we need to lazy download
-        if not self.telegram_lazy_download:
-            return self.temporary_file_path
+        """TODO 逻辑不够清晰，重构一下"""
+        pass
 
-        # file_path is actually pyrogram file_id now
-        if self.file_path:
-            return self.file_path
+        # # only when protocol is telegram, we need to lazy download
+        # if not self.telegram_lazy_download:
+        #     return self.temporary_file_path
 
-        file_name = f"{random()}.jpg"
+        # # file_path is actually pyrogram file_id now
+        # if self.file_path:
+        #     return self.file_path
 
-        # lazy download when transfering to other platfrom for better performance
-        # download huge file with delay the execution of event handler
-        # unless using separate process or thread for downloading
-        file_path = await telegram_download_media(self.temporary_file_path, file_name)
-        self.file_path = file_path
-        return file_path
+        # file_name = f"{random()}.jpg"
+
+        # # lazy download when transfering to other platfrom for better performance
+        # # download huge file with delay the execution of event handler
+        # # unless using separate process or thread for downloading
+        # file_path = await telegram_download_media(self.temporary_file_path, file_name)
+        # self.file_path = file_path
+        # return file_path
 
     async def onebot(self):
         await self.get_file_path()
@@ -177,6 +181,8 @@ class Image(BaseMessageSegment):
 
         if self.mode == "flash":
             temp["data"]["type"] = "flash"
+
+        return temp
 
     async def keaimao(self):
         await self.get_file_path()

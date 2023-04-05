@@ -1,6 +1,7 @@
 import httpx
 from pepperbot.config import global_config
 from pepperbot.exceptions import InitializationError
+from pepperbot.extensions.log import debug_log
 from pepperbot.types import T_BotProtocol, T_WebProtocol
 from devtools import debug
 
@@ -44,7 +45,8 @@ class ApiCaller:
         # self.client.aclose().__await__()
 
     def to_onebot(self, action: str, kwargs):
-        # todo 直接返回.data
+        # TODO 直接返回.data
+        # debug_log(kwargs)
         return self.client.post(f"http://{self.host}:{self.port}/{action}", json=kwargs)
 
     def to_keaimao(self, action: str, kwargs):

@@ -39,8 +39,8 @@ class BotRoute(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    handlers: Optional[Iterable[Callable]] = None
-    commands: Optional[Iterable[Callable]] = None
+    handlers: Optional[Iterable[object]] = None
+    commands: Optional[Iterable[BaseClassCommand]] = None
     groups: Optional[T_RouteRelation] = "*"
     friends: Optional[T_RouteRelation] = "*"
 
