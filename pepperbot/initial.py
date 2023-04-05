@@ -156,11 +156,16 @@ class PepperBot:
 
     def run(self):
         sanic_app.register_listener(
-            PepperBot.before_server_start, "before_server_start"
+            PepperBot.before_server_start, "main_process_start"
         )
 
         try:
-            sanic_app.run(self.host, self.port, debug=self.debug)
+            sanic_app.run(
+                self.host,
+                self.port,
+                debug=self.debug,
+                auto_reload=self.debug,
+            )
         except (KeyboardInterrupt, SystemExit):
             logger.info("PepperBot成功退出")
         # except:
