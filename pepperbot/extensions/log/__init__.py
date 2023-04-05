@@ -9,6 +9,12 @@ from loguru import logger
 from pepperbot.config import global_config
 
 
+__all__ = (
+    "logger",
+    "debug_log",
+)
+
+
 def formatter(record: Dict):
     level = record["level"].name
 
@@ -63,8 +69,3 @@ def debug_log(message: Any, title: str = ""):
 
 
 logging.getLogger("apscheduler").setLevel(global_config.logger.level)
-
-__all__ = (
-    "logger",
-    "debug_log",
-)

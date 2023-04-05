@@ -21,7 +21,7 @@ class Logger(BaseModel):
 
 
 class Sqlite(BaseModel):
-    path = "./.sqlite3"
+    path = "./db.sqlite3"
 
 
 class GlobalConfig(BaseSettings):
