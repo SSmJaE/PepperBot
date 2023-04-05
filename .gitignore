@@ -12,6 +12,7 @@ dist
 htmlcov
 bot
 .pdm.toml
+build
 
 demos/*.session*
 demos/test.py
