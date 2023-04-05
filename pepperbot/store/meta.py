@@ -277,11 +277,11 @@ def get_api_caller(protocol: T_BotProtocol):
     return api_caller
 
 
-def get_onebot_caller():
+def get_onebot_caller() -> ApiCaller:
     return get_api_caller("onebot")
 
 
-def get_keaimao_caller():
+def get_keaimao_caller() -> ApiCaller:
     return get_api_caller("keaimao")
 
 

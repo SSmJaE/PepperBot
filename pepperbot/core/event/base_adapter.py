@@ -4,7 +4,7 @@ from pepperbot.store.meta import T_HandlerKwargMapping
 from pepperbot.types import T_RouteMode
 
 
-class BaseAdapater:
+class BaseAdapter:
     @staticmethod
     def get_event_name(raw_event: Dict) -> str:
         """根据各个协议，提取事件名称"""

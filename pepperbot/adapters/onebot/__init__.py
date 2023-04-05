@@ -6,14 +6,14 @@ from pepperbot.adapters.onebot.event import (
     OnebotV11PrivateEvent,
 )
 from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
-from pepperbot.core.event.base_adapter import BaseAdapater
+from pepperbot.core.event.base_adapter import BaseAdapter
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import logger
 from pepperbot.types import T_RouteMode
 from pepperbot.utils.common import get_own_attributes
 
 
-class OnebotV11Adapter(BaseAdapater):
+class OnebotV11Adapter(BaseAdapter):
     event_prefix = "onebot_"
     meta_events = list(get_own_attributes(OnebotV11MetaEvent))
     common_events = list(get_own_attributes(OnebotV11CommonEvent))

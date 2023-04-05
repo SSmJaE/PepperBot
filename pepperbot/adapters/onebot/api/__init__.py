@@ -2,6 +2,7 @@
 # from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
+from pepperbot.adapters.onebot.models.user import GroupMember
 from pepperbot.core.bot.api_caller import ApiCaller
 from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.store.meta import get_onebot_caller
@@ -15,7 +16,7 @@ class OnebotV11Api:
     @staticmethod
     async def get_login_info():
         try:
-            return (await get_onebot_caller()("get_login_info")).json()["data"]
+            return await get_onebot_caller()("get_login_info")
         except:
             raise BackendApiError(f"无法获取onebot机器人登录信息，请确认onebot服务是否正常运行")
 
@@ -49,28 +50,24 @@ class OnebotV11Api:
         display_name: str,
         folder_id: Optional[str] = None,
     ):
-        return (
-            await get_onebot_caller()(
-                "upload_group_file",
-                **{
-                    "group_id": group_id,
-                    "folder": folder_id,
-                    "file": path,
-                    "name": display_name,
-                },
-            )
-        ).json()["data"]
+        return await get_onebot_caller()(
+            "upload_group_file",
+            **{
+                "group_id": group_id,
+                "folder": folder_id,
+                "file": path,
+                "name": display_name,
+            },
+        )
 
     @staticmethod
     async def get_all_files(group_id: str):
-        return (
-            await get_onebot_caller()(
-                "get_group_root_files",
-                **{
-                    "group_id": group_id,
-                },
-            )
-        ).json()["data"]
+        return await get_onebot_caller()(
+            "get_group_root_files",
+            **{
+                "group_id": group_id,
+            },
+        )
 
     @staticmethod
     async def ban(group_id: str, user_id: str, duration: int = 30):
@@ -145,6 +142,18 @@ class OnebotV11Api:
                 "approve": False,
             },
         )
+
+    @staticmethod
+    async def get_group_member_info(group_id: str, user_id: str):
+        return_json =  await get_onebot_caller()(
+            "get_group_member_info",
+            **{
+                "group_id": group_id,
+                "user_id": user_id,
+            },
+        )
+
+        return GroupMember(**return_json)
 
 
 class OnebotV11Properties(BaseBot):

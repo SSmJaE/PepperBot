@@ -71,7 +71,7 @@ class KeaimaoApi:
     @staticmethod
     async def get_login_accounts():
         try:
-            return (await get_keaimao_caller()("GetLoggedAccountList")).json()["data"]
+            return await get_keaimao_caller()("GetLoggedAccountList")
         except:
             raise EventHandleError(f"无法获取可爱猫机器人登录信息，请确认可爱猫正常运行")
 

@@ -10,7 +10,7 @@ from pepperbot.adapters.onebot.api import OnebotV11GroupBot, OnebotV11PrivateBot
 from pepperbot.adapters.telegram import TelegramAdapter
 from pepperbot.adapters.telegram.api import TelegramGroupBot, TelegramPrivateBot
 from pepperbot.core.bot.universal import UniversalGroupBot, UniversalPrivateBot
-from pepperbot.core.event.base_adapter import BaseAdapater
+from pepperbot.core.event.base_adapter import BaseAdapter
 from pepperbot.core.event.kwargs import UNIVERSAL_KWARGS_MAPPING
 from pepperbot.core.event.universal import (
     ALL_GROUP_EVENTS,
@@ -106,7 +106,7 @@ PROTOCOL_ADAPTER_MAPPING: Dict[T_BotProtocol, Any] = {
 }
 
 
-def get_adapter(protocol: T_BotProtocol) -> BaseAdapater:
+def get_adapter(protocol: T_BotProtocol) -> BaseAdapter:
     return PROTOCOL_ADAPTER_MAPPING[protocol]
 
 

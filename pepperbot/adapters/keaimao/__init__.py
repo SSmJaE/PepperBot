@@ -7,13 +7,13 @@ from pepperbot.adapters.keaimao.event import (
     KeaimaoPrivateEvent,
 )
 from pepperbot.adapters.keaimao.event.kwargs import KEAIMAO_KWARGS_MAPPING
-from pepperbot.core.event.base_adapter import BaseAdapater
+from pepperbot.core.event.base_adapter import BaseAdapter
 from pepperbot.exceptions import EventHandleError
 from pepperbot.types import T_RouteMode
 from pepperbot.utils.common import get_own_attributes
 
 
-class KeaimaoAdapter(BaseAdapater):
+class KeaimaoAdapter(BaseAdapter):
     event_prefix = "keaimao_"
     meta_events = list(get_own_attributes(KeaimaoMetaEvent))
     common_events = list(get_own_attributes(KeaimaoCommonEvent))
