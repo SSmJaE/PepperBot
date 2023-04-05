@@ -1,41 +1,65 @@
-[tool.poetry]
+[project]
+authors = [{ name = "SSmJaE", email = "ssmjae327@gmail.com" }]
+classifiers = ["Programming Language :: Python"]
+dependencies = [
+    "APScheduler>=3.10.1",
+    "arrow>=1.2.3",
+    "better-exceptions>=0.3.3",
+    "devtools>=0.10.0",
+    "httpx>=0.23.3",
+    "loguru>=0.6.0",
+    "pydantic>=1.10.6",
+    "python-dotenv>=1.0.0",
+    "rich>=13.3.2",
+    "sanic>=22.12.0",
+]
+description = "An intuitive multi-platform bot framework, easily forward messages among platforms, support QQ, WeChat, Telegram. 一个符合直觉的跨社交平台机器人框架，轻松地在平台间传递消息，支持QQ、微信、Telegram"
+keywords = [
+    "Telegram",
+    "async",
+    "asyncio",
+    "bot",
+    "chinese",
+    "cqhttp",
+    "cross-platform",
+    "framework",
+    "keaimao",
+    "onebot",
+    "pydantic",
+    "pyrogram",
+    "python",
+    "qq",
+    "type-annotations",
+    "type-hint",
+    "wechat",
+]
+license = { text = "MIT" }
 name = "pepperbot"
-version = "0.3.0"
-description = ""
-authors = ["SSmJaE <shaoxydd8888@gmail.com>"]
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.3.1"
 
-[tool.poetry.dependencies]
-python = "^3.8"
-sanic = "^21.12.1"
-httpx = "^0.21.1"
-pydantic = "^1.8.1"
-arrow = "^1.0.3"
-loguru = "^0.5.3"
-APScheduler = "^3.7.0"
-rich = "^11.1.0"
-python-dotenv = "^0.19.2"
-devtools = "^0.6.1"
-better-exceptions = "^0.3.3"
-Pyrogram = "^2.0.14"
-TgCrypto = "^1.2.3"
+[project.optional-dependencies]
+telegram = ["Pyrogram>=2.0.102", "TgCrypto>=1.2.5"]
 
-[tool.poetry.dev-dependencies]
-black = { version = "^21.4b2", allow-prereleases = true }
-pytest = "^5.2"
-pytest-cov = "^3.0.0"
+[project.urls]
+documentation = "https://SSmJaE.github.io/PepperBot"
+homepage      = "https://github.com/SSmJaE/PepperBot"
+repository    = "https://github.com/SSmJaE/PepperBot"
+# changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+# [project.scripts]
+# pepperbot = "cli:main"
 
-[tool.poetry.scripts]
-pepperbot = "cli:main"
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+test = ["pytest-cov>=4.0.0", "pytest>=7.2.2"]
 
-[tool.poe.tasks]
+[tool.pdm.scripts]
+badge = """\
+pytest --cov-report xml --cov-branch --cov=pepperbot ./tests/command/test_parse.py \
+&& deactive \
+&& genbadge coverage -i ./coverage.xml \
+"""
 run = "python private/run.py"
 test = "pytest --cov-report html --cov-branch --cov=pepperbot ./tests"
-badge.sequence = [
-    "pytest --cov-report xml --cov-branch --cov=pepperbot ./tests/command/test_parse.py",
-    "deactive",
-    "genbadge coverage -i ./coverage.xml",
-]
