@@ -20,7 +20,8 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          # node 17 => Error: error:0308010C:digital envelope routines::unsupported
+          node-version: 16
           cache: yarn
           # https://github.com/actions/setup-node#checking-in-lockfiles
           cache-dependency-path: docs/yarn.lock
