@@ -8,15 +8,17 @@ on:
 
 jobs:
   deploy:
-    defaults:
-      run:
-        # monorepo，所以需要指定工作目录
-        working-directory: docs
+    # defaults:
+    #   run:
+    #     # monorepo，所以需要指定工作目录
+    #     working-directory: docs
 
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - run: cd docs
       - uses: actions/setup-node@v3
         with:
           node-version: 18
