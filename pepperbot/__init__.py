@@ -4,8 +4,9 @@ import better_exceptions
 from better_exceptions import encoding
 
 from pepperbot.extensions.log import logger
+from pepperbot.extensions.scheduler import async_scheduler
 
-from .initial import PepperBot, async_scheduler
+from .initial import PepperBot
 
 __version__ = "0.3.2"
 __all__ = (

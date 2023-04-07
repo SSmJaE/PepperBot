@@ -1,4 +1,4 @@
-from typing import Any, Callable, Coroutine, Iterable, Literal, Optional, Type
+from typing import Any, Callable, Coroutine, Iterable, Literal, Optional, Type, cast
 
 from apscheduler.triggers.interval import IntervalTrigger
 from devtools import debug, pformat
@@ -30,10 +30,12 @@ from pepperbot.store.meta import (
 from pepperbot.types import T_BotProtocol, T_WebProtocol
 
 sanic_app = Sanic("PepperBot")
-sanic_app.config.WEBSOCKET_PING_TIMEOUT = None  # type:ignore
-
 
 async_create_telegram_handler: Optional[Callable] = None
+
+
+async def _ensure_async_scheduler_start():
+    logger.success("PepperBot successfully start scheduler")
 
 
 class PepperBot:
@@ -46,6 +48,12 @@ class PepperBot:
         self.host = host
         self.port = port
         self.debug = debug
+
+        sanic_app.config.INSPECTOR = debug
+        sanic_app.config.WEBSOCKET_PING_TIMEOUT = None  # type:ignore
+
+        sanic_app.register_listener(self.main_process_start, "main_process_start")
+        sanic_app.register_listener(self.after_server_start, "after_server_start")
 
     def register_adapter(
         self,
@@ -124,7 +132,7 @@ class PepperBot:
 
             register_telegram_event(pyrogram_client)
 
-            logger.success("telegram client created")
+            logger.success("PepperBot successfully create pyrogram client")
 
             await pyrogram_client.start()
 
@@ -141,32 +149,58 @@ class PepperBot:
         pass
 
     @staticmethod
-    async def before_server_start(*args):
-        logger.success(f"successfully load .env config \n {pformat(global_config)}")
+    async def main_process_start(app, loop):
+        """
+        https://sanic.dev/en/guide/basics/listeners.html#asgi-mode
 
-        logger.success(f"successfully create bot routes")
+        If you are running your application with an ASGI server, main_process_start and main_process_stop will be ignored
+        """
+
+        logger.success(
+            f"PepperBot successfully load .env config \n {pformat(global_config)}"
+        )
+
+        logger.success(f"PepperBot successfully create bot routes")
         output_config()
+
+    @staticmethod
+    async def after_server_start(app, loop):
+        # ensure that async_scheduler is created under same async context
+        # https://github.com/sanic-org/sanic/issues/743
+        # global async_scheduler
+        # async_scheduler = AsyncIOScheduler({'event_loop': loop})
 
         if async_create_telegram_handler:
             async_scheduler.add_job(async_create_telegram_handler)
 
         async_scheduler.add_job(check_command_timeout, IntervalTrigger(seconds=10))
         # async_scheduler.add_job(clean_bot_instances)
+        async_scheduler.add_job(_ensure_async_scheduler_start)
+
         async_scheduler.start()
 
-    def run(self):
-        sanic_app.register_listener(
-            PepperBot.before_server_start, "main_process_start"
+    def run(self, **kwargs):
+        """
+        all available kwargs https://sanic.dev/en/guide/deployment/running.html#low-level-app-run
+
+        bind event listener or other things before run sanic, and should not in same function with run
+
+        otherwise, it will not work(because it only run on Sanic's main worker process, NOT any of its worker processes)
+        """
+
+        final_kwargs = dict(
+            host=self.host,
+            port=self.port,
+            debug=self.debug,
+            auto_reload=self.debug,
         )
 
+        final_kwargs.update(kwargs)
+
         try:
-            sanic_app.run(
-                self.host,
-                self.port,
-                debug=self.debug,
-                auto_reload=self.debug,
-            )
+            # by a separate dict, make sure that there wouldn't have two same kwargs
+            sanic_app.run(**final_kwargs)
         except (KeyboardInterrupt, SystemExit):
-            logger.info("PepperBot成功退出")
+            logger.info("PepperBot successfully shutdown")
         # except:
         #     logger.exception("")

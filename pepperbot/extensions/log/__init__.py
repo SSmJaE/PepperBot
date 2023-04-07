@@ -16,6 +16,8 @@ __all__ = (
 
 
 def formatter(record: Dict):
+    # TODO 带进程id，因为现在sanic自带worker manager了
+
     level = record["level"].name
 
     file_path: str = record["extra"].get("file_path") or record["file"].path
@@ -68,4 +70,6 @@ def debug_log(message: Any, title: str = ""):
         print(pformat(message, highlight=True))
 
 
+# TODO 整合sanic的日志
+# TODO 统一logging为loguru
 logging.getLogger("apscheduler").setLevel(global_config.logger.level)
