@@ -420,7 +420,7 @@ async def check_command_timeout():
 
     logger.info("检查指令是否超时……")
 
-    timeouted_status: List[T_CommandStatusKey] = []
+    timeout_status: List[T_CommandStatusKey] = []
     """ 不要在迭代字典的过程中，动态的修改字典 """
 
     for key, status in normal_command_context_mapping.items():
@@ -442,7 +442,7 @@ async def check_command_timeout():
 
             if not len(status.history):
                 logger.error(f"如果要执行timeout生命周期，history_size至少为1")
-                timeouted_status.append(key)
+                timeout_status.append(key)
                 continue
 
             class_command_cache = class_command_mapping[command_name]
@@ -456,7 +456,7 @@ async def check_command_timeout():
                 logger.info(
                     f"指令 <lc>{command_name}</lc> 未定义生命周期 <lc>{pointer}</lc>，直接结束指令"
                 )
-                timeouted_status.append(key)
+                timeout_status.append(key)
                 continue
 
             logger.info(f"开始执行指令 <lc>{command_name}</lc> 的生命周期 <lc>{pointer}</lc>")
@@ -489,7 +489,12 @@ async def check_command_timeout():
                     raise exception from exception
 
             finally:
-                timeouted_status.append(key)
+                timeout_status.append(key)
 
-    for key in timeouted_status:
+    for key in timeout_status:
         normal_command_context_mapping.pop(key)
+
+        command_name, protocol, mode, source_id = key
+        logger.info(
+            f"协议 <lc>{protocol}</lc> <lc>{mode}</lc> 模式中 <lc>{source_id}</lc> 的指令 <lc>{command_name}</lc> 已timeout"
+        )

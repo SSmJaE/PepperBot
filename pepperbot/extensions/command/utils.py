@@ -33,11 +33,17 @@ def meet_text_prefix(
     debug_log(prefixes, "所有前缀")
     debug_log(aliases, "所有别名")
 
+    debug_log(chain.pure_text)
+
     for alias in aliases:
         for prefix in prefixes:
             final_prefix = prefix + alias
 
-            if re.search(f"^{final_prefix}", chain.pure_text):
+            # 如果是At + Text的情况，pure_text之前会多出一个空格
+            # 因为经常性，At和Text之间，会手动加一个空格，不如不去掉，就会导致判断失效
+            # 必须有^，不然，当有多个指令时，某一个final_prefix是另一个final_prefix的子集时，会导致错误匹配
+            # 比如，/a和/ab，当输入/a时，会匹配到/a和/ab，此时如果/a指令在前，/ab就不会被匹配到
+            if re.search(f"^{final_prefix}", chain.pure_text.strip()):
                 debug_log(f"^{final_prefix} 满足 {command_name} 的执行条件")
 
                 return True, final_prefix, prefix, alias

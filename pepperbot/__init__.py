@@ -8,7 +8,7 @@ from pepperbot.extensions.scheduler import async_scheduler
 
 from .initial import PepperBot
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __all__ = (
     "__version__",
     "PepperBot",
