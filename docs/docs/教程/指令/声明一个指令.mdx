@@ -106,6 +106,83 @@ class 天气指令:
 
 配合`include_class_name`使用，可以实现非常灵活的效果
 
+### require_at
+
+如果你希望只有当群员@了机器人时，才能触发指令，可以设置`require_at`为 True
+
+比如，设置`aliases`为`["天气"]`，`require_at`为 `True`，当用户输入
+
+```py
+@bot 天气 上海
+```
+
+时，才会触发
+
+#### 可选的 At 触发
+
+如果你希望，既可以通过前缀触发，也可以通过@触发
+
+-   通过前缀触发，不需要@
+-   需要@的触发
+
+可以通过继承实现
+
+可以发现，`PepperBot`中的指令，都是通过`as_command`装饰器实现的
+
+而`as_command`装饰器接受的，是一个`class`
+
+所以，我们可以将指令具体的功能，放到一个`class`中，然后通过新实现两个`class`，都继承这个`class`，来绑定不同的`as_command`参数
+
+```py
+class WeatherCommand:
+    async def initial(self):
+        ...
+
+@as_commond(
+    prefixes=["/"],
+    aliases=["天气", "气象", "风雨"],
+    include_class_name=False,
+)
+class WeatherCommandWithPrefix(WeatherCommand):
+    pass
+
+@as_commond(
+    need_prefix=False,
+    # prefixes=[],
+    aliases=["天气", "气象", "风雨"],
+    include_class_name=False,
+    require_at=True,
+)
+class WeatherCommandWithAt(WeatherCommand):
+    pass
+```
+
+需要注意的是，class 的名称，不能重复，否则会报错
+
+我们可以通过`as_command`的`aliases`和`include_class_name`参数，来实现不同 class 使用相同的 prefix 和 alias
+
+#### 仅需 At
+
+如果你希望只要@了机器人，就能触发指令，可以设置`require_at`为 True，同时`need_prefix`为 False
+
+然后，提供一个`空字符串`，作为 alias 即可
+
+```py
+@as_commond(
+    need_prefix=False,
+    aliases=[""],
+    require_at=True,
+)
+class WeatherCommandWithAt(WeatherCommand):
+    ...
+```
+
+现在，用户只要@了机器人，就能触发指令了
+
+```py
+@bot
+```
+
 ## 校验参数
 
 从上方的例子可以看到，我们实现了参数校验的功能，参数的自动校验和解析，是通过`PatternArg`实现的
