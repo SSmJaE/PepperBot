@@ -1,3 +1,6 @@
+// @ts-check
+
+// /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 module.exports = {
     教程: [
         {
@@ -19,13 +22,17 @@ module.exports = {
                 {
                     type: "category",
                     label: "PepperBot配置",
-                    collapsed: false,
-                    items: ["教程/环境/PepperBot安装", "教程/环境/PepperBot对接"],
+                    collapsed: true,
+                    items: [
+                        "教程/环境/PepperBot安装",
+                        "教程/环境/初始化项目",
+                        "教程/环境/PepperBot对接",
+                    ],
                 },
                 {
                     type: "category",
                     label: "协议配置",
-                    collapsed: false,
+                    collapsed: true,
                     items: [
                         "教程/环境/配置QQ",
                         "教程/环境/配置微信",
@@ -46,6 +53,7 @@ module.exports = {
                 "教程/事件/消息链",
                 "教程/事件/消息片段",
                 "教程/事件/群消息响应",
+                "教程/事件/运行机器人",
                 // "教程/事件/hooks",
                 // "教程/事件/其它事件",
             ],
@@ -66,7 +74,7 @@ module.exports = {
         {
             type: "category",
             label: "指令",
-            collapsed: false,
+            collapsed: true,
             items: [
                 "教程/指令/何时使用指令",
                 "教程/指令/指令的生命周期",
@@ -84,7 +92,24 @@ module.exports = {
             type: "category",
             label: "进阶",
             collapsed: false,
-            items: ["进阶/直接操作Sanic", "进阶/数据库"],
+            items: [
+                "教程/进阶/直接操作Sanic",
+                "教程/进阶/数据库",
+                "教程/进阶/多进程",
+                "教程/进阶/配置文件",
+                "教程/进阶/日志",
+                "教程/进阶/Linux下部署",
+            ],
+        },
+        {
+            type: "category",
+            label: "市场",
+            collapsed: true,
+            items: [
+                "教程/市场/什么是市场",
+                "教程/市场/发布项目",
+                "教程/市场/使用项目",
+            ],
         },
         // {
         //     type: "category",
@@ -92,27 +117,23 @@ module.exports = {
         //     collapsed: false,
         //     items: [],
         // },
-        {
-            type: "category",
-            label: "部署",
-            collapsed: false,
-            items: ["教程/部署/配置文件", "教程/部署/日志", "教程/部署/linux下部署"],
-        },
+        // {
+        //     type: "category",
+        //     label: "部署",
+        //     collapsed: false,
+        //     items: [],
+        // },
     ],
     示例: ["示例/概览", "示例/定时任务", "示例/消息转发", "示例/课程表"],
+    事件一览: [
+        "API/事件参数/概览",
+        "API/事件参数/跨平台",
+        "API/事件参数/Onebot",
+        "API/事件参数/可爱猫",
+        "API/事件参数/Telegram",
+    ],
     API: [
         "API/概览",
-        {
-            type: "category",
-            label: "事件参数",
-            collapsed: false,
-            items: [
-                "API/事件参数/跨平台",
-                "API/事件参数/Onebot",
-                "API/事件参数/可爱猫",
-                "API/事件参数/Telegram",
-            ],
-        },
         {
             type: "category",
             label: "Arbitrary API",
