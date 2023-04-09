@@ -1,15 +1,13 @@
 <h1 align="center">PepperBot</h1>
 
 <p align="center">
-<img  src="./archive/icon.png" width="200">
+<img  src="./archive/icon.png" width="200" />
 </p>
 
 <p align="center">一个符合直觉的跨社交平台机器人框架，轻松地在平台间传递消息，支持QQ、微信、Telegram</p>
 <p align="center">
 <a href="https://ssmjae.github.io/PepperBot/">文档</a> ·
 <a href="https://jq.qq.com/?_wv=1027&k=EPhcRRib">QQ交流群</a>  
-<!-- <a href="https://jq.qq.com/?_wv=1027&k=EPhcRRib">微信交流群</a> · 
-<a href="https://jq.qq.com/?_wv=1027&k=EPhcRRib">TG交流群</a>  -->
 </p>
 
 <p align="center">
@@ -111,3 +109,5 @@ class WhateverNameYouWant:
                 Image("http://123.jpg"),
             )
 ```
+
+## 生态

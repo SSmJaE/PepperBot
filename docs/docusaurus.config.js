@@ -4,13 +4,25 @@ const iconPath = "/img/icon.png";
 module.exports = {
     title: "PepperBot Docs",
     tagline: "PepperBot的文档",
-    url: "https://github.com/SSmJaE",
-    baseUrl: "/PepperBot/",
-    onBrokenLinks: "throw",
-    onBrokenMarkdownLinks: "warn",
     favicon: iconPath,
+
+    url: "https://SSmJaE.github.io/",
+    baseUrl: "/PepperBot/",
+
     organizationName: "SSmJaE", // Usually your GitHub org/user name.
     projectName: "PepperBot", // Usually your repo name.
+
+    onBrokenLinks: "throw",
+    onBrokenMarkdownLinks: "warn",
+
+    // Even if you don't use internalization, you can use this field to set useful
+    // metadata like html lang. For example, if your site is Chinese, you may want
+    // to replace "en" with "zh-Hans".
+    i18n: {
+        defaultLocale: 'zh-Hans',
+        locales: ['zh-Hans', 'en'],
+    },
+
     themeConfig: {
         navbar: {
             title: "PepperBot",
@@ -39,11 +51,11 @@ module.exports = {
                     label: "API",
                     position: "left",
                 },
-                // {
-                //     to: "docs/store",
-                //     label: "指令市场",
-                //     position: "left",
-                // },
+                {
+                    to: "/market/",
+                    label: "市场",
+                    position: "left",
+                },
                 {
                     to: "docs/参与开发/",
                     label: "参与开发",
@@ -110,7 +122,7 @@ module.exports = {
         //     copyright: `Built with Docusaurus.`,
         // },
         prism: {
-            theme: require("prism-react-renderer/themes/github"),
+            theme: require("prism-react-renderer/themes/oceanicNext"),
             darkTheme: require("prism-react-renderer/themes/vsDark"),
         },
         algolia: {
@@ -139,7 +151,9 @@ module.exports = {
     },
     presets: [
         [
-            "@docusaurus/preset-classic",
+            // "@docusaurus/preset-classic",
+            'classic',
+
             {
                 docs: {
                     sidebarPath: require.resolve("./sidebars.js"),

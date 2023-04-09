@@ -1,0 +1,26 @@
+capabilities:
+  - name: GPT问答
+    type:
+      - command
+    package-name: pepperbot-gpt-example # 这个是可选的，并不强求
+    import-code: | # 这个是可选的，并不强求
+      from pepperbot_gpt_example import (
+        GPTExample,
+        multiline_example,
+      )
+    repository: https://github.com/SSmJaE/pepperbot-gpt-example # 但是仓库是必须要提供的，市场就是基于github的
+    description: 一些简短的描述，不需要详细描述，想要看详细描述的话，可以直接跳转到仓库
+  - name: 基于GPT，自动识别广告并禁言
+    type:
+      - handler
+    package-name: pepperbot-auto-ban
+    repository: https://github.com/SSmJaE/pepperbot-auto-ban
+    description: 一些简短的描述，不需要详细描述，详细描述的话，可以直接跳转到仓库
+  - name: 小辣椒
+    type:
+      - command
+      - handler
+      - product
+    package-name: pepperbot-bot-example
+    repository: https://github.com/SSmJaE/pepperbot-bot-example
+    description: 一些简短的描述，不需要详细描述，详细描述的话，可以直接跳转到仓库
