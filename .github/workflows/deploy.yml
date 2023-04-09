@@ -8,10 +8,10 @@ on:
 
 jobs:
   deploy:
-    # defaults:
-    #   run:
-    #     # monorepo，所以需要指定工作目录
-    #     working-directory: docs
+    defaults:
+      run:
+        # monorepo，所以需要指定工作目录
+        working-directory: docs
 
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      - run: cd docs
+      # - run: cd docs
       - name: Install dependencies
         run: pnpm install
 
