@@ -53,7 +53,8 @@ jobs:
 
       # https://github.com/peaceiris/actions-gh-pages/issues/770
       - name: gitignore问题
-        run: mv build/* temp
+        # linux下，文件夹必须先存在，才能移动文件到里面
+        run: mkdir temp && mv build/* temp
 
       # Popular action to deploy to GitHub Pages:
       # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
