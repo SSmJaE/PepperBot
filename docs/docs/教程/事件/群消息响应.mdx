@@ -1,0 +1,64 @@
+最常用的事件，往往是群消息事件，我们可以通过定义群消息事件的响应函数，实现对群聊消息的回应，或是执行指令之类
+
+在了解了事件响应、事件参数、消息链这三个部分后，我们终于到真正动手开始定义事件响应了
+
+要完整的跑起来一个机器人，根据我们所了解到的知识，我们需要
+
+-   配置路由，让 PepperBot 知道哪个`handler`处理哪些群的消息
+-   定义`事件响应函数`，当发生对应的事件时，要执行哪些操作
+-   运行 PepperBot，持续的监听事件
+
+## 配置路由
+
+假设我们想要实现
+
+当 QQ 群 123456 接受到群消息时，原样返回该消息
+
+根据[路由](./路由.md)中了解的知识，我们可以配制出如下路由
+
+```py
+bot.apply_routes([
+    BotRoute(
+        friends=None,
+        groups={
+            "onebot": ["123456"]
+        }
+        handlers=[MyFirstHandler]
+    )
+])
+
+```
+
+## 定义群消息事件响应
+
+根据我们在[事件响应](./事件响应机制.md)部分中提到的，如果我们要定义群消息的事件响应，为一个 `class` 定义一个名 `group_message` 的方法即可
+
+```py
+class MyFirstHandler:
+    async def group_message(self, bot: UniversalGroupBot, chain: MessageChain):
+        await bot.group_message(
+            Text("收到了你发送的消息"),
+            *chain.segments,
+        )
+```
+
+import { Conversation } from "@site/src/components/Conversation";
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "任意消息",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "收到了你发送的消息 任意消息",
+        },
+    ]}
+/>
+
+:::info
+暂时没有做机器人的权限检测，比如机器人是否有踢人权限(是管理员)，是否能够发消息(是否被禁言)
+:::
