@@ -22,13 +22,32 @@ jobs:
         with:
           # node 17 => Error: error:0308010C:digital envelope routines::unsupported
           node-version: 18
-          cache: pnpm
-          # https://github.com/actions/setup-node#checking-in-lockfiles
-          cache-dependency-path: docs/pnpm-lock.yaml
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          # https://github.com/pnpm/action-setup/issues/40
+          version: 7
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - run: cd docs
       - name: Install dependencies
         run: pnpm install
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Build website
         run: pnpm run build
 
