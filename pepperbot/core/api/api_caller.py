@@ -45,7 +45,9 @@ class ApiCaller:
         # todo 没有找到在del中调用AsyncClient.aclose的方法
         # self.client.aclose().__await__()
 
-    def to_onebot(self, action: str, kwargs: dict, *, direct=True) -> dict[str, Any]:
+    def to_onebot(
+        self, action: str, kwargs: dict = {}, *, direct=True
+    ) -> dict[str, Any]:
         """direct时，直接返回["data"]"""
 
         # debug_log(kwargs)
@@ -77,7 +79,7 @@ class ApiCaller:
             logger.exception("无法序列化协议端返回的数据，请检查是否正确配置了对应的ip、端口、协议")
             raise exception
 
-    def to_keaimao(self, action: str, kwargs) -> dict[str, Any]:
+    def to_keaimao(self, action: str, kwargs={}) -> dict[str, Any]:
         kwargs["event"] = action
 
         debug(kwargs)

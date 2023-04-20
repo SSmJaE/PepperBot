@@ -1,12 +1,12 @@
 from typing import List, Optional, Type, cast
 
-from pepperbot.adapters.keaimao.api import KeaimaoApi, KeaimaoGroupApi, KeaimaoGroupBot
+from pepperbot.adapters.keaimao.api import KeaimaoAPI, KeaimaoGroupAPI, KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import (
     OnebotV11API,
     OnebotV11GroupAPI,
     OnebotV11GroupBot,
 )
-from pepperbot.adapters.telegram.api import TelegramApi, TelegramGroupApi
+from pepperbot.adapters.telegram.api import TelegramAPI, TelegramGroupAPI
 from pepperbot.core.message.chain import T_SegmentInstance
 
 # from pepperbot.core.event.utils import get_bot_instance
@@ -16,8 +16,8 @@ from pepperbot.types import BaseBot, T_BotProtocol
 
 class ArbitraryAPI:
     onebot = OnebotV11API
-    keaimao = KeaimaoApi
-    telegram = TelegramApi
+    keaimao = KeaimaoAPI
+    telegram = TelegramAPI
 
 
 class UniversalProperties(BaseBot):

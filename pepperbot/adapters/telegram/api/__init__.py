@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple
 if TYPE_CHECKING:
     from pepperbot.core.message.segment import T_SegmentInstance
 
-from pepperbot.core.bot.api_caller import ApiCaller
+from pepperbot.core.api.api_caller import ApiCaller
 from pepperbot.core.message.segment import (
     Audio,
     Image,
@@ -28,7 +28,7 @@ TELEGRAM_SEGMENT_ACTION_MAPPING: Dict[T_SegmentClass, str] = {
 }
 
 
-class TelegramApi:
+class TelegramAPI:
     @staticmethod
     async def send_message(chat_id: str, iterable: Iterable["T_SegmentInstance"]):
         client = get_telegram_caller()
@@ -49,11 +49,11 @@ class TelegramApi:
 
     @staticmethod
     async def group_message(chat_id: str, *segments: "T_SegmentInstance"):
-        await TelegramApi.send_message(chat_id, segments)
+        await TelegramAPI.send_message(chat_id, segments)
 
     @staticmethod
     async def private_message(chat_id: str, *segments: "T_SegmentInstance"):
-        await TelegramApi.send_message(chat_id, segments)
+        await TelegramAPI.send_message(chat_id, segments)
 
 
 class TelegramProperties(BaseBot):
@@ -63,21 +63,17 @@ class TelegramProperties(BaseBot):
     api_caller: Client
 
 
-class TelegramCommonApi(TelegramProperties):
-    pass
-
-
-class TelegramGroupApi(TelegramProperties):
+class TelegramGroupAPI(TelegramProperties):
     async def group_message(self, *segments: "T_SegmentInstance"):
-        return await TelegramApi.group_message(self.group_id, *segments)
+        return await TelegramAPI.group_message(self.group_id, *segments)
 
 
-class TelegramPrivateApi(TelegramProperties):
+class TelegramPrivateAPI(TelegramProperties):
     async def private_message(self, *segments: "T_SegmentInstance"):
-        return await TelegramApi.private_message(self.private_id, *segments)
+        return await TelegramAPI.private_message(self.private_id, *segments)
 
 
-class TelegramGroupBot(TelegramCommonApi, TelegramGroupApi):
+class TelegramGroupBot(TelegramGroupAPI):
     __slots__ = (
         "bot_id",
         "group_id",
@@ -90,7 +86,7 @@ class TelegramGroupBot(TelegramCommonApi, TelegramGroupApi):
         self.api_caller = get_telegram_caller()
 
 
-class TelegramPrivateBot(TelegramCommonApi, TelegramPrivateApi):
+class TelegramPrivateBot(TelegramPrivateAPI):
     __slots__ = (
         "bot_id",
         "private_id",

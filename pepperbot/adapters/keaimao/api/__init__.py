@@ -53,7 +53,7 @@ from typing import TYPE_CHECKING, Dict
 if TYPE_CHECKING:
     from pepperbot.core.message.segment import T_SegmentInstance
 
-from pepperbot.core.bot.api_caller import ApiCaller
+from pepperbot.core.api.api_caller import ApiCaller
 from pepperbot.core.message.segment import Image, Music, T_SegmentClass, Text, Video
 from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.store.meta import get_bot_id, get_keaimao_caller
@@ -67,7 +67,7 @@ KEAIMAO_SEGMENT_ACTION_MAPPING: Dict[T_SegmentClass, str] = {
 }
 
 
-class KeaimaoApi:
+class KeaimaoAPI:
     @staticmethod
     async def get_login_accounts():
         try:
@@ -105,20 +105,16 @@ class KeaimaoProperties(BaseBot):
     api_caller: ApiCaller
 
 
-class KeaimaoCommonApi(KeaimaoProperties):
-    pass
-
-
-class KeaimaoGroupApi(KeaimaoProperties):
+class KeaimaoGroupAPI(KeaimaoProperties):
     async def group_message(self, *segments: "T_SegmentInstance"):
-        return await KeaimaoApi.group_message(self.group_id, *segments)
+        return await KeaimaoAPI.group_message(self.group_id, *segments)
 
 
-class KeaimaoPrivateApi(KeaimaoProperties):
+class KeaimaoPrivateAPI(KeaimaoProperties):
     pass
 
 
-class KeaimaoGroupBot(KeaimaoCommonApi, KeaimaoGroupApi):
+class KeaimaoGroupBot(KeaimaoGroupAPI):
     __slots__ = (
         "bot_id",
         "group_id",
@@ -131,7 +127,7 @@ class KeaimaoGroupBot(KeaimaoCommonApi, KeaimaoGroupApi):
         self.api_caller = get_keaimao_caller()
 
 
-class KeaimaoPrivateBot(KeaimaoCommonApi, KeaimaoPrivateApi):
+class KeaimaoPrivateBot(KeaimaoPrivateAPI):
     __slots__ = (
         "bot_id",
         "private_id",

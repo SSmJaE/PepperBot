@@ -1,47 +1,63 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
-from pepperbot.adapters.keaimao.event import (
-    KeaimaoMetaEvent,
-    KeaimaoCommonEvent,
-    KeaimaoGroupEvent,
-    KeaimaoPrivateEvent,
-)
-from pepperbot.adapters.keaimao.event.kwargs import KEAIMAO_KWARGS_MAPPING
+from pepperbot.adapters.keaimao.event import KeaimaoEvent
 from pepperbot.core.event.base_adapter import BaseAdapter
 from pepperbot.exceptions import EventHandleError
-from pepperbot.types import T_RouteMode
+from pepperbot.store.event import ProtocolEvent, filter_event_by_type
+from pepperbot.types import T_ConversationType
 from pepperbot.utils.common import get_own_attributes
+
+own_attributes = get_own_attributes(KeaimaoEvent)
+
+events: list[ProtocolEvent] = [getattr(KeaimaoEvent, attr) for attr in own_attributes]
 
 
 class KeaimaoAdapter(BaseAdapter):
-    event_prefix = "keaimao_"
-    meta_events = list(get_own_attributes(KeaimaoMetaEvent))
-    common_events = list(get_own_attributes(KeaimaoCommonEvent))
-    group_events = list(get_own_attributes(KeaimaoGroupEvent))
-    private_events = list(get_own_attributes(KeaimaoPrivateEvent))
+    kwargs_mapping = {
+        cast(str, event.protocol_event_name): event.keyword_arguments
+        for event in events
+    }
 
-    all_events = [*meta_events, *common_events, *group_events, *private_events]
+    all_events = events
+    all_event_names = [cast(str, event.protocol_event_name) for event in events]
 
-    kwargs = KEAIMAO_KWARGS_MAPPING
+    meta_events = filter_event_by_type(events, ("meta",))
+    meta_event_names = [cast(str, event.protocol_event_name) for event in meta_events]
+    notice_events = filter_event_by_type(events, ("notice",))
+    notice_event_names = [
+        cast(str, event.protocol_event_name) for event in notice_events
+    ]
+    request_events = filter_event_by_type(events, ("request",))
+    request_event_names = [
+        cast(str, event.protocol_event_name) for event in request_events
+    ]
+    message_events = filter_event_by_type(events, ("message",))
+    message_event_names = [
+        cast(str, event.protocol_event_name) for event in message_events
+    ]
+
+    group_events = filter_event_by_type(events, ("group",))
+    private_events = filter_event_by_type(events, ("private",))
 
     @staticmethod
-    def get_event_name(raw_event: Dict):
-        event_name: str = ""
-        event = raw_event["event"]
+    def get_event(raw_event: Dict):
+        event: Optional[ProtocolEvent] = None
 
-        if event == "EventFriendMsg":
-            event_name = KeaimaoPrivateEvent.private_message
-        elif event == "EventGroupMsg":
-            event_name = KeaimaoGroupEvent.group_message
+        event_name = raw_event["event"]
 
-        if not event_name:
+        if event_name == "EventFriendMsg":
+            event = KeaimaoEvent.private_message
+        elif event_name == "EventGroupMsg":
+            event = KeaimaoEvent.group_message
+
+        if not event:
             raise EventHandleError(f"未能获取可爱猫事件名称")
 
-        return event_name
+        return event
 
     @staticmethod
-    def get_route_mode(raw_event: Dict, raw_event_name: str):
-        mode: Optional[T_RouteMode] = None
+    def get_conversation_type(raw_event: Dict, raw_event_name: str):
+        mode: Optional[T_ConversationType] = None
 
         if raw_event_name in KeaimaoAdapter.group_events:
             mode = "group"
@@ -51,7 +67,7 @@ class KeaimaoAdapter(BaseAdapter):
         return mode
 
     @staticmethod
-    def get_source_id(raw_event: Dict, mode: T_RouteMode):
+    def get_source_id(raw_event: Dict, mode: T_ConversationType):
         source_id: Optional[str] = None
 
         if mode == "group":
