@@ -1,2 +1,3 @@
-from .GroupFile import *
-from .GroupInfo import *
+from .group import *
+from .message import *
+from .user import *
