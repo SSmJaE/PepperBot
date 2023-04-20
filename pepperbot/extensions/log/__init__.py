@@ -2,7 +2,7 @@ import inspect
 import logging
 import os
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from devtools.prettier import pformat
 from loguru import logger
@@ -59,15 +59,17 @@ logger.add(
 logger = logger.opt(colors=True)
 
 
-def debug_log(message: Any, title: str = ""):
-    frame = inspect.stack()[1]
-    file_path = frame.filename
-    lineno = frame.lineno
-
-    logger.bind(title=title, file_path=file_path, lineno=lineno).debug("")
-
+def debug_log(message: Optional[Any] = None, title: str = ""):
+    # 获取frame就很“昂贵”，所以只有在debug模式下才会获取
     if global_config.logger.level <= 10:  # DEBUG
-        print(pformat(message, highlight=True))
+        frame = inspect.stack()[1]
+        file_path = frame.filename
+        lineno = frame.lineno
+
+        logger.bind(title=title, file_path=file_path, lineno=lineno).debug("")
+
+        if message:
+            print(pformat(message, highlight=True))
 
 
 # TODO 整合sanic的日志
