@@ -20,8 +20,8 @@ class Logger(BaseModel):
     write_to_log: bool = False
 
 
-class Sqlite(BaseModel):
-    path = "./db.sqlite3"
+class Database(BaseModel):
+    url = "sqlite:///db.sqlite3"
 
 
 class GlobalConfig(BaseSettings):
@@ -33,7 +33,7 @@ class GlobalConfig(BaseSettings):
 
     debug = Debug()
     logger = Logger()
-    sqlite = Sqlite()
+    database = Database()
 
 
 global_config = GlobalConfig()

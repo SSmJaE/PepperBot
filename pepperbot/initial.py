@@ -6,7 +6,7 @@ from sanic import Sanic
 
 from pepperbot.adapters.telegram import register_telegram_event
 from pepperbot.config import global_config
-from pepperbot.core.bot.api_caller import ApiCaller
+from pepperbot.core.api.api_caller import ApiCaller
 from pepperbot.core.route.utils import (
     create_bot_routes,
     create_web_routes,
@@ -15,19 +15,21 @@ from pepperbot.core.route.utils import (
 )
 from pepperbot.exceptions import InitializationError
 from pepperbot.extensions.command.handle import check_command_timeout
-from pepperbot.extensions.log import logger
+from pepperbot.extensions.log import debug_log, logger
 from pepperbot.extensions.scheduler import async_scheduler
+from pepperbot.store.orm import engine, metadata, set_metadata
 from pepperbot.store.meta import (
-    ALL_AVAILABLE_BOT_PROTOCOLS,
     DEFAULT_URI,
     BotRoute,
-    api_callers,
     clean_bot_instances,
     output_config,
+    api_callers,
     register_routes,
-    route_mapping,
 )
-from pepperbot.types import T_BotProtocol, T_WebProtocol
+from pepperbot.types import BOT_PROTOCOLS, T_BotProtocol, T_WebProtocol
+
+# from dotenv import load_dotenv
+# import os
 
 sanic_app = Sanic("PepperBot")
 
@@ -55,6 +57,9 @@ class PepperBot:
         sanic_app.register_listener(self.main_process_start, "main_process_start")
         sanic_app.register_listener(self.after_server_start, "after_server_start")
 
+        # load_dotenv()  # take environment variables from .env.
+        # debug_log(os.environ)
+
     def register_adapter(
         self,
         bot_protocol: Literal["onebot", "keaimao"],
@@ -67,13 +72,14 @@ class PepperBot:
         uri: str
         request_handler: Optional[Callable] = None
 
-        if bot_protocol not in ALL_AVAILABLE_BOT_PROTOCOLS:
+        if bot_protocol not in BOT_PROTOCOLS:
             raise InitializationError(f"尚不支持的机器人协议 {bot_protocol}")
 
         if receive_uri:
             uri = receive_uri
         else:
             if receive_protocol == "http":
+                # TODO lambda重名问题，动态创建
                 request_handler = lambda request: http_receiver(request, bot_protocol)
                 uri = DEFAULT_URI[bot_protocol] + "/http"
 
@@ -111,11 +117,15 @@ class PepperBot:
 
     def register_telegram(self, *args, **kwargs):
         # sanic启动至少需要一个route，虽然这个route并不会被调用
+        # sanic不允许重名的handler，lambda表达式会导致重名(都为lambda)
+        async def telegram_handler(request):
+            return 1
+
         create_web_routes(
             sanic_app,
             receive_protocol="http",
             uri="/telegram/http",
-            request_handler=lambda request: 1,
+            request_handler=telegram_handler,
         )
 
         async def create_client_under_async_context():
@@ -139,7 +149,7 @@ class PepperBot:
         global async_create_telegram_handler
         async_create_telegram_handler = create_client_under_async_context
 
-    def register_plugin(self):
+    def register_plugin(self) -> None:
         pass
 
     def apply_routes(self, routes: Iterable[BotRoute]):
@@ -156,12 +166,28 @@ class PepperBot:
         If you are running your application with an ASGI server, main_process_start and main_process_stop will be ignored
         """
 
+        # TODO 主动获取bot info
+        await set_metadata("has_initial_bot_info", False)
+
+        # TODO 在各adapter初始化完成之后，再获取
+        # 所以需要实现一个hook，after_adapter_init
+
+        # main process、worker process都需要读取.env
+        # 主动读取一次，这样即使用户定义的BaseSetting中没有制定env_file，也能读取到
+        # load_dotenv()  # take environment variables from .env.
         logger.success(
             f"PepperBot successfully load .env config \n {pformat(global_config)}"
         )
 
         logger.success(f"PepperBot successfully create bot routes")
-        output_config()
+        # output_config()
+        # debug(per_worker)
+
+        # 必须放到最后，等model都定义好了再执行
+        # note that this has to be the same metadata that is used in ormar Models definition
+        metadata.create_all(engine)
+        # 保证过期(无效)的command status一定被清理，不会干扰has_running_command的判断
+        await check_command_timeout()
 
     @staticmethod
     async def after_server_start(app, loop):
@@ -169,6 +195,11 @@ class PepperBot:
         # https://github.com/sanic-org/sanic/issues/743
         # global async_scheduler
         # async_scheduler = AsyncIOScheduler({'event_loop': loop})
+
+        # 正常情况下，主进程设置一次就行了
+        # 但是如果自动重启，那么就需要在每次重启后都设置一次
+        if app.config["AUTO_RELOAD"]:
+            await set_metadata("has_initial_bot_info", False)
 
         if async_create_telegram_handler:
             async_scheduler.add_job(async_create_telegram_handler)
