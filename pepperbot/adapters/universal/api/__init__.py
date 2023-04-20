@@ -2,8 +2,8 @@ from typing import List, Optional, Type, cast
 
 from pepperbot.adapters.keaimao.api import KeaimaoApi, KeaimaoGroupApi, KeaimaoGroupBot
 from pepperbot.adapters.onebot.api import (
-    OnebotV11Api,
-    OnebotV11GroupApi,
+    OnebotV11API,
+    OnebotV11GroupAPI,
     OnebotV11GroupBot,
 )
 from pepperbot.adapters.telegram.api import TelegramApi, TelegramGroupApi
@@ -14,8 +14,8 @@ from pepperbot.exceptions import BackendApiError, EventHandleError
 from pepperbot.types import BaseBot, T_BotProtocol
 
 
-class ArbitraryApi:
-    onebot = OnebotV11Api
+class ArbitraryAPI:
+    onebot = OnebotV11API
     keaimao = KeaimaoApi
     telegram = TelegramApi
 
@@ -24,18 +24,13 @@ class UniversalProperties(BaseBot):
     protocol: T_BotProtocol
     bot_id: str
     group_id: str
-    arbitrary: Type[ArbitraryApi]
+    arbitrary: Type[ArbitraryAPI]
     onebot: Optional[OnebotV11GroupBot]
     keaimao: Optional[KeaimaoGroupBot]
     # telegram: Optional[TelegramGroupBot]
 
 
-class UniversalCommonApi(UniversalProperties):
-
-    pass
-
-
-class UniversalGroupApi(UniversalProperties):
+class UniversalGroupAPI(UniversalProperties):
     async def group_message(self, *segments: T_SegmentInstance):
         if self.onebot:
             return await self.onebot.group_message(*segments)
@@ -49,11 +44,11 @@ class UniversalGroupApi(UniversalProperties):
     group_msg = group_message
 
 
-class UniversalPrivateApi(UniversalProperties):
+class UniversalPrivateAPI(UniversalProperties):
     pass
 
 
-class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
+class UniversalGroupBot(UniversalGroupAPI):
     """
     universal api直接绑定在bot身上，方法都是实例化的，因为最常用
     chain 也实例化，常用
@@ -82,7 +77,7 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         self.bot_id = bot_id
         self.group_id = group_id
 
-        self.arbitrary = ArbitraryApi
+        self.arbitrary = ArbitraryAPI
 
         from pepperbot.core.event.handle import get_or_create_bot
 
@@ -97,5 +92,5 @@ class UniversalGroupBot(UniversalCommonApi, UniversalGroupApi):
         self.telegram = bot_instance if protocol == "telegram" else None
 
 
-class UniversalPrivateBot(UniversalCommonApi, UniversalPrivateApi):
+class UniversalPrivateBot(UniversalPrivateAPI):
     pass
