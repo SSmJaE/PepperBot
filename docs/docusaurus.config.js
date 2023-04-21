@@ -32,17 +32,17 @@ module.exports = {
             },
             items: [
                 {
-                    to: "docs/教程/",
+                    to: "docs/tutorial/",
                     label: "教程",
                     position: "left",
                 },
                 {
-                    to: "docs/示例/",
+                    to: "docs/examples/",
                     label: "示例",
                     position: "left",
                 },
                 {
-                    to: "docs/事件/",
+                    to: "docs/event/",
                     label: "事件一览",
                     position: "left",
                 },
@@ -57,7 +57,7 @@ module.exports = {
                     position: "left",
                 },
                 {
-                    to: "docs/参与开发/",
+                    to: "docs/contribution/",
                     label: "参与开发",
                     position: "left",
                 },

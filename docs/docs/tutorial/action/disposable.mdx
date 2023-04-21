@@ -1,0 +1,23 @@
+---
+title: 一次性任务
+---
+
+import CodeBlock from "@theme/CodeBlock";
+
+import MyComponentSource from "!!raw-loader!../../../../demos/示例/一次性任务.py";
+
+有些时候，我们只希望执行"一下"操作，然后就退出，要怎么实现呢？
+
+执行“一下”操作，那么就不用监听事件了，所以我们并不需要定义`handler`，但是我们要执行`操作`，也就是说，我们要调用 API，那么，对应`协议端`的`adapter`还是要配置的，对应的`协议端`也是要启动的
+
+`adapter`的配置，见[此处](../environment/qq.md)
+
+默认情况下，PepperBot 会持续监听事件，是因为我们调用了
+
+```py
+bot.run()
+```
+
+方法，所以，如果我们只想跑一次的话，只要配置了 adapter，然后 asyncio.run()一下我们定义的任务即可
+
+<CodeBlock className="language-python">{MyComponentSource}</CodeBlock>;

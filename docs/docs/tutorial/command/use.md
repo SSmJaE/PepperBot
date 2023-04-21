@@ -1,0 +1,36 @@
+---
+title: 使用指令
+---
+
+## 在`BotRoute`中注册
+
+和`事件响应`中的`handler`一样，我们也需要将`指令`，通过`BotRoute`注册之后，才能跑起来
+
+配置和`handler`类似
+
+```py
+@as_command()
+class MyCommand:
+    pass
+
+bot.apply_routes([
+    BotRoute(
+        friends=None,
+        groups={
+            "onebot": ["123456"]
+        },
+        handlers=[],
+        commands = [MyCommand],
+    )
+])
+```
+
+## 指令的执行顺序
+
+全局指令
+
+指定消息来源的指令
+
+动态验证的指令
+
+执行指令时，消息事件仍会触发，不过是先判断是否触发指令，再执行消息事件的响应
