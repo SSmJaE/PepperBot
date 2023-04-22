@@ -11,6 +11,7 @@ from typing import (
     Optional,
     Tuple,
     Union,
+    cast,
 )
 
 from devtools import debug
@@ -49,8 +50,8 @@ from pepperbot.core.message.segment import (
 )
 from pepperbot.exceptions import EventHandleError
 from pepperbot.extensions.log import logger
-from pepperbot.store.meta import EventMeta
-from pepperbot.types import T_BotProtocol, T_RouteMode
+from pepperbot.store.event import EventMetadata
+from pepperbot.types import T_BotProtocol, T_ConversationType
 from pepperbot.utils.common import await_or_sync
 from pyrogram.enums.message_media_type import MessageMediaType
 
@@ -84,9 +85,8 @@ TELEGRAM_SEGMENT_FACTORY_MAPPING: Dict[
 
 
 async def construct_segments(
-    protocol: T_BotProtocol, mode: T_RouteMode, raw_event: Dict
+    protocol: T_BotProtocol, mode: T_ConversationType, raw_event: Dict
 ) -> List[T_SegmentInstance]:
-
     result: List[T_SegmentInstance] = []
 
     if protocol == "onebot":
@@ -134,12 +134,14 @@ async def construct_segments(
     return result
 
 
-async def chain_factory(event_meta: EventMeta):
+async def chain_factory(event_meta: EventMetadata):
     chain = MessageChain(
         event_meta.protocol,
-        event_meta.mode,
+        # 能够构造MessageChain的事件，一定可以获取到conversation_type
+        cast(T_ConversationType, event_meta.conversation_type),
         event_meta.raw_event,
         event_meta.source_id,
+        event_meta.user_id,
     )
     await chain.construct()
     return chain
@@ -151,6 +153,7 @@ class MessageChain:
         "segments",
         "raw_event",
         "source_id",
+        "user_id",
         "protocol",
         "mode",
         "onebot_message_id",
@@ -161,20 +164,11 @@ class MessageChain:
     def __init__(
         self,
         protocol: T_BotProtocol,
-        mode: T_RouteMode,
+        mode: T_ConversationType,
         raw_event: Dict,
         source_id: str,
+        user_id: str,
     ) -> None:
-        """
-        [summary]
-
-        Args:
-            event: [description]
-            source_id: 当mode为group时，source_id就是group_id，mode为private时同理
-            protocol: [description]
-            mode: [description]
-
-        """
         # debug(locals())
 
         self.id = random()
@@ -182,6 +176,7 @@ class MessageChain:
 
         self.raw_event = raw_event
         self.source_id = source_id
+        self.user_id = user_id
         self.protocol = protocol
         self.mode = mode
 
@@ -260,33 +255,31 @@ class MessageChain:
         return results
 
     @property
-    def at(self)-> list[At]:
+    def at(self) -> List[At]:
         return self.__getItems(At)
 
     @property
-    def onebot_faces(self)-> list[OnebotFace]:
+    def onebot_faces(self) -> List[OnebotFace]:
         return self.__getItems(OnebotFace)
 
     @property
-    def audio(self)-> list[Audio]:
+    def audio(self) -> List[Audio]:
         return self.__getItems(Audio)
 
     @property
-    def images(self)-> list[Image]:
+    def images(self) -> List[Image]:
         return self.__getItems(Image)
 
     @property
-    def replies(self)-> list[Reply]:
+    def replies(self) -> List[Reply]:
         return self.__getItems(Reply)
 
     @property
-    def music(self)-> list[Music]:
+    def music(self) -> List[Music]:
         return self.__getItems(Music)
 
     @property
-    def text(
-        self,
-    ) -> list[Text]:
+    def text(self) -> List[Text]:
         return self.__getItems(Text)
 
     @property
@@ -333,12 +326,12 @@ class MessageChain:
         return self.pure_text.endswith(string)
 
     async def onebot_reply(self, *segments: T_SegmentInstance):
-        from pepperbot.adapters.onebot.api import OnebotV11Api
+        from pepperbot.adapters.onebot.api import OnebotV11API
 
         if self.mode == "group":
-            api = OnebotV11Api.group_message
+            api = OnebotV11API.group_message
         else:
-            api = OnebotV11Api.private_message
+            api = OnebotV11API.private_message
 
         return await api(
             self.source_id,
@@ -348,13 +341,11 @@ class MessageChain:
     async def onebot_withdraw(
         self,
     ):
-        # await self.api(
-        #     "delete_msg",
-        #     **{
-        #         "message_id": self.messageId,
-        #     },
-        # )
-        pass
+        """仅群聊中有效，需要管理员权限"""
+
+        from pepperbot.adapters.onebot.api import OnebotV11API
+
+        return await OnebotV11API.withdraw_message(self.onebot_message_id)
 
     def __getitem__(self, index: int) -> T_SegmentInstance:
         return self.segments[index]
