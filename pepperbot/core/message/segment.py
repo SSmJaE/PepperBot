@@ -1,23 +1,17 @@
+import base64
+import hashlib
 import os
 from random import random
-from typing import (
-    Any,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar, Union
 
+import aiofiles
+import httpx
 from devtools import debug
-from pepperbot.core.message.base import BaseMessageSegment
-from pepperbot.exceptions import EventHandleError
-from pepperbot.store.meta import get_telegram_caller
 from pyrogram.enums.parse_mode import ParseMode
 from pyrogram.types import Message
+
+from pepperbot.core.message.base import BaseMessageSegment
+from pepperbot.exceptions import EventHandleError
 
 
 async def telegram_download_media(file_id: str, file_name: str):
@@ -26,6 +20,8 @@ async def telegram_download_media(file_id: str, file_name: str):
 
     https://docs.pyrogram.org/api/methods/download_media?highlight=download_media#pyrogram.Client.download_media
     """
+    from pepperbot.store.meta import get_telegram_caller
+
     client = get_telegram_caller()
 
     await client.download_media(file_id, file_name=file_name)
@@ -39,7 +35,6 @@ class At(BaseMessageSegment):
     __slots__ = ("user_id",)
 
     def __init__(self, user_id: str):
-
         self.user_id = user_id
 
         super().__init__(**{"identifier": user_id})
@@ -70,7 +65,6 @@ class Audio(BaseMessageSegment):
         file_path: str,
         telegram_lazy_download=False,
     ):
-
         self.temporary_file_path = file_path
         self.telegram_lazy_download = telegram_lazy_download
         self.file_path = ""
@@ -138,7 +132,6 @@ class Image(BaseMessageSegment):
         mode: Optional[Literal["flash"]] = None,
         telegram_lazy_download=False,
     ):
-
         self.temporary_file_path = file_path
         self.file_path = file_path
 
@@ -202,9 +195,42 @@ class Image(BaseMessageSegment):
             "photo": self.file_path,
         }
 
-    def download(self):
-        # todo download
-        pass
+    async def download(
+        self,
+        full_path: Optional[str] = None,
+        save_dir: Optional[str] = None,
+        file_name: Optional[str] = None,
+        extension: str = "jpg",
+    ) -> str:
+        """返回下载后的绝对(完整)路径
+
+        如果提供了full_path(需要提供文件的扩展类型)，则直接下载到该路径，其他参数无效
+        """
+
+        if full_path:
+            save_path = full_path
+        else:
+            # 通过hash值来命名文件，避免重复
+            save_path = f"{file_name if file_name else hash_string(self.temporary_file_path)}.{extension}"
+            if save_dir:
+                save_path = os.path.join(save_dir, save_path)
+
+            save_path = os.path.abspath(save_path)
+
+        if self.temporary_file_path.startswith("http"):
+            await download_file(self.file_path, save_path)
+            return save_path
+
+        elif self.temporary_file_path.startswith("file://"):
+            return self.file_path[7:]
+
+        elif self.temporary_file_path.startswith("base64://"):
+            with open(save_path, "wb") as f:
+                f.write(base64.b64decode(self.temporary_file_path))
+            return save_path
+
+        else:
+            raise EventHandleError(f"无法解析的图片路径 {self.file_path}")
 
     def onebot_to_flash(self):
         self.mode = "flash"
@@ -229,6 +255,29 @@ def validate_image_path(path: str):
             raise EventHandleError(f"无法解析的图片路径 {path}")
 
     return path
+
+
+def hash_string(string: str):
+    h = hashlib.sha256()
+    h.update(string.encode("utf-8"))
+    return h.hexdigest()
+
+
+async def download_file(url: str, save_path: str):
+    """使用httpx，流式下载"""
+
+    # 以防万一，还是再调用一次，保证绝对是绝对路径
+    absolute_path = os.path.abspath(save_path)
+
+    directory = os.path.dirname(absolute_path)  # 获取文件夹路径
+    if not os.path.exists(directory):  # 如果文件夹不存在
+        os.makedirs(directory)  # 创建文件夹
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream("GET", url) as response:
+            async with aiofiles.open(absolute_path, "wb") as f:
+                async for chunk in response.aiter_bytes(chunk_size=8192):
+                    await f.write(chunk)
 
 
 def onebot_image_factory(raw_segment: Dict):
@@ -259,7 +308,6 @@ class Music(BaseMessageSegment):
     )
 
     def __init__(self, music_id: str, source: Literal["qq", "163", "xm"] = "qq"):
-
         self.music_id = music_id
         self.source = source
 
@@ -296,7 +344,6 @@ class OnebotFace(BaseMessageSegment):
     __slots__ = ("face_id",)
 
     def __init__(self, face_id: int):
-
         self.face_id = face_id
 
         super().__init__(**{"identifier": face_id})
@@ -330,7 +377,6 @@ class OnebotShare(BaseMessageSegment):
         content: Optional[str] = None,
         image_url: Optional[str] = None,
     ):
-
         self.url = url
         self.title = title
         self.content = content
@@ -354,7 +400,6 @@ class Poke(BaseMessageSegment):
     __slots__ = ("user_id",)
 
     def __init__(self, user_id: str):
-
         self.user_id = user_id
 
         super().__init__(**{"identifier": user_id})
@@ -377,7 +422,6 @@ class Reply(BaseMessageSegment):
     __slots__ = ("message_id",)
 
     def __init__(self, message_id: str):
-
         self.message_id = message_id
 
         super().__init__(**{"identifier": message_id})
@@ -400,7 +444,6 @@ class Text(BaseMessageSegment):
     __slots__ = ("content",)
 
     def __init__(self, content: str):
-
         self.content = content
 
         super().__init__(**{"identifier": content})
@@ -449,7 +492,6 @@ class Video(BaseMessageSegment):
         file_path: str,
         telegram_lazy_download=False,
     ):
-
         self.temporary_file_path = file_path
         self.telegram_lazy_download = telegram_lazy_download
         self.file_path = ""
@@ -571,6 +613,45 @@ GT_SegmentInstance = TypeVar(
 T_SegmentClassOrInstance = Union[T_SegmentClass, T_SegmentInstance]
 GT_SegmentClassOrInstance = TypeVar(
     "GT_SegmentClassOrInstance",
-    T_SegmentClass,
-    T_SegmentInstance,
+    Type[At],
+    Type[Audio],
+    Type[Image],
+    Type[Music],
+    Type[OnebotFace],
+    Type[OnebotShare],
+    Type[Poke],
+    Type[Reply],
+    Type[Text],
+    Type[Video],
+    Type[Voice],
+    At,
+    Audio,
+    Image,
+    Music,
+    OnebotFace,
+    OnebotShare,
+    Poke,
+    Reply,
+    Text,
+    Video,
+    Voice,
 )
+GT_PatternArg = TypeVar(
+    "GT_PatternArg",
+    str,
+    int,
+    float,
+    bool,
+    At,
+    Audio,
+    Image,
+    Music,
+    OnebotFace,
+    OnebotShare,
+    Poke,
+    Reply,
+    Text,
+    Video,
+    Voice,
+)
+""" 泛型中的类型，不能是Union的，必须展开 """
