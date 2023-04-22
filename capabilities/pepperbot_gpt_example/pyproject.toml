@@ -1,0 +1,16 @@
+[tool.pdm]
+
+[project]
+authors         = [{ name = "SSmJaE", email = "ssmjae327@gmail.com" }]
+dependencies    = [
+    "pepperbot>=0.3.4",
+    "httpx>=0.24.0",
+    "apscheduler>=3.10.1",
+    "ormar>=0.9.4",
+    "pydantic>=1.10.7",
+]
+description     = ""
+license         = { text = "MIT" }
+name            = "pepperbot-gpt-example"
+requires-python = ">=3.10"
+version         = "0.0.1"
