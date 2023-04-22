@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any, Iterable
 
@@ -40,7 +41,8 @@ async def http_receiver(request, protocol: T_BotProtocol):
         raw_event = request.json
 
         logger.debug(pformat(raw_event))
-        await handle_event(protocol, raw_event)
+
+        asyncio.create_task(handle_event(protocol, raw_event))
 
     except EventHandleError as e:
         logger.exception(e)
@@ -49,6 +51,7 @@ async def http_receiver(request, protocol: T_BotProtocol):
         logger.exception("事件处理异常")
 
     finally:
+        # 必须返回一个response
         return text("")
 
 
@@ -59,7 +62,8 @@ async def websocket_receiver(request, ws, protocol: T_BotProtocol):
             raw_event = json.loads(data)
 
             logger.debug(pformat(raw_event))
-            await handle_event(protocol, raw_event)
+
+            asyncio.create_task(handle_event(protocol, raw_event))
 
         except EventHandleError as e:
             logger.exception(e)
