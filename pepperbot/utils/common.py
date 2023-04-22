@@ -1,7 +1,10 @@
+import asyncio
+import functools
 import inspect
 from inspect import isawaitable, iscoroutine
 from types import FunctionType
 from typing import Any, Callable, Coroutine, Dict, List, Union, cast
+from devtools import debug
 from pydantic import BaseModel
 
 
@@ -18,7 +21,6 @@ def get_current_function_name():
 def get_own_methods(instance: object):
     """从class上获取所有非__开头的方法"""
     for methodName in dir(instance):
-
         methodOrProperty = getattr(instance, methodName)
 
         if callable(methodOrProperty):
@@ -27,29 +29,54 @@ def get_own_methods(instance: object):
 
 
 def get_own_attributes(instance: object):
+    """从class上获取所有非__开头的属性"""
+
     for property in dir(instance):
         if not property.startswith("__"):
             yield property
 
 
-async def await_or_sync(
-    functionOrCoroutine: Union[Any, FunctionType], *args, **kwargs
-) -> Any:
+async def await_or_sync(obj: Union[Any, FunctionType], *args, **kwargs) -> Any:
     """
     针对bound method，iscoroutine和isawaitable对bound method无效
 
     判断__func__也不行
     """
-    if callable(functionOrCoroutine):
-        result = functionOrCoroutine(*args, **kwargs)
-        # 针对bounded mothoud
-        if iscoroutine(result):
-            if result.__name__ == functionOrCoroutine.__name__:
-                result = await result
 
+    # while isinstance(obj, functools.partial):
+    #     obj = obj.func
+
+    if (
+        asyncio.iscoroutinefunction(obj)
+        or (callable(obj) and asyncio.iscoroutinefunction(obj.__call__))
+        # or iscoroutine(obj)
+        # or isawaitable(obj)
+    ):
+        # debug("coroutine")
+        result = await obj(*args, **kwargs)  # type: ignore
         return result
+    else:
+        if callable(obj):
+            # debug("sync")
+            result = await asyncio.to_thread(obj, *args, **kwargs)
+            # loop = asyncio.get_event_loop()
+            # with_kwargs = functools.partial(functionOrCoroutine, *args, **kwargs)
 
-    return None
+            # result = await loop.run_in_executor(None, with_kwargs)
+            return result
+        else:
+            return None
+
+    # if callable(functionOrCoroutine):
+    #     result = functionOrCoroutine(*args, **kwargs)
+    #     # 针对bounded mothoud
+    #     if iscoroutine(result):
+    #         if result.__name__ == functionOrCoroutine.__name__:
+    #             result = await result
+
+    #     return result
+
+    # return None
 
     # debug(functionOrCoroutine)
     # debug(dir(functionOrCoroutine))
@@ -102,7 +129,8 @@ def fit_kwargs(method: Callable, kwargs: Dict[str, Any]):
     定义时是位置参数或者关键字参数都可以，因为位置参数也可以通过关键词参数的形式赋值
     """
     # validKwargNames = method.__annotations__.keys()
-    provided_arg_names = inspect.getargs(method.__code__)[0]
+    # provided_arg_names = inspect.getargs(method.__code__)[0]
+    provided_arg_names = inspect.signature(method).parameters
 
     fitted_args = {}
 
@@ -135,7 +163,6 @@ def print_tree(tree: DisplayTree, indent=0, prefixes=[]):
         newPrefixes = [*prefixes]
 
         if index == treeLength - 1:
-
             if isinstance(node, DisplayTree):
                 print("".join([*prefixes, lastBranch]), node.name)
 
