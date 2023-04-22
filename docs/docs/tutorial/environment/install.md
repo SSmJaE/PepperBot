@@ -6,12 +6,6 @@ title: 安装
 需要 python 3.8 及以上版本
 :::
 
-:::warning
-如果你希望对接协议端，比如 QQ，需要同时运行 go-cqhttp 和 PepperBot
-
-简单来说，就是打开两个窗口，一个运行 go-cqhttp，一个运行 PepperBot，微信等其他平台同理
-:::
-
 ## 安装稳定版本
 
 > PepperBot 使用 Poetry 管理依赖，建议使用 Poetry 进行开发

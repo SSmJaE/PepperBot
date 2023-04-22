@@ -14,6 +14,12 @@ title: 对接协议
 
 我们都需要配置
 
+:::warning
+如果你希望对接协议端，比如 QQ，需要同时运行 go-cqhttp 和 PepperBot
+
+简单来说，就是打开两个窗口，一个运行 go-cqhttp，一个运行 PepperBot，微信等其他平台同理
+:::
+
 ## 配置 PepperBot 接收端口
 
 ```py
