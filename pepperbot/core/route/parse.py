@@ -1,8 +1,10 @@
-from typing import Iterable, List, Set
+from typing import Any, Iterable, List, Literal, Set, Type, TypeVar
 
 from devtools import debug
+
 from pepperbot.core.route.cache import (
     cache_class_command,
+    cache_class_command_config,
     cache_class_handler,
     cache_route_validator,
 )
@@ -12,39 +14,64 @@ from pepperbot.core.route.validate import (
     is_valid_route_validator,
 )
 from pepperbot.exceptions import InitializationError
-from pepperbot.store.command import class_command_mapping
+from pepperbot.store.command import ClassCommandConfigCache, CommandConfig
 from pepperbot.store.meta import (
-    ALL_AVAILABLE_BOT_PROTOCOLS,
     BotRoute,
+    class_command_config_mapping,
+    class_command_mapping,
     class_handler_mapping,
     route_mapping,
     route_validator_mapping,
+)
+from pepperbot.types import (
+    BOT_PROTOCOLS,
+    COMMAND_CONFIG,
+    BaseClassCommand,
+    T_ConversationType,
 )
 
 
 def parse_routes(routes: Iterable[BotRoute]):
     for route in routes:
-
-        commands = []
+        commands: Iterable[BaseClassCommand] = []
         if route.commands:
             commands = route.commands
 
-        command_names: Set[str] = set()
+        command_config_ids: Set[str] = set()
+        """ 需要知道config_id和command_name的对应关系 
+        
+        (command_name, config_id)
+        """
+
         for command in commands:
-            command_name = command.__name__
+            # 直接.__name__，不要.__class__.__name__，因为后者会返回type
+            command_name = command.__name__  # type: ignore
 
             if not is_valid_class_command(command):
                 raise InitializationError(f"路由 {route} 中的指令 {command_name} 不符合要求")
 
+            # class command的class本身，和command对应的config，解耦了，需要分别缓存
+            # command config后续通过map_by_conversation_type进行缓存
+            # class command直接在这里缓存，只需要缓存一次
             if command_name not in class_command_mapping.keys():
                 cache_class_command(command, command_name)
 
-            command_names.add(command_name)
+            # 上方已经验证该字段一定存在
+            command_config_dict: dict[str, CommandConfig] = getattr(
+                command, COMMAND_CONFIG
+            )
+
+            for command_config_id, command_config in command_config_dict.items():
+                if command_config_id not in class_command_config_mapping.keys():
+                    cache_class_command_config(command_name, command_config)
+
+                command_config_ids.add(command_config_id)
 
         handler_names: Set[str] = set()
         if route.handlers:
             for handler in route.handlers:
-                handler_name = handler.__name__
+                # 目前都是class handler，后续可能支持function handler
+                handler_name = handler.__name__  # type: ignore
 
                 if not is_valid_class_handler(handler):
                     raise InitializationError(
@@ -56,88 +83,104 @@ def parse_routes(routes: Iterable[BotRoute]):
 
                 handler_names.add(handler_name)
 
-        # -------------------------------------------------------------------------------
+        map_by_conversation_type(
+            route, "group", route.groups, command_config_ids, handler_names
+        )
+        map_by_conversation_type(
+            route, "private", route.friends, command_config_ids, handler_names
+        )
 
-        # pydantic会校验不合法的情况，所以不用else
-        if route.groups == "*":
-            for protocol in ALL_AVAILABLE_BOT_PROTOCOLS:
-                route_mapping.global_commands[protocol]["group"] |= command_names
-                route_mapping.global_handlers[protocol]["group"] |= handler_names
 
-        elif route.groups and type(route.groups) == dict:
-            for protocol, group_ids in route.groups.items():
-                if group_ids == "*":
-                    route_mapping.global_commands[protocol]["group"] |= command_names
-                    route_mapping.global_handlers[protocol]["group"] |= handler_names
-
-                else:
-                    for group_id in group_ids:
-                        group_id = str(group_id)
-
-                        route_mapping.mapping[protocol]["group"][group_id][
-                            "commands"
-                        ] |= command_names
-
-                        route_mapping.mapping[protocol]["group"][group_id][
-                            "class_handlers"
-                        ] |= handler_names
-
-        elif callable(route.groups):
-            validator = route.groups
-
-            if not is_valid_route_validator(validator):
-                raise InitializationError(f"路由{route}中的groups的validator不符合要求")
-
-            validator_name = validator.__name__
-            if validator_name not in route_validator_mapping.keys():
-                cache_route_validator(validator, validator_name)
-
-            route_mapping.mapping["validators"]["group"][validator_name][
-                "commands"
-            ] |= command_names
-
-            route_mapping.mapping["validators"]["group"][validator_name][
-                "class_handlers"
+def map_by_conversation_type(
+    route: BotRoute,
+    conversation_type: T_ConversationType,
+    conversation_definition: Any,
+    command_config_ids: Set[str],
+    handler_names: Set[str],
+):
+    if conversation_definition == "*":
+        for protocol in BOT_PROTOCOLS:
+            route_mapping[
+                (
+                    protocol,
+                    conversation_type,
+                    "__global__",
+                    "class_commands",
+                )
+            ] |= command_config_ids
+            route_mapping[
+                (
+                    protocol,
+                    conversation_type,
+                    "__global__",
+                    "class_handlers",
+                )
             ] |= handler_names
 
-        # -------------------------------------------------------------------------------
+    elif conversation_definition and type(conversation_definition) == dict:
+        for protocol, conversation_keys in conversation_definition.items():
+            if conversation_keys == "*":
+                route_mapping[
+                    (
+                        protocol,
+                        conversation_type,
+                        "__global__",
+                        "class_commands",
+                    )
+                ] |= command_config_ids
+                route_mapping[
+                    (
+                        protocol,
+                        conversation_type,
+                        "__global__",
+                        "class_handlers",
+                    )
+                ] |= handler_names
 
-        if route.friends == "*":
-            for protocol in ALL_AVAILABLE_BOT_PROTOCOLS:
-                route_mapping.global_commands[protocol]["private"] |= command_names
-                route_mapping.global_handlers[protocol]["private"] |= handler_names
+            else:
+                for conversation_key in conversation_keys:
+                    conversation_key = str(conversation_key)
 
-        elif route.friends and type(route.friends) == dict:
-            for protocol, private_ids in route.friends.items():
-                if private_ids == "*":
-                    route_mapping.global_handlers[protocol]["private"] |= handler_names
+                    route_mapping[
+                        (
+                            protocol,
+                            conversation_type,
+                            conversation_key,
+                            "class_commands",
+                        )
+                    ] |= command_config_ids
+                    route_mapping[
+                        (
+                            protocol,
+                            conversation_type,
+                            conversation_key,
+                            "class_handlers",
+                        )
+                    ] |= handler_names
 
-                else:
-                    for private_id in private_ids:
-                        private_id = str(private_id)
+    elif callable(conversation_definition):
+        validator = conversation_definition
 
-                        route_mapping.mapping[protocol]["private"][private_id][
-                            "commands"
-                        ] |= command_names
+        if not is_valid_route_validator(validator):
+            raise InitializationError(f"路由{route}中的{conversation_type}的validator不符合要求")
 
-                        route_mapping.mapping[protocol]["private"][private_id][
-                            "class_handlers"
-                        ] |= handler_names
+        validator_name = validator.__name__
+        if validator_name not in route_validator_mapping.keys():
+            cache_route_validator(validator, validator_name)
 
-        elif callable(route.friends):
-            validator = route.friends
-
-            if not is_valid_route_validator(validator):
-                raise InitializationError(f"路由{route}中的friends的validator不符合要求")
-
-            validator_name = validator.__name__
-            if validator_name not in route_validator_mapping.keys():
-                cache_route_validator(validator, validator_name)
-
-            route_mapping.mapping["validators"]["private"][validator_name][
-                "commands"
-            ] |= command_names
-
-            route_mapping.mapping["validators"]["private"][validator_name][
-                "class_handlers"
-            ] |= handler_names
+        route_mapping[
+            (
+                "validator",
+                conversation_type,
+                "__unset__",
+                "class_commands",
+            )
+        ] |= command_config_ids
+        route_mapping[
+            (
+                "validator",
+                conversation_type,
+                "__unset__",
+                "class_handlers",
+            )
+        ] |= handler_names

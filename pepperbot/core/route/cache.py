@@ -6,41 +6,29 @@ from collections import OrderedDict
 from typing import Callable, Dict, List, Set, Tuple, Union, cast, get_args, get_origin
 
 from devtools import debug
+
 from pepperbot.core.message.segment import Text
 from pepperbot.exceptions import EventHandlerDefineError, InitializationError
 from pepperbot.extensions.command.handle import LIFECYCLE_WITHOUT_PATTERNS
 from pepperbot.extensions.command.pattern import merge_text_of_patterns
 from pepperbot.store.command import (
-    COMMAND_CONFIG,
+    PATTERN_ARG_TYPES,
     ClassCommandCache,
+    ClassCommandConfigCache,
+    ClassCommandMethodCache,
     CommandConfig,
-    CommandMethodCache,
+    GT_PatternArg,
     PatternArg,
-    T_PatternArg,
-    class_command_config_mapping,
-    class_command_mapping,
-    runtime_pattern_arg_types,
+    T_PatternArgClass,
 )
-
-# from pepperbot.parse import (
-#     GROUP_EVENTS,
-#     GROUP_EVENTS_T,
-#     GroupEvent,
-#     is_valid_friend_method,
-#     is_valid_group_method,
-# )
-# from pepperbot.parse.bots import *
-# from pepperbot.parse.kwargs import (
-#     DEFAULT_KWARGS,
-#     HANDLER_KWARGS_MAP,
-#    EventHandlerKwarg,
-#     construct_GroupCommonBot,
-# )
 from pepperbot.store.meta import (
     ClassHandlerCache,
+    class_command_config_mapping,
+    class_command_mapping,
     class_handler_mapping,
     route_validator_mapping,
 )
+from pepperbot.types import COMMAND_CONFIG, BaseClassCommand
 from pepperbot.utils.common import get_own_methods
 
 """ 
@@ -50,10 +38,11 @@ todo
  """
 
 
-def cache_class_handler(class_handler: Callable, handler_name: str):
+def cache_class_handler(class_handler: object, handler_name: str):
+    """在parse中，已经验证过class_handler的合法性，这里不再重复验证"""
 
     #  不要每次都创建实例，on/register监听器新增时建立一次保存起来即可
-    class_handler_instance = class_handler()
+    class_handler_instance = class_handler()  # type: ignore
 
     # groupHandler可能有多个装饰器，比如register, withCommand
     # 先解析为与装饰器名称相关的缓存至groupMeta，
@@ -66,15 +55,6 @@ def cache_class_handler(class_handler: Callable, handler_name: str):
     # 初始化时，遍历生成缓存，不要每次接收到消息都去遍历
     for method in get_own_methods(class_handler_instance):
         method_name = method.__name__
-
-        # todo 多protocol合并的事件
-        # if not is_valid_group_method(method_name):
-        #     # if is_valid_friend_method(method.__name__):
-        #     raise EventHandlerDefineError(f"")
-
-        # if not is_valid_event_handler(class_handler, method, method_name):
-        #     raise EventHandlerDefineError(f"")
-
         event_handlers[method_name] = method
 
     class_handler_mapping[handler_name] = ClassHandlerCache(
@@ -87,29 +67,27 @@ def cache_class_handler(class_handler: Callable, handler_name: str):
     # botInstance=construct_GroupCommonBot({"group_id": id}, cast(Any, None)),
 
 
-def cache_class_command(class_command: Callable, command_name: str):
-    # 多个group handler，相同command的处理(解析所有指令和groupId，重新生成缓存)
-    # 同一个commandClass，就实例化一次
+def cache_class_command(class_command: BaseClassCommand, command_name: str):
+    """同一个commandClass，就实例化一次"""
 
-    # if lifecycle_name not in get_own_methods():
+    class_command_instance = class_command()  # type: ignore
 
-    class_command_instance = class_command()
     command_method_mapping = {}
 
     for method in get_own_methods(class_command_instance):
         method_name = method.__name__
 
-        patterns: List[Tuple[str, T_PatternArg]] = []
+        patterns: List[Tuple[str, T_PatternArgClass]] = []
         compressed_patterns = []
 
         if method_name not in LIFECYCLE_WITHOUT_PATTERNS:
+            # signature可以获取到被装饰器装饰过的函数的真实参数签名
             signature = inspect.signature(method)
 
             for arg_name, p in signature.parameters.items():
-
                 if p.default == "PatternArg":
                     annotation = p.annotation
-                    if annotation not in runtime_pattern_arg_types:
+                    if annotation not in PATTERN_ARG_TYPES:
                         raise InitializationError(f"仅支持str, bool, int, float和所有消息类型")
 
                     # 未具体指定类型(int, float, bool)的Text按照str处理
@@ -117,12 +95,11 @@ def cache_class_command(class_command: Callable, command_name: str):
                         (arg_name, annotation if annotation != Text else str)
                     )
 
-            # debug(patterns)
-
             compressed_patterns = merge_text_of_patterns(patterns)
+        # debug(patterns)
         # debug(compressed_patterns)
 
-        command_method_mapping[method_name] = CommandMethodCache(
+        command_method_mapping[method_name] = ClassCommandMethodCache(
             method=method,
             patterns=patterns,
             compressed_patterns=compressed_patterns,
@@ -133,45 +110,14 @@ def cache_class_command(class_command: Callable, command_name: str):
         command_method_mapping=command_method_mapping,
     )
 
-    command_config: CommandConfig = getattr(class_command, COMMAND_CONFIG)
 
-    class_command_config_mapping[command_name]["default"] = command_config
-
-    # debug(commandKwargs)
-
-    # command_methods = {}
-    # for method in get_own_methods(class_command_instance):
-    #     method_name = method.__name__
-
-    #     if not is_valid_command_method(method):
-    #         raise ClassCommandDifinationError()
-
-    #     commandBuffer.methods[method.__name__] = method
-
-    # if "initial" not in command_methods.keys():
-    #     raise ClassCommandDifinationError()
-
-    # commandBuffer = ClassCommandCache(
-    #     instance=class_command_instance,
-    #     kwargs=command_kwargs,
-    #     methods=command_methods,
-    # )
-
-    # classHandlers.commandCache[commandClass] = commandBuffer
-
-    # maxSize = commandKwargs["maxSize"]
-    # timeout = commandKwargs["timeout"]
-    # mode = commandKwargs["mode"]
-
-    # commandContext = CommandContext(
-    #     maxSize=maxSize or globalContext.maxSize,
-    #     timeout=timeout or globalContext.timeout,
-    #     mode=mode,
-    # )
-
-    # globalContext.cache[commandClass] = commandContext
-
-    # class_command_mapping
+def cache_class_command_config(command_name: str, command_config: CommandConfig):
+    # TODO 验证一下
+    # TODO 相关的文档，怎么避免意外创建多个command config
+    class_command_config_mapping[command_config.config_id] = ClassCommandConfigCache(
+        class_command_name=command_name,
+        command_config=command_config,
+    )
 
 
 def cache_route_validator(validator: Callable, validator_name: str):
