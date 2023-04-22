@@ -1,110 +1,59 @@
 from __future__ import annotations
+from collections import deque
+import pickle
 
 import time
-from collections import defaultdict, deque
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Deque,
     Dict,
-    ForwardRef,
+    Generic,
     List,
     Literal,
+    Optional,
     Sequence,
-    Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
+    cast,
 )
+from uuid import uuid4
 
-from devtools import debug
+import ormar
+from pydantic import BaseModel, Field
+from typing_extensions import get_args
 
 # if TYPE_CHECKING:
+# field "chain" not yet prepared so type is still a ForwardRef, you might need to call HistoryItem.update_forward_refs().
+# pydantic需要用到
 from pepperbot.core.message.chain import MessageChain
-
-from pepperbot.core.message.segment import T_SegmentClass, T_SegmentInstance
-from pepperbot.types import (
-    BaseClassCommand,
-    T_BotProtocol,
-    T_RouteMode,
-    T_RouteRelation,
+from pepperbot.core.message.segment import (
+    GT_PatternArg,
+    Image,
+    T_SegmentClass,
+    T_SegmentInstance,
 )
-from pydantic import BaseModel, Field
-from typing_extensions import TypedDict, get_args
-
-
-class CommandConfig(BaseModel):
-    need_prefix: bool = False
-    prefixes: Sequence[str] = ["/"]
-    """ 都是正则，自动加上^ """
-    aliases: Sequence[str] = Field(default_factory=list)
-    """ 指令前缀别名 ，都是正则 """
-    include_class_name: bool = True
-    """ 类名本身是否作为指令前缀 """
-    exit_patterns: Sequence[str] = ["^/exit", "^退出"]
-    """ 都是正则，满足条件， """
-    require_at: bool = False
-    """ 是否需要@机器人 """
-    timeout: int = 30
-    """ 会话超时时间，单位秒, """
-    history_size: int = 1
-    """ 
-    保留上一次的raw_event，可以在timeout中复用
-    不然timeout中并没有办法获取到raw_event，因为timeout实在apscheduler中独立调用的 
-    """
-    # lock_user = False
-    # """ 跨消息渠道锁定用户
-    # 不管他是私聊、还是群聊、还是频道，只要是一条规则指定的用户，他们的发言都会被指令接受
-    # """
-    # user_mapping: List[Dict[T_BotProtocol, str]] = Field(default_factory=list)
-    # """
-    # 用户自己负责，是否有重复指定的情况
-    # 如果重复指定了两次，那么就会执行两次
-    # [
-    #     {
-    #         "onebot" : "123455",
-    #         "keaimao" : "wxid_askjhfljdsaf",
-    #     },
-    #     {
-    #         "onebot" : "7890784",
-    #         "keaimao" : "wxid_xnvkjdhf",
-    #     },
-    # ]
-    # """
-    # lock_source = False
-    # """
-    # 指定消息来源，该消息来源(群、频道)内，所有用户的发言都被指令接受
-    # 不要和lock_user同时使用，二选一
-    # 也就是说，normal, lock_user, lock_source是三选一的关系
-    # """
-    # source_mapping: List[Dict[T_BotProtocol, List[str]]] = Field(default_factory=list)
-    # """
-    # [
-    #     {
-    #         "onebot" : ["123455", "2034789"],
-    #         "keaimao" : ["123789@chatroom",],
-    #     },
-    # ]
-    # """
-
-
-VALID_TEXT_TYPES = (str, int, float, bool)
-T_ValidTextTypeInstance = Union[str, int, float, bool]
-T_ValidTextType = Union[Type[str], Type[int], Type[float], Type[bool]]
-
-T_PatternArg = Union[T_ValidTextType, T_SegmentClass]
-T_PatternArgResult = Union[str, int, float, bool, T_SegmentInstance]
-
+from pepperbot.store.orm import database, metadata
+from pepperbot.types import T_BotProtocol
 
 TRUE_TEXTS = ("True", "true", "1")
 FALSE_TEXTS = ("False", "false", "0")
 
+VALID_TEXT_TYPES = (str, int, float, bool)
+T_ValidTextTypeInstance = Union[str, int, float, bool]
+T_ValidTextTypeClass = Union[Type[str], Type[int], Type[float], Type[bool]]
+
+T_PatternArgInstance = Union[T_ValidTextTypeInstance, T_SegmentInstance]
+T_PatternArgClass = Union[T_ValidTextTypeClass, T_SegmentClass]
+
 
 def get_runtime_pattern_arg_types():
-    runtime_generic_types = []
-    for type_ in get_args(T_PatternArg):
+    """获取运行时的T_PatternArg的类型，基础类型 + 所有Segment类型"""
 
+    runtime_generic_types = []
+    for type_ in get_args(GT_PatternArg):
         if type_ is Union:  # T_SegmentClass
             runtime_generic_types.extend(get_args(type_))
 
@@ -119,35 +68,86 @@ def get_runtime_pattern_arg_types():
     return runtime_class_types
 
 
-runtime_pattern_arg_types = get_runtime_pattern_arg_types()
-
-# class PatternArg:
-#     # pass
-#     # __slots__ = ("type_",)
-
-#     def __init__(self):
-#         # self.type_ = type_
-
-#         return 123
+PATTERN_ARG_TYPES = get_runtime_pattern_arg_types()
+""" 运行时的GT_PatternArg的类型，基础类型 + 所有Segment类型 """
 
 
-def PatternArg() -> Any:
-    return "PatternArg"
+# TODO 带默认值的pattern
+def PatternArg(default: Optional[GT_PatternArg] = None) -> GT_PatternArg:
+    return cast(GT_PatternArg, "PatternArg")
+    # return cast(GT_PatternArg, default)
 
 
-T_CompressedPatterns = List[
-    Union[List[Tuple[str, T_PatternArg]], Tuple[str, T_PatternArg]]
+# a: Image = PatternArg()
+
+
+# class PatternArg(Generic[GT_PatternArg]):
+#     """ """
+
+#     __slots__ = (
+#         "type_",
+#         "default",
+#     )
+
+#     def __init__(
+#         self, type_: Type[GT_PatternArg], default: Optional[GT_PatternArg] = None
+#     ):
+#         self.type_ = type_
+#         self.default = default
+
+
+# a = PatternArg(Image, Image(""))
+
+
+def uuid_str() -> str:
+    return str(uuid4())
+
+
+T_InteractiveStrategy = Literal[
+    "same_source_same_user",
+    "same_source_any_user",
+    "any_source_same_user",
+    "any_source_any_user",
 ]
 
 
-class CommandMethodCache(BaseModel):
+class CommandConfig(BaseModel):
+    """pydantic可以自动处理动态默认值的问题
+
+    动态默认值问题是指，如果默认值是[]、{}，则会被复用，导致多个指令共享同一个默认值对象(因为是同一个对象)
+    也就是说，修改会在多个指令间同步
+    """
+
+    config_id: str = Field(default_factory=uuid_str)
+
+    need_prefix: bool = False
+    prefixes: Sequence[str] = ["/"]
+    aliases: Sequence[str] = Field(default_factory=list)
+    include_class_name: bool = True
+    exit_patterns: Sequence[str] = ["^/exit", "^退出"]
+    require_at: bool = False
+    timeout: int = 60
+    history_size: int = 1
+    interactive_strategy: T_InteractiveStrategy = "any_source_same_user"
+    config: Any = None
+    concurrency: bool = True
+    priority: int = 0
+    propagation_group: str = "default"
+
+
+T_CompressedPatterns = List[
+    Union[List[Tuple[str, GT_PatternArg]], Tuple[str, GT_PatternArg]]
+]
+
+
+class ClassCommandMethodCache(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
     method: Callable
-    patterns: List[Tuple[str, T_PatternArg]]
+    patterns: List[Tuple[str, T_PatternArgInstance]]
     compressed_patterns: T_CompressedPatterns
     """ cache时缓存便于正则的格式化的pattern，不用每次收到消息都解析 """
-
-
-# CommandMethodCache.update_forward_refs()
 
 
 class ClassCommandCache(BaseModel):
@@ -155,38 +155,16 @@ class ClassCommandCache(BaseModel):
         arbitrary_types_allowed = True
 
     class_instance: Any
-    command_method_mapping: Dict[str, CommandMethodCache] = {}
+    command_method_mapping: Dict[str, ClassCommandMethodCache] = {}
     """ key为方法名，value为实例化后的方法 """
-    # command_config: Dict[str, Any]
-    # lock_user_context_ids: Set[str] = set()
-    """ 
-    允许在BotRoute中，对同一个command设置多个不同的kwargs组合
-    [id1, id2, id3]
-
-    for id in ids:
-        if meet_lock_user_rule()
-    """
-    # lock_source_context_ids
 
 
-class_command_mapping: Dict[str, ClassCommandCache] = {}
-""" ClassCommand.__name__ : ClassHandlerCache """
+class ClassCommandConfigCache(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
 
-
-class_command_config_mapping: Dict[str, Dict[str, CommandConfig]] = defaultdict(dict)
-""" 一个command可能有多个config，share_state_command时，复用class_command_cache，
-解耦class_instance和config，不然要重复创建多次
-default是给BotRoute中注册的command用的
-{
-    [command_name] : {
-        "default" : CommandConfig,
-        "id1" : CommandConfig,
-        "id2" : CommandConfig,
-    }
-}
- """
-
-COMMAND_CONFIG = "__command_config__"
+    class_command_name: str
+    command_config: CommandConfig
 
 
 class HistoryItem(BaseModel):
@@ -201,44 +179,33 @@ class HistoryItem(BaseModel):
 # MessageChain.update_forward_refs()
 
 
-class ClassCommandStatus(BaseModel):
-    """也可以理解为一个session"""
+class ClassCommandStatus(ormar.Model):
+    """保存指令状态，跨进程"""
 
-    pointer: str = "initial"
-    history: Deque[HistoryItem]
-    last_updated_time: float = Field(default_factory=time.time)
-    """ 用来判断timeout """
-    timeout: int
-    context: Dict = Field(default_factory=dict)
+    class Meta:
+        tablename = "class_command_status"
+        database = database
+        metadata = metadata
+
+    id: int = cast(int, ormar.Integer(primary_key=True))
+
+    command_name = cast(str, ormar.String(max_length=50))
+    config_id: str = cast(str, ormar.String(max_length=50))
+    protocol: T_BotProtocol = cast(T_BotProtocol, ormar.String(max_length=50))
+    conversation_type: str = cast(str, ormar.String(max_length=50))
+    conversation_id: str = cast(str, ormar.String(max_length=50))
+    user_id: str = cast(str, ormar.String(max_length=50))
+
+    pointer: str = cast(str, ormar.String(max_length=50, default="initial"))
+    running: bool = ormar.Boolean(default=False)
+
+    # 通过pickle序列化后的数据
+    history: bytes = ormar.LargeBinary(
+        max_length=100000, default=pickle.dumps(deque(maxlen=1))
+    )
+    context: bytes = ormar.LargeBinary(max_length=100000, default=pickle.dumps({}))
+
     """ 用户定义，method之间的消息传递方式 """
-
-
-T_CommandStatusKey = Tuple[str, T_BotProtocol, T_RouteMode, str]
-
-normal_command_context_mapping: Dict[T_CommandStatusKey, ClassCommandStatus] = {}
-""" 
-默认情况，不锁定用户，也不锁定消息来源
-{
-    (command_name, protocol, mode, source_id) : status
-}
-"""
-
-
-# class LockRelation(TypedDict):
-#     rule: Dict[T_BotProtocol, List[str]]
-#     context: ClassCommandContext
-
-
-# lock_user_context_mapping: Dict[str, LockRelation] = {}
-"""
-锁定用户
-lock_user_mapping中的每一条规则，都应该有一个单独的context
-
-{
-    id : {
-        rule : {},
-        context : context
-    }
-}
-
-"""
+    last_updated_time: float = cast(float, ormar.Float(default=time.time))
+    """ 用来判断timeout """
+    timeout: int = cast(int, ormar.Integer())

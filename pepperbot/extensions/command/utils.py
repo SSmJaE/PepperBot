@@ -2,15 +2,13 @@ import re
 import time
 from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, Tuple
 
-from devtools import pformat
+from devtools import debug, pformat
+
 from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import At
+from pepperbot.extensions.log import debug_log, logger
 from pepperbot.store.command import CommandConfig
 from pepperbot.store.meta import get_bot_id
-from pepperbot.extensions.log import debug_log, logger
-
-
-from devtools import debug
 
 
 def meet_text_prefix(
@@ -18,7 +16,6 @@ def meet_text_prefix(
     command_name: str,
     command_config: CommandConfig,
 ) -> Tuple[bool, str, str, str]:
-
     aliases: Set[str] = set(command_config.aliases)
     if command_config.include_class_name:
         aliases.add(command_name)
@@ -32,24 +29,23 @@ def meet_text_prefix(
     debug_log(command_name, "指令名")
     debug_log(prefixes, "所有前缀")
     debug_log(aliases, "所有别名")
-
-    debug_log(chain.pure_text)
+    debug_log(chain.pure_text, "纯文本")
 
     for alias in aliases:
         for prefix in prefixes:
-            final_prefix = prefix + alias
+            prefix_with_alias = prefix + alias
 
             # 如果是At + Text的情况，pure_text之前会多出一个空格
             # 因为经常性，At和Text之间，会手动加一个空格，不如不去掉，就会导致判断失效
             # 必须有^，不然，当有多个指令时，某一个final_prefix是另一个final_prefix的子集时，会导致错误匹配
             # 比如，/a和/ab，当输入/a时，会匹配到/a和/ab，此时如果/a指令在前，/ab就不会被匹配到
-            if re.search(f"^{final_prefix}", chain.pure_text.strip()):
-                debug_log(f"^{final_prefix} 满足 {command_name} 的执行条件")
+            if not re.search(f"^{prefix_with_alias}", chain.pure_text.strip()):
+                debug_log(f"{prefix_with_alias} 不满足 {command_name} 的执行条件")
+                continue
 
-                return True, final_prefix, prefix, alias
+            debug_log(f"^{prefix_with_alias} 满足 {command_name} 的执行条件")
 
-            else:
-                debug_log(f"{final_prefix} 不满足 {command_name} 的执行条件")
+            return True, prefix_with_alias, prefix, alias
 
     return False, "", "", ""
 

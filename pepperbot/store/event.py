@@ -1,7 +1,7 @@
 from typing import Any, Literal, Optional, Sequence, Set
 from pydantic import BaseModel
 
-from pepperbot.types import T_BotProtocol, T_ConversationType
+from pepperbot.types import T_BotProtocol, T_ConversationType, T_DispatchHandler
 
 
 class EventHandlerKwarg(BaseModel):
@@ -65,3 +65,24 @@ class EventMetadata(BaseModel):
     """ group_id( mode == group ) or user_id( mode == private ) """
     user_id: str
     """ user_id """
+
+
+class EventDispatchMetadata(BaseModel):
+    has_running_command = False
+    has_available_command = False
+    command_dispatch_handler: Optional[T_DispatchHandler] = None
+    """ running时，为running的handler 
+    
+    如果没有running，但是有匹配的(available)command时，为available的handler
+    """
+    stop_propagation = False
+    """ 给command用的，不通过抛出异常，而是通过这个标记来停止事件传播 """
+
+
+class PropagationConfig(BaseModel):
+    propagation_group: str = "default"
+    """ 事件传播组 """
+    priority: int = 0
+    """ 优先级，越大越先执行 """
+    concurrency: bool = True
+    """ 是否允许并发执行 """
