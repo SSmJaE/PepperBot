@@ -6,21 +6,21 @@ capabilities:
     import-code: | # 这个是可选的，并不强求
       from pepperbot_gpt_example import (
         GPTExample,
-        multiline_example,
+        GPTExampleConfig,
       )
-    repository: https://github.com/SSmJaE/pepperbot-gpt-example # 但是仓库是必须要提供的，市场就是基于github的
-    description: 一些简短的描述，不需要详细描述，想要看详细描述的话，可以直接跳转到仓库
+    repository: https://github.com/SSmJaE/PepperBot/tree/master/capabilities/pepperbot_gpt_example # 但是仓库是必须要提供的，市场就是基于github的
+    description: 可以识别上下文的GPT指令实现；可以设置超级用户、超级群组，或者为指定用户、指定群组设置次数限制
   - name: 基于GPT，自动识别广告并禁言
     type:
       - handler
-    package-name: pepperbot-auto-ban
-    repository: https://github.com/SSmJaE/pepperbot-auto-ban
+    package-name: pepperbot-anti-ad
+    repository: https://github.com/SSmJaE/PepperBot/tree/master/capabilities/pepperbot-anti-ad
     description: 一些简短的描述，不需要详细描述，详细描述的话，可以直接跳转到仓库
-  - name: 小辣椒
-    type:
-      - command
-      - handler
-      - product
-    package-name: pepperbot-bot-example
-    repository: https://github.com/SSmJaE/pepperbot-bot-example
-    description: 一些简短的描述，不需要详细描述，详细描述的话，可以直接跳转到仓库
+  # - name: 小辣椒
+  #   type:
+  #     - command
+  #     - handler
+  #     - product
+  #   package-name: pepperbot-bot-example
+  #   repository: https://github.com/SSmJaE/pepperbot-bot-example
+  #   description: 一些简短的描述，不需要详细描述，详细描述的话，可以直接跳转到仓库

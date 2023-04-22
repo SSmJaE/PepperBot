@@ -347,7 +347,7 @@ async def run_class_command(
             logger.error(f"无法重置指令 <lc>{command_name}</lc> 的状态")
 
         await get_and_run_lifecycle(
-            command_name, command_method_mapping, pointer, "cleanup", locals()
+            command_name, command_method_mapping, pointer, "cleanup", command_kwargs
         )
 
 
