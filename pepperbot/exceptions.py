@@ -25,7 +25,7 @@ class ClassCommandDefinitionError(PepperBotBaseException):
     pass
 
 
-class PatternFormotError(PepperBotBaseException):
+class PatternFormatError(PepperBotBaseException):
     pass
 
 
@@ -34,22 +34,18 @@ class PatternValidateError(PepperBotBaseException):
 
 
 class ClassCommandOnFinish(PepperBotBaseException):
-
     pass
 
 
 class ClassCommandOnExit(PepperBotBaseException):
-
     pass
 
 
 class ClassCommandOnTimeout(PepperBotBaseException):
-
     pass
 
 
 class EventHandlerDefineError(PepperBotBaseException):
-
     pass
 
 
