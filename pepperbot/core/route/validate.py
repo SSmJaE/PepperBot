@@ -1,29 +1,29 @@
 from ast import Call
 import ast
 import inspect
+import keyword
 import re
-from typing import Any, Callable, Dict, List, Sequence, Union, get_args, get_origin
+from typing import Any, Callable, Dict, List, Sequence, Set, Union, get_args, get_origin
 
 from devtools import debug
-from pepperbot.adapters.keaimao.event.kwargs import KEAIMAO_KWARGS_MAPPING
-from pepperbot.adapters.onebot.event.kwargs import ONEBOTV11_KWARGS_MAPPING
-from pepperbot.adapters.telegram.event.kwargs import TELEGRAM_KWARGS_MAPPING
-from pepperbot.core.event.kwargs import UNIVERSAL_KWARGS_MAPPING
-from pepperbot.core.event.universal import (
-    ALL_COMMON_EVENTS,
-    ALL_GROUP_EVENTS,
-    ALL_META_EVENTS,
-    ALL_PRIVATE_EVENTS,
-)
+from pepperbot.adapters.keaimao import KeaimaoAdapter
+from pepperbot.adapters.keaimao.event import KeaimaoEvent
+from pepperbot.adapters.onebot import OnebotV11Adapter
+from pepperbot.adapters.onebot.event import OnebotV11Event
+from pepperbot.adapters.telegram import TelegramAdapter
+from pepperbot.adapters.telegram.event import TelegramEvent
+from pepperbot.adapters.universal import UniversalAdapter
+from pepperbot.adapters.universal.event import UniversalEvent
+from pepperbot.core.event.universal import ALL_PROTOCOL_EVENT_NAMES
 from pepperbot.exceptions import InitializationError
 from pepperbot.extensions.command.handle import (
     COMMAND_DEFAULT_KWARGS,
-    LIFECYCLE_NO_PROGRAMMIC,
     LIFECYCLE_WITHOUT_PATTERNS,
-    common_kwargs,
+    COMMAND_COMMON_KWARGS,
 )
-from pepperbot.store.command import runtime_pattern_arg_types
-from pepperbot.store.meta import EventHandlerKwarg
+from pepperbot.store.command import PATTERN_ARG_TYPES
+from pepperbot.store.event import EventHandlerKwarg
+from pepperbot.types import COMMAND_CONFIG
 from pepperbot.utils.common import get_own_methods
 
 
@@ -31,30 +31,23 @@ def is_valid_class_handler(class_handler: object):
     for method in get_own_methods(class_handler):
         method_name = method.__name__
 
-        is_handler_method_name_valid(method_name)
-        is_handler_method_args_valid(class_handler, method, method_name)
+        is_class_handler_method_name_valid(method_name)
+        is_class_handler_method_args_valid(class_handler, method, method_name)
 
     return True
 
 
-def is_handler_method_name_valid(method_name: str):
-    if not (
-        method_name in ALL_META_EVENTS
-        or method_name in ALL_COMMON_EVENTS
-        or method_name in ALL_GROUP_EVENTS
-        or method_name in ALL_PRIVATE_EVENTS
-    ):
-        raise InitializationError(f"无效的事件名 {method_name}")
+def is_class_handler_method_name_valid(method_name: str):
+    # if not (method_name in ALL_EVENTS):
+    #     raise InitializationError(f"无效的事件名 {method_name}")
+
+    # 允许非事件名的方法名
+    return True
 
 
-def gen_usable_kwargs_hint(method_name_kwargs_mapping: Dict, method_name: str):
-
-    kwarg_list: List[EventHandlerKwarg] = method_name_kwargs_mapping.get(
-        method_name, common_kwargs
-    )
-
+def gen_usable_kwargs_hint(keyword_arguments: Sequence[EventHandlerKwarg]):
     kwarg_name_type_mapping = {}
-    for kwarg in kwarg_list:
+    for kwarg in keyword_arguments:
         kwarg_name_type_mapping[kwarg.name] = kwarg.type_
 
     usable_kwargs_hint = "\n可用的参数及类型有\n"
@@ -106,28 +99,26 @@ def is_kwarg_annotation_correct(
         )
 
 
-def is_handler_method_args_valid(
+def is_class_handler_method_args_valid(
     class_handler: Any, method: Callable, method_name: str
 ):
+    if method_name not in ALL_PROTOCOL_EVENT_NAMES:
+        return
 
     if "onebot" in method_name:
-        mapping = ONEBOTV11_KWARGS_MAPPING
-        event_name = method_name.replace("onebot_", "")
+        keyword_arguments = OnebotV11Adapter.kwargs_mapping[method_name]
 
     elif "keaimao" in method_name:
-        mapping = KEAIMAO_KWARGS_MAPPING
-        event_name = method_name.replace("keaimao_", "")
+        keyword_arguments = KeaimaoAdapter.kwargs_mapping[method_name]
 
     elif "telegram" in method_name:
-        mapping = TELEGRAM_KWARGS_MAPPING
-        event_name = method_name.replace("telegram_", "")
+        keyword_arguments = TelegramAdapter.kwargs_mapping[method_name]
 
     else:
-        mapping = UNIVERSAL_KWARGS_MAPPING
-        event_name = method_name
+        keyword_arguments = UniversalAdapter.kwargs_mapping[method_name]
 
     kwarg_name_type_mapping, usable_kwargs_hint = gen_usable_kwargs_hint(
-        mapping, event_name
+        keyword_arguments
     )
     usable_kwarg_names = kwarg_name_type_mapping.keys()
 
@@ -138,16 +129,18 @@ def is_handler_method_args_valid(
         f"\n{source_file_name}文件中的类响应器{class_handler_name}的" + f"{method_name}事件"
     )
 
-    all_args, var_args, var_kwargs = inspect.getargs(method.__code__)
+    # all_args, var_args, var_kwargs = inspect.getargs(method.__code__)
 
-    if var_args or var_kwargs:
-        raise InitializationError(
-            common_prefix
-            + "不需要提供*或者**参数，PepperBot会自动根据声明的参数以及类型注入"
-            + usable_kwargs_hint
-        )
+    # if var_args or var_kwargs:
+    #     raise InitializationError(
+    #         common_prefix
+    #         + "不需要提供*或者**参数，PepperBot会自动根据声明的参数以及类型注入"
+    #         + usable_kwargs_hint
+    #     )
 
-    for arg_name in all_args[1:]:  # 第一个是self
+    parameters = inspect.signature(method).parameters
+
+    for arg_name in (list(parameters.keys()))[1:]:  # 第一个是self
         if arg_name not in usable_kwarg_names:
             raise InitializationError(
                 common_prefix + f"上不存在参数{arg_name}" + usable_kwargs_hint
@@ -162,7 +155,6 @@ def is_handler_method_args_valid(
 
     # 经过上两步验证，此时的参数，一定是有效的，而且有类型注解
     for arg_name, arg_type in method.__annotations__.items():
-
         supposed_arg_type = kwarg_name_type_mapping[arg_name]
 
         is_kwarg_annotation_correct(
@@ -171,6 +163,10 @@ def is_handler_method_args_valid(
 
 
 def is_valid_class_command(class_command: Any):
+    assert hasattr(
+        class_command, COMMAND_CONFIG
+    ), f"需要通过as_command装饰器修饰{class_command.__class__.__name__}"
+
     source_file_name = inspect.getsourcefile(class_command)
     class_command_name = class_command.__name__
 
@@ -178,6 +174,7 @@ def is_valid_class_command(class_command: Any):
 
     methods = list(get_own_methods(class_command))
     method_names = [method.__name__ for method in methods]
+    method_mapping = {method.__name__: method for method in methods}
 
     if not "initial" in method_names:
         raise InitializationError("指令必须定义initial方法作为入口")
@@ -185,22 +182,29 @@ def is_valid_class_command(class_command: Any):
     for method in methods:
         method_name = method.__name__
 
-        is_command_method_args_valid(method, method_name, common_prefix)
-        is_command_method_return_valid(method, method_name, method_names, common_prefix)
+        is_class_command_method_return_valid(
+            method, method_name, method_names, common_prefix
+        )
+
+    # 先通过上面的验证，此时的方法一定有返回值，并且只返回了一个值
+    involved_method_names = get_all_returned_identifiers(methods)
+
+    # 只验证被返回的方法，其他的方法不需要验证
+    for method_name in involved_method_names:
+        method = method_mapping[method_name]
+        is_class_command_method_args_valid(method, method_name, common_prefix)
 
     return True
 
 
-def is_command_method_args_valid(
+def is_class_command_method_args_valid(
     method: Callable, method_name: str, common_prefix: str
 ):
-
     common_prefix += f"{method_name}方法"
 
     signature = inspect.signature(method)
 
     for arg_name, p in signature.parameters.items():
-
         # self
         if arg_name == "self":
             continue
@@ -212,8 +216,9 @@ def is_command_method_args_valid(
             )
 
         ## has type hint
+        keyword_arguments = COMMAND_DEFAULT_KWARGS.get(method_name, COMMAND_COMMON_KWARGS)
         kwarg_name_type_mapping, usable_kwargs_hint = gen_usable_kwargs_hint(
-            COMMAND_DEFAULT_KWARGS, method_name
+            keyword_arguments
         )
 
         if p.annotation == p.empty:
@@ -237,7 +242,7 @@ def is_command_method_args_valid(
                 supposed_type = kwarg_name_type_mapping.get(arg_name)
                 if not supposed_type:
                     raise InitializationError(
-                        common_prefix + f"{arg_name} 无对应的类型，请确认该参数是否为有效参数"
+                        common_prefix + f"中不存在参数 {arg_name} ，请确认该参数是否为有效参数"
                     )
 
                 is_kwarg_annotation_correct(
@@ -250,7 +255,7 @@ def is_command_method_args_valid(
             if method_name in LIFECYCLE_WITHOUT_PATTERNS:
                 raise InitializationError(common_prefix + f"这些生命周期不应支持pattern")
 
-            if p.annotation not in runtime_pattern_arg_types:
+            if p.annotation not in PATTERN_ARG_TYPES:
                 raise InitializationError(
                     common_prefix + f"仅支持str, bool, int, float和所有消息类型"
                 )
@@ -279,7 +284,21 @@ def get_return_identifiers(f: Callable):
      'lineno': 7,
      'statement': <_ast.Return object at 0x00000233AC624100>}]
     """
-    (tree,) = ast.parse(inspect.getsource(f).lstrip()).body
+    function_source = inspect.getsource(f)
+    without_first_indent = function_source.lstrip()
+
+    # debug(function_source)
+
+    while without_first_indent.startswith("@"):
+        without_decorator = without_first_indent[without_first_indent.index("\n") :]
+        without_first_indent = without_decorator.lstrip()
+
+        # debug(without_decorator)
+        # debug(without_first_indent)
+
+    # 如果有装饰器，装饰器也会一并获取到，
+    # 要手动去掉，不然无法正常解析函数定义
+    (tree,) = ast.parse(without_first_indent).body
 
     return_statements: List = []
 
@@ -296,7 +315,22 @@ def get_return_identifiers(f: Callable):
     return return_statements
 
 
-def is_command_method_return_valid(
+def get_all_returned_identifiers(f_list: list[Callable]):
+    identifiers: Set[str] = set()
+
+    for f in f_list:
+        return_statements = get_return_identifiers(f)
+
+        for info in return_statements:
+            ids = info["ids"]
+
+            if ids:  # 不为None，且len(ids) == 1
+                identifiers.update(ids)
+
+    return identifiers
+
+
+def is_class_command_method_return_valid(
     method: Callable, method_name: str, method_names: List[str], common_prefix: str
 ):
     """
@@ -321,13 +355,14 @@ def is_command_method_return_valid(
         if identifier not in method_names:  # 要么返回下一步的方法名，要么不返回
             wrong = True
 
-        if identifier in LIFECYCLE_NO_PROGRAMMIC:
+        if identifier in LIFECYCLE_WITHOUT_PATTERNS:  # 不应该由指令作者主动触发
             wrong = True
 
         if wrong:
             raise InitializationError(
-                common_prefix + f"方法 {method_name} 的返回值可以为除catch, timeout, exit以外的生命周期，"
-                "即initial和finish，或者直接返回None(不返回)以结束会话"
+                common_prefix
+                + f"方法 {method_name} 的返回值只能是initial生命周期，或者用户自己定义的方法名，以继续会话；"
+                "直接返回None，或者不写返回语句，以结束会话"
             )
 
 
