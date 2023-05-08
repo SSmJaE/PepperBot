@@ -1,13 +1,8 @@
-import sys
-from os import path
-
-BASE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
-sys.path.append(BASE_DIR)
+from pepperbot.core.message.chain import MessageChain
+from pepperbot.core.message.segment import *
 
 
-from pepperbot.main import *
-
-mockEvent = {
+mock_event = {
     "message_id": 12345,
     "message": [
         {"type": "face", "data": {"id": 123}},
@@ -15,10 +10,10 @@ mockEvent = {
         {"type": "text", "data": {"text": "word word2"}},
     ],
 }
-mockEvent2 = {"message_id": 7238908, "message": []}
+mock_event2 = {"message_id": 7238908, "message": []}
 
-chain = MessageChain(mockEvent, 1234, None)
-chain2 = MessageChain(mockEvent2, 1234, None)
+chain = MessageChain("onebot", "group", mock_event, "123456789", "987654321")
+chain2 = MessageChain("onebot", "group", mock_event2, "123456789", "987654321")
 
 assert chain != chain2
 
@@ -36,15 +31,15 @@ assert Text("word2") not in chain
 assert Text("word word") in chain
 assert chain.has(Text("word word")) == True
 assert chain.has(Text("word word1")) == False
-assert chain.has(Face(123)) == True
-assert chain.has(Face(124)) == False
-assert chain.has(Face("123")) == True, "如果从后端传入的数据未经过Pydantic类型转换"
+assert chain.has(OnebotFace(123)) == True
+assert chain.has(OnebotFace(124)) == False
+assert chain.has(OnebotFace(123)) == True, "如果从后端传入的数据未经过Pydantic类型转换"
 # 快捷方式
 assert chain.has_and_first(Text) == (True, Text("word word"))
 assert chain.has_and_last(Text) == (True, Text("word word2"))
 assert chain.has_and_all(Text) == (True, [Text("word word"), Text("word word2")])
 # 获取所有指定类型实例
-assert chain.faces == [Face(123)]
+assert chain.onebot_faces == [OnebotFace(123)]
 assert chain.text == [Text("word word"), Text("word word2")]
 # 按index取Segment
 assert chain[1] == Text("word word")

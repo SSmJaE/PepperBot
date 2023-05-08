@@ -9,7 +9,7 @@ from pepperbot.store.meta import BotRoute
 
 from .initial import PepperBot
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 __all__ = (
     "__version__",
     "PepperBot",
