@@ -1,0 +1,177 @@
+---
+title: 配置指令
+---
+
+通过`as_command`装饰器，我们可以将一个 class 转换为一个`PepperBot`的指令
+
+同时，通过配置该装饰器的参数，我们可以实现非常灵活的指令效果
+
+接下来，我们将具体介绍`as_command`装饰器可用的配置项
+
+## 所有配置项
+
+> 也可以通过 IDE 查看使用指南
+>
+> 比如使用 VSCODE，就可以通过将鼠标悬浮在该装饰器上方，或者悬浮在具体的配置项上，来查看对应的文档提示
+
+| 参数               | 类型      | 默认值 |
+| ------------------ | --------- | ------ |
+| prefixes           | List[str] | []     |
+| need_prefix        | bool      | False  |
+| aliases            | List[str] | []     |
+| include_class_name | bool      | True   |
+| require_at         | bool      | False  |
+| exit_patterns      | List[str] | []     |
+
+## 触发指令
+
+想要触发一个指令，我们首先要能满足指令的关键字识别
+
+常见的指令由以下三个部分组成 前缀 + 指令名称 + 参数
+
+比如"/今日头条"，前缀为“/”，指令名称为"今日头条"，没有参数
+
+比如“天气 上海”，没有前缀，或者说前缀为空，即“”，指令名称为“天气”，有一个参数，“上海”
+
+### prefixes
+
+通过`as_command`中的`prefixes`参数，我们可以设置指令的前缀，可以设置多个，也可以一个都不设置
+
+比如指令“今日头条”，我们设置`prefixes`为["/", "@", "#"]，当用户使用任意一个前缀时，都能触发该指令
+
+```py
+"/今日头条"
+"@今日头条"
+"#今日头条"
+```
+
+### need_prefix
+
+有时候，我们希望指令不需要前缀，比如，我们希望用户直接输入“天气 上海”，就能触发指令
+
+这时候，我们可以设置`need_prefix`为 False
+
+### aliases
+
+有时候，想要为指令设置多个别名，可以通过`as_command`中的`aliases`参数实现
+
+比如天气指令，当设置`aliases`为["天气", "气象", "风雨"]时，用户输入
+
+```py
+"天气 上海"
+"气象 北京"
+"风雨 深圳"
+```
+
+都会触发
+
+配合`include_class_name`使用，可以实现非常灵活的效果
+
+### include_class_name
+
+默认来说，指令的类名，也会被视作指令的名称，比如
+
+```py
+class 天气指令:
+    ...
+```
+
+假设 prefixes 设置为["/"]，当用户输入"/天气指令"时，会触发该指令
+
+这一行为可以设置 include_class_name 为 False 关闭
+
+### require_at
+
+如果你希望只有当群员@了机器人时，才能触发指令，可以设置`require_at`为 True
+
+比如，设置`aliases`为`["天气"]`，`require_at`为 `True`，当用户输入
+
+```py
+@bot 天气 上海
+```
+
+时，才会触发
+
+#### 可选的 At 触发
+
+如果你希望，既可以通过前缀触发，也可以通过@触发
+
+-   通过前缀触发，不需要@
+-   需要@的触发
+
+可以通过继承实现
+
+可以发现，`PepperBot`中的指令，都是通过`as_command`装饰器实现的
+
+而`as_command`装饰器接受的，是一个`class`
+
+所以，我们可以将指令具体的功能，放到一个`class`中，然后通过新实现两个`class`，都继承这个`class`，来绑定不同的`as_command`参数
+
+```py
+class WeatherCommand:
+    async def initial(self):
+        ...
+
+@as_commond(
+    prefixes=["/"],
+    aliases=["天气", "气象", "风雨"],
+    include_class_name=False,
+)
+class WeatherCommandWithPrefix(WeatherCommand):
+    pass
+
+@as_commond(
+    need_prefix=False,
+    # prefixes=[],
+    aliases=["天气", "气象", "风雨"],
+    include_class_name=False,
+    require_at=True,
+)
+class WeatherCommandWithAt(WeatherCommand):
+    pass
+```
+
+需要注意的是，class 的名称，不能重复，否则会报错
+
+我们可以通过`as_command`的`aliases`和`include_class_name`参数，来实现不同 class 使用相同的 prefix 和 alias
+
+#### 仅需 At
+
+如果你希望只要@了机器人，就能触发指令，可以设置`require_at`为 True，同时`need_prefix`为 False
+
+然后，提供一个`空字符串`，作为 alias 即可
+
+```py
+@as_commond(
+    need_prefix=False,
+    aliases=[""],
+    require_at=True,
+)
+class WeatherCommandWithAt(WeatherCommand):
+    ...
+```
+
+现在，用户只要@了机器人，就能触发指令了
+
+```py
+@bot
+```
+
+## 退出指令
+
+### exit_patterns
+
+通过定义`exit_patterns`，
+
+都是正则表达式，和`prefixes`有点像
+
+满足`exit_patterns`而退出，是用户主动退出，触发的是`exit`钩子
+
+`exit`钩子，无法通过 return self.exit 手动触发
+
+```py
+
+
+```
+
+### timeout

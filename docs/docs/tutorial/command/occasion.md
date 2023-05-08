@@ -37,18 +37,27 @@ if "今日头条" in chain:
 
 但是，但你想要实现更复杂、更强大、更灵活的指令，并且想要与其他人共享时，使用 PepperBot 的指令系统，无疑可以减轻很多工作量
 
-PepperBot 的指令系统有如下特点
+## PepperBot 的指令系统的能力
 
 - 自动解析多个参数，并且自动转换参数为指定的类型
 
 ```py
-async def test(self, int_arg: int = PatternArg(), bool_arg: bool = PatternArg()):
+async def test(self, int_arg: int = CLIArgument(), bool_arg: bool = CLIArgument()):
     ...
 ```
 
-- 强大的生命周期，会话概念，过期检测
-- 高级指令状态管理(指令的阶段/指向)
-- 指令复用/多处使用，参数定制，更清晰的项目结构
-- [ ] 跨群/跨平台的指令状态共享
+- 引入会话概念，配合强大的生命周期能力
 
-extra=error
+具体见[指令的生命周期](./lifecycle.md)
+
+- 高级指令状态管理(指令的阶段/指向)
+
+具体见[指令的状态](./state.md)
+
+- 指令复用/多处使用，参数定制，更清晰的项目结构
+
+TODO
+
+- 跨群/跨平台的指令状态共享，或者说交互策略
+
+具体见[交互策略](./strategy.md)

@@ -3,7 +3,7 @@ title: 指令的生命周期
 ---
 
 
-![](./command.drawio.svg)
+![](../../assets/command_lifecycle.drawio.svg)
 
 ## 会话的概念
 
