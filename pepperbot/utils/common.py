@@ -1,9 +1,9 @@
 import asyncio
-import functools
 import inspect
-from inspect import isawaitable, iscoroutine
+from inspect import iscoroutine
 from types import FunctionType
 from typing import Any, Callable, Coroutine, Dict, List, Union, cast
+
 from devtools import debug
 from pydantic import BaseModel
 
@@ -34,6 +34,14 @@ def get_own_attributes(instance: object):
     for property in dir(instance):
         if not property.startswith("__"):
             yield property
+
+
+def get_class_name_from_method(method: Callable) -> str:
+    """从method上获取class name"""
+
+    # debug(method.__qualname__)
+
+    return method.__qualname__.split(".")[0]
 
 
 async def await_or_sync(obj: Union[Any, FunctionType], *args, **kwargs) -> Any:

@@ -1,34 +1,30 @@
-import inspect
-import random
-import re
-from ast import Call
-from collections import OrderedDict
-from typing import Callable, Dict, List, Set, Tuple, Union, cast, get_args, get_origin
+from argparse import ArgumentParser
+from typing import Callable, Dict
 
 from devtools import debug
 
-from pepperbot.core.message.segment import Text
-from pepperbot.exceptions import EventHandlerDefineError, InitializationError
 from pepperbot.extensions.command.handle import LIFECYCLE_WITHOUT_PATTERNS
-from pepperbot.extensions.command.pattern import merge_text_of_patterns
+from pepperbot.extensions.command.node import build_command_tree
+from pepperbot.extensions.command.parser import CustomArgumentParser
+from pepperbot.extensions.command.pattern import (
+    build_sub_parsers,
+    construct_overall_help_message,
+)
 from pepperbot.store.command import (
-    PATTERN_ARG_TYPES,
     ClassCommandCache,
     ClassCommandConfigCache,
     ClassCommandMethodCache,
     CommandConfig,
-    GT_PatternArg,
-    PatternArg,
-    T_PatternArgClass,
 )
 from pepperbot.store.meta import (
     ClassHandlerCache,
     class_command_config_mapping,
     class_command_mapping,
     class_handler_mapping,
+    command_relations_cache,
     route_validator_mapping,
 )
-from pepperbot.types import COMMAND_CONFIG, BaseClassCommand
+from pepperbot.types import BaseClassCommand
 from pepperbot.utils.common import get_own_methods
 
 """ 
@@ -74,40 +70,49 @@ def cache_class_command(class_command: BaseClassCommand, command_name: str):
 
     command_method_mapping = {}
 
+    with_pattern_methods = set()
+
+    relations_cache = command_relations_cache[command_name]
+
     for method in get_own_methods(class_command_instance):
         method_name = method.__name__
 
-        patterns: List[Tuple[str, T_PatternArgClass]] = []
-        compressed_patterns = []
-
         if method_name not in LIFECYCLE_WITHOUT_PATTERNS:
-            # signature可以获取到被装饰器装饰过的函数的真实参数签名
-            signature = inspect.signature(method)
+            with_pattern_methods.add(method_name)
 
-            for arg_name, p in signature.parameters.items():
-                if p.default == "PatternArg":
-                    annotation = p.annotation
-                    if annotation not in PATTERN_ARG_TYPES:
-                        raise InitializationError(f"仅支持str, bool, int, float和所有消息类型")
+        command_method_mapping[method_name] = ClassCommandMethodCache(method=method)
 
-                    # 未具体指定类型(int, float, bool)的Text按照str处理
-                    patterns.append(
-                        (arg_name, annotation if annotation != Text else str)
-                    )
+    parsers: Dict[str, ArgumentParser] = {}
+    """ 这里放的是.add_subparsers.add_parser()返回的对象 """
 
-            compressed_patterns = merge_text_of_patterns(patterns)
-        # debug(patterns)
-        # debug(compressed_patterns)
+    parser_handles = {}
+    """ 这里放的是add_subparsers()返回的对象，而不是parser对象 """
 
-        command_method_mapping[method_name] = ClassCommandMethodCache(
-            method=method,
-            patterns=patterns,
-            compressed_patterns=compressed_patterns,
-        )
+    root_node = build_command_tree(relations_cache)
+
+    main_parser = CustomArgumentParser(prog=command_name, add_help=False)
+
+    build_sub_parsers(
+        root_node,
+        main_parser,
+        parser_handles,
+        parsers,
+        relations_cache,
+        command_method_mapping,
+    )
+
+    # debug(parsers)
+    # debug(parser_handles)
+
+    help_message = construct_overall_help_message(
+        command_name, root_node, command_method_mapping
+    )
 
     class_command_mapping[command_name] = ClassCommandCache(
         class_instance=class_command_instance,
         command_method_mapping=command_method_mapping,
+        parser=main_parser,
+        help_message=help_message,
     )
 
 

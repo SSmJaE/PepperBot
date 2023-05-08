@@ -9,22 +9,11 @@ from devtools import debug
 from pepperbot.exceptions import InitializationError
 from pepperbot.store.meta import CLASS_CHECKERS, T_AvailableChecker, checkers_cache
 from pepperbot.types import COMMAND_CONFIG, T
-from pepperbot.utils.common import await_or_sync, fit_kwargs
+from pepperbot.utils.common import await_or_sync, fit_kwargs, get_class_name_from_method
 from pepperbot.extensions.log import logger
 
 AVAILABLE_CHECKERS = "__available_checkers__"
 HAS_SET_AVAILABLE_CHECKERS = "__has_set_available_checkers__"
-
-
-def get_class_name_from_method(method: Callable) -> str:
-    """从method上获取class name
-
-    用于available装饰器
-    """
-
-    # debug(method.__qualname__)
-
-    return method.__qualname__.split(".")[0]
 
 
 def available(*checkers: T_AvailableChecker):
@@ -140,7 +129,7 @@ async def check_available(obj: object, kwargs: Dict, is_class=True) -> bool:
         class_name = get_class_name_from_method(obj)  # type: ignore
         field = obj.__name__  # type: ignore
 
-    debug(checkers_cache)
+    # debug(checkers_cache)
 
     checkers = checkers_cache[class_name, field]
     if not checkers:

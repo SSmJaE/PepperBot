@@ -1,8 +1,10 @@
 from __future__ import annotations
-from collections import deque
-import pickle
 
+import pickle
+import re
 import time
+from argparse import ArgumentParser
+from collections import OrderedDict, deque
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -53,7 +55,7 @@ def get_runtime_pattern_arg_types():
     """获取运行时的T_PatternArg的类型，基础类型 + 所有Segment类型"""
 
     runtime_generic_types = []
-    for type_ in get_args(GT_PatternArg):
+    for type_ in get_args(T_PatternArgClass):
         if type_ is Union:  # T_SegmentClass
             runtime_generic_types.extend(get_args(type_))
 
@@ -71,32 +73,87 @@ def get_runtime_pattern_arg_types():
 PATTERN_ARG_TYPES = get_runtime_pattern_arg_types()
 """ 运行时的GT_PatternArg的类型，基础类型 + 所有Segment类型 """
 
+ARGPARSE_HELP = "__help__"
 
-# TODO 带默认值的pattern
-def PatternArg(default: Optional[GT_PatternArg] = None) -> GT_PatternArg:
-    return cast(GT_PatternArg, "PatternArg")
-    # return cast(GT_PatternArg, default)
+ARGPARSE_CALLED_METHOD = "__called_method__"
 
 
-# a: Image = PatternArg()
+class _PatternArg(BaseModel):
+    """主要用来生成help信息"""
+
+    type_: Any
+    default: Optional[Any] = None
+    required: bool = False
+    """ 根据type==Optional + default判断 """
+    help_message: Optional[str] = None
+    is_option: bool = False
+    """ 根据是CLIArgument还是CLIOption判断 """
+    name: str
+    """ 如果是argument，就是参数名
+     
+    如果是option，如果用户提供了name，就是name，不然就是参数名
+    """
+    short_name: Optional[str] = None
+    multiple: bool = False
+    """ 根据type==List判断 """
 
 
-# class PatternArg(Generic[GT_PatternArg]):
-#     """ """
+class TemporaryPatternArg:
+    def __init__(
+        self,
+        cls: Literal["CLIArgument", "CLIOption"],
+        kwargs: Dict[str, Any],
+    ):
+        self.cls = cls
+        self.kwargs = kwargs
 
-#     __slots__ = (
-#         "type_",
-#         "default",
-#     )
 
-#     def __init__(
-#         self, type_: Type[GT_PatternArg], default: Optional[GT_PatternArg] = None
+# T_OptionalMultiplePatternArg = Optional[Union[GT_PatternArg, List[GT_PatternArg]]]
+# 不能抽出来，会失去类型推导能力？
+
+
+# GT_PatternArgOrList = TypeVar("GT_PatternArgOrList", GT_PatternArg, List[GT_PatternArg])
+
+
+def CLIArgument(
+    default: Optional[Union[GT_PatternArg, List[GT_PatternArg]]] = None,
+    help: Optional[str] = None,
+) -> GT_PatternArg:
+    # 这里只是为了IDE的类型提示，并不关心返回值是什么，也用不上
+    # 是直接通过AST的方式，生成_PatternArg
+    # 直接用AST有点麻烦，用inspect.signature
+    return cast(GT_PatternArg, TemporaryPatternArg("CLIArgument", locals()))
+
+
+# class CLIArgument(Generic[GT_PatternArg]):
+#     def __new__(
+#         cls,
+#         *,
+#         default: Optional[GT_PatternArg] = None,
+#         help: Optional[str] = None,
 #     ):
-#         self.type_ = type_
-#         self.default = default
+#         return cast(GT_PatternArg, _PatternArg)
 
 
-# a = PatternArg(Image, Image(""))
+# 这两种方式(用函数，或者__new__)基本都一样，用函数的开销小一点，虽然都可以忽略不计
+# 唯一区别是，不提供default时，如果是class的形式，如果GT_PatternArg设置了default(TypeVar)，如果参数的类型和default不一致，会报错
+# 而如果是函数的形式，则可以自动根据参数的类型推断default的类型，所以不会报错，也不用设置TypeVar中的default
+# https://peps.python.org/pep-0696/
+# 3.12才支持给TypeVar设置default
+
+# a: str = CLIArgument(default=Image(""))
+# a: Image = CLIArgument(default=Image(""))
+# a: int = CLIArgument()  # 无默认值时，泛型如何处理
+
+
+def CLIOption(
+    *,
+    default: Optional[Union[GT_PatternArg, List[GT_PatternArg]]] = None,
+    help: Optional[str] = None,
+    name: Optional[str] = None,
+    short_name: Optional[str] = None,
+):
+    return cast(GT_PatternArg, TemporaryPatternArg("CLIOption", locals()))
 
 
 def uuid_str() -> str:
@@ -145,9 +202,12 @@ class ClassCommandMethodCache(BaseModel):
         arbitrary_types_allowed = True
 
     method: Callable
-    patterns: List[Tuple[str, T_PatternArgInstance]]
-    compressed_patterns: T_CompressedPatterns
-    """ cache时缓存便于正则的格式化的pattern，不用每次收到消息都解析 """
+    pattern_args: OrderedDict[str, _PatternArg] = OrderedDict()
+    help_message: Optional[str] = None
+    """ sub command的help message """
+    command_stack: List[str] = []
+    """ 对于nest command来说，就是从initial => sub command => sub sub command的顺序，
+    用于处理argparse的解析结果 """
 
 
 class ClassCommandCache(BaseModel):
@@ -157,6 +217,13 @@ class ClassCommandCache(BaseModel):
     class_instance: Any
     command_method_mapping: Dict[str, ClassCommandMethodCache] = {}
     """ key为方法名，value为实例化后的方法 """
+    parser: ArgumentParser
+    help_message: Optional[str] = None
+    """ 存储help message，此处为总览"""
+
+
+DOWNGRADE_PATTERN_FORMAT = "__{type_}:{id_}__"
+DOWNGRADE_PATTERN = re.compile(r"__(\w+):(.*)__")
 
 
 class ClassCommandConfigCache(BaseModel):

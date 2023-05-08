@@ -170,7 +170,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
     ordered_handlers.sort(key=lambda x: x[1], reverse=True)
     grouped_ordered_handlers = groupby(ordered_handlers, key=lambda x: x[0])
 
-    # debug_log(dict(grouped_ordered_handlers))
+    # debug(dict(grouped_ordered_handlers))
 
     groups = []
     for propagation_group, dispatch_handlers in grouped_ordered_handlers:

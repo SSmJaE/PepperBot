@@ -1,17 +1,20 @@
-from typing import Any, Optional, Sequence, cast
+from typing import Any, Callable, Optional, Sequence, Union, cast
 
 from pepperbot.store.command import (
+    CLIArgument,
+    CLIOption,
     CommandConfig,
-    PatternArg,
     T_InteractiveStrategy,
 )
-from pepperbot.types import COMMAND_CONFIG, BaseClassCommand
+from pepperbot.store.meta import SubCommandRelation, command_relations_cache
+from pepperbot.types import COMMAND_CONFIG, BaseClassCommand, F
+from pepperbot.utils.common import get_class_name_from_method
 
-
-def permission():
-    # todo command的权限管理
-    # todo command的黑白名单，动态黑白名单(提供函数，参数为当前发言用户)
-    pass
+__all__ = (
+    "as_command",
+    "CLIArgument",
+    "CLIOption",
+)
 
 
 def as_command(
@@ -93,27 +96,27 @@ def as_command(
     return decorator
 
 
-# class CommonEndMixin:
-#     # 用户主动退出
-#     async def exit(
-#         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
-#     ):
-#         await bot.group_msg(Text("用户主动退出"))
+def sub_command(
+    parent: Optional[Union[Callable, str]] = None, name: Optional[str] = None
+):
+    def decorator(method: F) -> F:
+        method_name: str = method.__name__  # type: ignore
 
-#     # 流程正常退出(在中间的流程return None也是正常退出)
-#     async def finish(
-#         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
-#     ):
-#         # todo group_msg内部，自动合并相邻的Text
-#         await bot.group_msg(Text(f"{sender.user_id}"), Text("命令正常执行完毕后退出"))
+        if method_name not in command_relations_cache:
+            parent_method_name: Optional[str] = None
+            if parent is not None:
+                if isinstance(parent, str):
+                    parent_method_name = parent
+                else:
+                    parent_method_name = parent.__name__
 
-#     async def timeout(
-#         self, bot: GroupCommonBot, chain: MessageChain, sender: Sender, **kwargs
-#     ):
-#         await bot.group_msg(Text("用户超时未回复，结束会话"))
+            class_name = get_class_name_from_method(method)
 
-__all__ = (
-    "as_command",
-    "PatternArg",
-    "permission",
-)
+            command_relations_cache[class_name][method_name] = SubCommandRelation(
+                parent_method_name=parent_method_name,
+                command_final_name=name or method_name,
+            )
+
+        return method
+
+    return decorator

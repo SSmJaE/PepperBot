@@ -285,6 +285,8 @@ class MessageChain:
     @property
     def pure_text(self) -> str:
         result = ""
+
+        # 这里不+空格，因为从event解析，基本不存在连续的Text Segment
         for segment in self.text:
             result += segment.content
 

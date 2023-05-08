@@ -1,5 +1,7 @@
 from collections import defaultdict
+from inspect import isclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -8,23 +10,21 @@ from typing import (
     List,
     Literal,
     Optional,
-    Sequence,
     Set,
     Tuple,
-    Type,
     Union,
     cast,
 )
-from uuid import UUID
+
+from pydantic import BaseModel, Field
+from pyrogram.client import Client
+from rich import print as rich_print
+from rich.tree import Tree
+from typing_extensions import NotRequired
 
 from pepperbot.core.api.api_caller import ApiCaller
 from pepperbot.exceptions import InitializationError
-from pepperbot.store.command import (
-    ClassCommandCache,
-    ClassCommandConfigCache,
-    CommandConfig,
-)
-from pepperbot.store.event import ProtocolEvent
+from pepperbot.store.command import ClassCommandCache, ClassCommandConfigCache
 from pepperbot.types import (
     BOT_PROTOCOLS,
     CONVERSATION_TYPES,
@@ -35,17 +35,10 @@ from pepperbot.types import (
     T_HandlerType,
     T_RouteRelation,
     T_RouteValidator,
-    T_WebProtocol,
 )
-from pepperbot.utils.common import deepawait_or_sync, fit_kwargs
-from pydantic import BaseModel, Field
-from pyrogram.client import Client
-from rich import print as rich_print
-from rich.tree import Tree
-from typing_extensions import Annotated, NotRequired
 
-from inspect import isclass
-
+if TYPE_CHECKING:
+    from pepperbot.core.message.segment import T_SegmentInstance
 
 import sys
 
@@ -206,7 +199,31 @@ checkers_cache: Dict[Tuple[str, str], Set[T_AvailableChecker]] = defaultdict(set
     ("class.__name__", CLASS_CHECKERS) : set(checker),
     ("class.__name__", "method.__name__") : set(checker),
 }
+"""
+
+
+class SubCommandRelation(TypedDict):
+    parent_method_name: Optional[str]
+    """ 没有父指令时的情况 """
+    command_final_name: str
+    """ 如何设置了alias，这里就是alias，否则就是command_name """
+
+
+command_relations_cache: Dict[str, Dict[str, SubCommandRelation]] = defaultdict(dict)
+""" 保存command的子指令关系，用于检查指令是否存在
+
+{
+    "command_name" : {
+        "sub_command_name" : SubCommandRelation(
+            parent_method_name = "parent_method_name",
+            command_final_name = "command_final_name",
+        ),
+    },
+}
  """
+
+command_arguments_cache: Dict[str, "T_SegmentInstance"] = {}
+""" 解决pickle的问题 """
 
 api_callers: ApiCallerTypeMap = {}
 

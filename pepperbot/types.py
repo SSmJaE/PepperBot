@@ -17,6 +17,17 @@ from typing import (
 
 
 COMMAND_CONFIG = "__command_config__"
+COMMAND_RELATIONS = "__command_relations__"
+""" 存储子指令和父指令的关系
+
+{
+    "sub_command_real_name": {
+        "parent_command_name": "",
+        "sub_command_alias": "",
+    }
+}
+
+"""
 
 
 class BaseClassCommand:
