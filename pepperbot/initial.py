@@ -166,8 +166,6 @@ class PepperBot:
         If you are running your application with an ASGI server, main_process_start and main_process_stop will be ignored
         """
 
-        # TODO 主动获取bot info
-        await set_metadata("has_initial_bot_info", False)
 
         # TODO 在各adapter初始化完成之后，再获取
         # 所以需要实现一个hook，after_adapter_init
@@ -186,6 +184,8 @@ class PepperBot:
         # 必须放到最后，等model都定义好了再执行
         # note that this has to be the same metadata that is used in ormar Models definition
         metadata.create_all(engine)
+        # TODO 主动获取bot info
+        await set_metadata("has_initial_bot_info", False)
         # 保证过期(无效)的command status一定被清理，不会干扰has_running_command的判断
         await check_command_timeout()
 
