@@ -1,59 +1,28 @@
-from collections import deque
 import pickle
 import time
+from collections import deque
 from inspect import isawaitable
-from typing import (
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-    cast,
-    final,
-)
+from typing import Any, Callable, Deque, Dict, Iterable, List, Set, Tuple, Union, cast
+
 from devtools import debug
 
-from pydantic import parse_obj_as
 from pepperbot.adapters.onebot.event import construct_chain
-
 from pepperbot.core.message.chain import MessageChain, chain_factory
 from pepperbot.core.route.available import check_available
 from pepperbot.exceptions import (
     ClassCommandDefinitionError,
     ClassCommandOnExit,
-    ClassCommandOnFinish,
-    ClassCommandOnTimeout,
+    PatternFormatError,
 )
 from pepperbot.extensions.command.pattern import parse_pattern
 from pepperbot.extensions.command.sender import CommandSender
 from pepperbot.extensions.command.utils import meet_command_exit, meet_command_prefix
 from pepperbot.extensions.log import debug_log, logger
-from pepperbot.store.command import (
-    ClassCommandStatus,
-    CommandConfig,
-    HistoryItem,
-)
+from pepperbot.store.command import ClassCommandStatus, CommandConfig, HistoryItem
 from pepperbot.store.event import EventHandlerKwarg, EventMetadata
-from pepperbot.store.meta import (
-    get_telegram_caller,
-    class_command_config_mapping,
-    class_command_mapping,
-)
-from pepperbot.types import (
-    T_BotProtocol,
-    T_ConversationType,
-    T_DispatchHandler,
-    T_HandlerType,
-    T_StopPropagation,
-)
+from pepperbot.store.meta import class_command_config_mapping, class_command_mapping
+from pepperbot.types import T_ConversationType, T_DispatchHandler, T_StopPropagation
 from pepperbot.utils.common import await_or_sync, fit_kwargs
-
 
 COMMAND_LIFECYCLE_EXCEPTIONS: Dict = {
     ClassCommandOnExit.__name__: "exit",
@@ -135,57 +104,6 @@ async def run_class_command(
 ):
     """只有has_running时，或者has_available时，才会调用此函数"""
 
-    # locals中需要存在raw_event, chain, sender
-    # raw_event = event_metadata.raw_event
-    # chain = await chain_factory(event_metadata)
-    # sender = CommandSender(event_metadata)
-
-    # class_command_config_cache = class_command_config_mapping[class_command_config_id]
-
-    # command_name = class_command_config_cache.class_command_name
-    # command_config = class_command_config_cache.command_config
-
-    # status, created = await get_command_status(
-    #     event_metadata, command_name, command_config
-    # )
-    # if not running:
-    #     history: Deque[HistoryItem] = deque(maxlen=command_config.history_size)
-    # else:
-    #     history: Deque[HistoryItem] = pickle.loads(status.history)
-
-    # context: Dict = pickle.loads(status.context)
-
-    # # locals中需要prefix和alias，作为initial的可选参数
-    # # 如果一直return self.initial，那么从第二次运行开始，需要手动获取一下prefix和alias
-    # prefix = context.get("prefix")
-    # alias = context.get("alias")
-
-    # if not prefix or not alias:
-    #     # if not running:
-    #     # 没有正在运行中的指令，则需要找到一个可用的指令
-    #     # 所以都需要判断一下，是否满足条件
-
-    #     # locals中需要prefix和alias，作为initial的可选参数
-    #     meet_prefix, prefix_with_alias, prefix, alias = meet_command_prefix(
-    #         chain,
-    #         command_name,
-    #         command_config,
-    #     )
-
-    #     # if not meet_prefix:
-    #     #     logger.info(f"该事件不满足指令 {command_name} {class_command_config_id} 的执行条件")
-    #     #     # logger.info(f"<y>{chain.pure_text}</y> 不满足指令 <lc>{command_name}</lc> 的执行条件")
-    #     #     return
-
-    #     # logger.info(
-    #     #     f"<y>{chain.pure_text}</y> 满足指令 <lc>{command_name}</lc> {class_command_config_id} 的执行条件"
-    #     # )
-
-    #     context.update(dict(prefix=prefix, alias=alias))
-    #     status.context = pickle.dumps(context)
-    #     status.running = True
-    #     await status.update()
-
     command_kwargs = await construct_command_kwargs(
         event_metadata, class_command_config_id, stop_propagation, running
     )
@@ -207,7 +125,7 @@ async def run_class_command(
             command_kwargs["chain"], command_kwargs["command_config"]
         ):
             logger.info(
-                f"<y>{command_kwargs['chain.pure_text']}</y> 满足指令 {command_name} 的退出条件"
+                f"<y>{command_kwargs['chain'].pure_text}</y> 满足指令 {command_name} 的退出条件"
             )
             raise ClassCommandOnExit()  # TODO 一并传递触发exit生命周期的exit_pattern，作为参数
 
@@ -218,16 +136,23 @@ async def run_class_command(
 
         # locals中需要
         # 如果解析出错，会直接抛出异常，所以不会修改pointer的指向
-        command_kwargs["patterns"] = await parse_pattern(
+        # TODO 这里抛出FormatException，不应该触发cleanup
+        returned_method_name = "has not set yet"
+        target_method_name, command_kwargs["patterns"] = await parse_pattern(
+            event_metadata,
+            class_command_cache,
             command_method_cache,
             pointer,
             command_kwargs,
+            command_name,
+            status,
         )
 
         status.last_updated_time = time.time()
         await status.update()
 
-        target_method = command_method_cache.method
+        # target_method = command_method_cache.method
+        target_method = command_method_mapping[target_method_name].method
         returned_method = await run_class_command_method(
             pointer, target_method, command_kwargs, running=running
         )
@@ -246,6 +171,11 @@ async def run_class_command(
 
         # 设置下一次执行时要调用的方法
         await update_command_pointer(status, command_kwargs, returned_method_name)
+
+    except PatternFormatError:
+        #  PatternError，不应该被catch生命周期捕获
+        # 同时，也不应触发其他生命周期，比如finish和cleanup
+        pass
 
     except ClassCommandOnExit:
         # 当触发生命周期时，立即调用，而不是等到用户下一次交互
