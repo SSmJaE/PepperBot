@@ -85,3 +85,26 @@ async def set_value(key: str, value: Any) -> None:
     """设置键值对形式的数据"""
 
     await set_value_from(Share, key, value)
+
+
+async def delete_value_from(model: Type[ormar.Model], key: str) -> None:
+    """删除键值对形式的数据"""
+
+    try:
+        column = await model.objects.get(key=key)
+        await column.delete()
+
+    except ormar.NoMatch:
+        pass
+
+
+async def delete_metadata(key: str) -> None:
+    """删除键值对形式的数据"""
+
+    await delete_value_from(Metadata, key)
+
+
+async def delete_value(key: str) -> None:
+    """删除键值对形式的数据"""
+
+    await delete_value_from(Share, key)
