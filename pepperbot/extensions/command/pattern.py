@@ -22,7 +22,7 @@ from pepperbot.core.message.chain import MessageChain, T_SegmentInstance
 from pepperbot.core.message.segment import T_SegmentClass, Text
 from pepperbot.exceptions import InitializationError, PatternFormatError
 from pepperbot.extensions.command.node import CommandNode
-from pepperbot.extensions.command.parser import CustomHelpAction
+from pepperbot.extensions.command.parser import CustomArgumentParser, CustomHelpAction
 from pepperbot.extensions.command.utils import merge_adjacent_text_segments
 from pepperbot.store.command import (
     ARGPARSE_CALLED_METHOD,
@@ -282,12 +282,14 @@ def construct_sub_command_help_message(
     return f"Usage: {command_name} [OPTIONS] [ARGS]..."
 
 
-def construct_overall_help_message(
+def construct_root_command_help_message(
     command_name: str,
     root_node: CommandNode,
     command_method_mapping: Dict[str, ClassCommandMethodCache],
 ) -> str:
-    return f"Usage: {command_name} [OPTIONS] [ARGS]..."
+    """针对根command，帮助信息包含其所有的sub command，树形展示"""
+
+    return f"Usage: {command_name}{':'+root_node.name if root_node.name != 'initial' else ''} [OPTIONS] [ARGS]..."
 
 
 def add_arguments(parser: ArgumentParser, method: Callable):
@@ -406,7 +408,7 @@ def add_arguments(parser: ArgumentParser, method: Callable):
             multiple=multiple,
         )
 
-        pattern_args[match_names[0]] = pattern_arg
+        pattern_args[arg_name] = pattern_arg
 
     return pattern_args
 
@@ -421,27 +423,23 @@ def get_command_stack(node: CommandNode):
     return stack[::-1]
 
 
-def build_sub_parsers(
+def build_sub_parsers_for_single_node(
     node: CommandNode,
-    main_parser: ArgumentParser,
     parser_handles: Dict[str, _SubParsersAction],
     parsers: Dict[str, ArgumentParser],
     relations_cache: Dict[str, SubCommandRelation],
+    command_name: str,
+    class_command_cache: ClassCommandCache,
     command_method_mapping: Dict[str, ClassCommandMethodCache],
+    root_parser: ArgumentParser,
 ):
-    """
-    一个指令中，只允许一个top parser
-
-    技术上来说，可以实现多个top parser，实现起来不复杂，但是想一想，都觉得可维护性太差了
-    """
-
     method_name = node.name
 
     # 判断是几级command，如果是第一级，那么就是main_parser，如果是第二级，那么就是sub_parser
     # 都需要保证，上一级的sub parser，已经存在
     if not node.parent:  # initial
-        parser = main_parser
-        command_final_name = "initial"
+        parser = root_parser
+        command_final_name = method_name
 
     else:
         sub_command_relation = relations_cache[method_name]
@@ -470,11 +468,25 @@ def build_sub_parsers(
     pattern_args = add_arguments(parser, method)
 
     class_command_method_cache.pattern_args = pattern_args
-    class_command_method_cache.help_message = construct_sub_command_help_message(
-        command_final_name, pattern_args
-    )
 
+    if not node.parent:
+        help_message = construct_root_command_help_message(
+            command_name, node, command_method_mapping
+        )
+
+    else:
+        help_message = construct_sub_command_help_message(
+            command_final_name, pattern_args
+        )
+
+    class_command_method_cache.help_message = help_message
     class_command_method_cache.command_stack = get_command_stack(node)
+    class_command_method_cache.is_root = node.parent is None
+
+    if not node.parent:
+        class_command_method_cache.parser = parser
+
+    class_command_cache.method_name_parser_mapping[method_name] = root_parser
 
     # 有sub_command再创建，不然，无法实现multi positional arguments，会直接尝试解析sub command
     if node.children:
@@ -484,14 +496,52 @@ def build_sub_parsers(
         parser_handles[method_name] = handle
 
         for child in node.children:
-            build_sub_parsers(
+            build_sub_parsers_for_single_node(
                 child,
-                main_parser,
                 parser_handles,
                 parsers,
                 relations_cache,
+                command_name,
+                class_command_cache,
                 command_method_mapping,
+                root_parser,
             )
+
+
+def build_sub_parsers_for_multi_nodes(
+    root_nodes: List[CommandNode],
+    parser_handles: Dict[str, _SubParsersAction],
+    parsers: Dict[str, ArgumentParser],
+    relations_cache: Dict[str, SubCommandRelation],
+    command_name: str,
+    class_command_cache: ClassCommandCache,
+    command_method_mapping: Dict[str, ClassCommandMethodCache],
+):
+    """
+    一个指令中，允许多个top parser
+
+    虽然实现多个top parser，但是只是为了，让非initial、非sub_command的method，也能使用命令行参数
+
+    对于nest command，一个指令还是只建议实现一个，否则会很难维护
+
+    """
+
+    for root_node in root_nodes:
+        root_parser = CustomArgumentParser(
+            prog=f"{command_name}_{root_node.name}",
+            add_help=False,
+        )
+
+        build_sub_parsers_for_single_node(
+            root_node,
+            parser_handles,
+            parsers,
+            relations_cache,
+            command_name,
+            class_command_cache,
+            command_method_mapping,
+            root_parser,
+        )
 
 
 # def get_pattern_results(
@@ -524,7 +574,7 @@ def build_sub_parsers(
 #                     text_without_type,
 #                 )
 
-#         # todo 支持pydantic的Field，比如gt,lt,对输出的报错信息，转为PatternFormotError
+#         # todo 支持pydantic的Field，比如gt,lt,对输出的报错信息，转为PatternFormatError
 #         # 最好能找到，pydantic中是怎么使用ModelField进行字段验证的，只是使用就好了
 #         # snap: int = Field(
 #         #     42,
@@ -567,7 +617,7 @@ async def parse_pattern(
     event_metadata: EventMetadata,
     class_command_cache: ClassCommandCache,
     cache: ClassCommandMethodCache,
-    method_name,
+    method_name: str,
     command_kwargs: Dict[str, Any],
     command_name: str,
     status: ClassCommandStatus,
@@ -594,7 +644,8 @@ async def parse_pattern(
     # if not cache.compressed_patterns:
     #     return method_name,{}
 
-    main_parser = class_command_cache.parser
+    # 需要根据当前的method_name，判断用哪个parser来解析
+    parser = class_command_cache.method_name_parser_mapping[method_name]
 
     # message_chain转为str(json.dumps，不带空格)，去掉prefix
     prefix_with_alias = prefix + alias
@@ -608,7 +659,7 @@ async def parse_pattern(
     splitted_args = without_prefix.split()
 
     try:
-        args = main_parser.parse_args(splitted_args)
+        args = parser.parse_args(splitted_args)
         args_dict = vars(args)
 
         # debug(args_dict)

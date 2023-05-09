@@ -71,10 +71,11 @@ results = []
 
 
 def new_caller(self, action: str, kwargs: dict[str, Any]):
-    results.append((action, kwargs))
-
     if action == "get_login_info":
         return {"user_id": "123456789", "nickname": "测试机器人"}
+
+    else:
+        results.append((action, kwargs))
 
 
 @pytest.fixture(scope="class")

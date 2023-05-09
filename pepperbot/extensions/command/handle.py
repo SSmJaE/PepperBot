@@ -172,6 +172,7 @@ async def run_class_command(
         # 设置下一次执行时要调用的方法
         await update_command_pointer(status, command_kwargs, returned_method_name)
 
+    # TODO 这个导致finish失效
     except PatternFormatError:
         #  PatternError，不应该被catch生命周期捕获
         # 同时，也不应触发其他生命周期，比如finish和cleanup

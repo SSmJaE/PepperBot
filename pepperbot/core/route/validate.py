@@ -193,6 +193,7 @@ def is_valid_class_command(class_command: Any):
 
     # 先通过上面的验证，此时的方法一定有返回值，并且只返回了一个值
     involved_method_names = get_all_returned_identifiers(methods)
+    involved_method_names.add("initial")  # initial方法也需要验证
 
     # 只验证被返回的方法，其他的方法不需要验证
     for method_name in involved_method_names:
@@ -205,7 +206,7 @@ def is_valid_class_command(class_command: Any):
 def is_class_command_method_args_valid(
     method: Callable, method_name: str, common_prefix: str
 ):
-    common_prefix += f"{method_name}方法"
+    common_prefix += f"方法 {method_name} "
 
     signature = inspect.signature(method)
 
@@ -260,9 +261,26 @@ def is_class_command_method_args_valid(
             if method_name in LIFECYCLE_WITHOUT_PATTERNS:
                 raise InitializationError(common_prefix + f"这些生命周期不应支持pattern")
 
-            if p.annotation not in PATTERN_ARG_TYPES or p.annotation is Any:
+            # 考虑到Optional、List的情况
+            element_type = get_args(p.annotation)
+
+            # TODO 优化一下判断optional、list的逻辑，和pattern里的add_arguments一起
+            if element_type:
+                if container_type := get_origin(element_type[0]) is list:
+                    element_type = get_args(element_type[0])[0]
+                else:
+                    element_type = element_type[0]
+
+            else:  # 没有container
+                element_type = p.annotation
+
+            # debug(element_type)
+
+            if element_type not in PATTERN_ARG_TYPES and element_type is not Any:
                 raise InitializationError(
-                    common_prefix + f"仅支持str, bool, int, float和所有消息类型"
+                    common_prefix
+                    + f"仅支持str, bool, int, float和所有消息类型，或者Any"
+                    + f"，而你提供了 {element_type}"
                 )
 
 

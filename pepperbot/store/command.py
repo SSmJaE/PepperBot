@@ -204,10 +204,19 @@ class ClassCommandMethodCache(BaseModel):
     method: Callable
     pattern_args: OrderedDict[str, _PatternArg] = OrderedDict()
     help_message: Optional[str] = None
-    """ sub command的help message """
+    """ command的help message """
     command_stack: List[str] = []
-    """ 对于nest command来说，就是从initial => sub command => sub sub command的顺序，
-    用于处理argparse的解析结果 """
+    """ 对于nest， root command => sub command => sub sub command的顺序
+
+    用于处理argparse的解析结果 
+    
+    至少包含自己
+    """
+
+    is_root: bool = False
+    """ 是否是root command """
+    parser: Optional[ArgumentParser] = None
+    """ 如果是root command，就是自己的parser"""
 
 
 class ClassCommandCache(BaseModel):
@@ -217,9 +226,27 @@ class ClassCommandCache(BaseModel):
     class_instance: Any
     command_method_mapping: Dict[str, ClassCommandMethodCache] = {}
     """ key为方法名，value为实例化后的方法 """
-    parser: ArgumentParser
-    help_message: Optional[str] = None
-    """ 存储help message，此处为总览"""
+
+    method_name_parser_mapping: Dict[str, ArgumentParser] = {}
+    """ key为方法名，value为parser 
+
+    - a(initial)
+        - b
+            - d
+            - e
+        - c
+            - f
+            - g
+    - h(非initial、非sub command，另一个根command)
+        - i
+        - j
+    
+    
+    则b、d、e、c、f、g的parser都是a的parser
+    而i、j的parser是h的parser
+
+    需要包含a、h自己的对应
+    """
 
 
 DOWNGRADE_PATTERN_FORMAT = "__{type_}:{id_}__"

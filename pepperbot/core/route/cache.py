@@ -1,14 +1,12 @@
 from argparse import ArgumentParser
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 
 from devtools import debug
 
 from pepperbot.extensions.command.handle import LIFECYCLE_WITHOUT_PATTERNS
 from pepperbot.extensions.command.node import build_command_tree
-from pepperbot.extensions.command.parser import CustomArgumentParser
 from pepperbot.extensions.command.pattern import (
-    build_sub_parsers,
-    construct_overall_help_message,
+    build_sub_parsers_for_multi_nodes,
 )
 from pepperbot.store.command import (
     ClassCommandCache,
@@ -71,6 +69,7 @@ def cache_class_command(class_command: BaseClassCommand, command_name: str):
     command_method_mapping = {}
 
     with_pattern_methods = set()
+    """ 可以有cli arguments的method """
 
     relations_cache = command_relations_cache[command_name]
 
@@ -88,32 +87,27 @@ def cache_class_command(class_command: BaseClassCommand, command_name: str):
     parser_handles = {}
     """ 这里放的是add_subparsers()返回的对象，而不是parser对象 """
 
-    root_node = build_command_tree(relations_cache)
+    root_nodes = build_command_tree(relations_cache, with_pattern_methods)
 
-    main_parser = CustomArgumentParser(prog=command_name, add_help=False)
+    class_command_cache = ClassCommandCache(
+        class_instance=class_command_instance,
+        command_method_mapping=command_method_mapping,
+    )
 
-    build_sub_parsers(
-        root_node,
-        main_parser,
+    build_sub_parsers_for_multi_nodes(
+        root_nodes,
         parser_handles,
         parsers,
         relations_cache,
+        command_name,
+        class_command_cache,
         command_method_mapping,
     )
 
     # debug(parsers)
     # debug(parser_handles)
 
-    help_message = construct_overall_help_message(
-        command_name, root_node, command_method_mapping
-    )
-
-    class_command_mapping[command_name] = ClassCommandCache(
-        class_instance=class_command_instance,
-        command_method_mapping=command_method_mapping,
-        parser=main_parser,
-        help_message=help_message,
-    )
+    class_command_mapping[command_name] = class_command_cache
 
 
 def cache_class_command_config(command_name: str, command_config: CommandConfig):
