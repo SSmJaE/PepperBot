@@ -153,7 +153,12 @@ class PepperBot:
         pass
 
     def apply_routes(self, routes: Iterable[BotRoute]):
-        create_bot_routes([*routes, *register_routes])
+        try:
+            create_bot_routes([*routes, *register_routes])
+
+        except InitializationError as e:  # 不显示整个traceback，只显示错误信息就行了
+            logger.error(e)
+            exit(1)
 
     def share_state_command(self):
         pass
@@ -165,7 +170,6 @@ class PepperBot:
 
         If you are running your application with an ASGI server, main_process_start and main_process_stop will be ignored
         """
-
 
         # TODO 在各adapter初始化完成之后，再获取
         # 所以需要实现一个hook，after_adapter_init
