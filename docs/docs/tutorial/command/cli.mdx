@@ -1,0 +1,112 @@
+---
+title: 命令行式指令
+---
+
+:::warning
+
+本文档正在编写中
+
+:::
+
+基于`argparse`，`PepperBot`将经典的命令行指令，移植到了机器人的世界中，使得机器人的指令更加灵活、易用
+
+而且，`PepperBot`支持将任意的`消息片段`作为参数，而不仅仅局限于`纯文本`
+
+比如，我们可以要求用户提供一张图片，可以直接这样使用
+
+import { Conversation } from "@site/src/components/Conversation";
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test [图片]",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "收到了你发送的图片 [图片]",
+        },
+    ]}
+/>
+
+```python
+async def initial(self, sender: CommandSender, image_result: Image = CLIArgument()):
+    await sender.send_message(
+        Text(f"收到了你发送的图片"),
+        image_result,  # 可以直接获取到用户发送的图片
+    )
+```
+
+## 参数定义
+
+```python
+from pepperbot.extensions.command import CLIArgument, CLIOption
+
+```
+
+### Positional 参数、Optional 参数
+
+--long -S
+
+### 类型注解
+
+Optional
+
+List
+
+参数格式有两点要求
+
+-   参数数量要和定义了的`PatternArg`数量一致
+-   参数类型要和对应位置的`PatternArg`一致
+
+比如这样的定义
+
+```py
+async def choose_game(self, game: str = PatternArg(), sender: CommandSender, npc : int = PatternArg()):
+    sender.send_message(Text(f"你选择的是 {game} 的 {npc}，需要查询他的什么装备呢？稀有度为何？"))
+```
+
+我们定义了两个参数，第一个参数为 game，字符串类型，第二个参数为 npc，是 int 类型
+
+可以看到，我们在统计参数的时候，跳过了`sender`这样的保留参数，只统计了默认值为`PatternArg()`的参数
+
+用户输入参数时的顺序，应该和定义的顺序一致，比如，第一个参数因为`game`，第二个参数为`npc`
+
+如果用户输入的参数的类型，与我们定义的不一致，比如
+
+```py
+"某游戏 某人物"
+```
+
+这里，npc 应该为 int 类型，而我们提供的是字符串"某人物"，那么，当 PepperBot 试图将字符串"某人物"转换为 int 类型时，自然会失败
+
+在 PepperBot 中，当用户的输入不符合要求时，会自动发送格式提示，比如
+
+```py
+" <str : xxx>
+```
+
+### 可选、必选、默认值
+
+## 子指令
+
+### 子指令的别名
+
+### 子指令的调度逻辑
+
+### 在子指令中，获取父指令的参数
+
+### 不要太“聪明”
+
+## 帮助信息
+
+### 针对“根指令”的帮助信息
+
+### 针对“子指令”的帮助信息
+
+<!--
+如果没能满足要求，也就是没有通过参数校验这一关，那么，指令并没有开始会话，该指令并不视为执行状态，自然，`history`中，也就没有该次，用户发送的消息
+
+再次强调，只有成功通过参数校验的`handler`，用户发送的消息才会被注入`history`，这样实现，是为了降低心智负担，即，出现在`history`中的消息，都是满足要求的，和我们自己定义的，不出错时，逻辑的执行顺序是一致的 -->
