@@ -1,7 +1,7 @@
 import asyncio
+import json
 from collections import defaultdict
 from itertools import groupby
-import json
 from typing import (
     Any,
     Callable,
@@ -37,10 +37,10 @@ from pepperbot.core.event.universal import (
 from pepperbot.core.event.utils import skip_current_onebot_event
 from pepperbot.core.route.available import check_available
 from pepperbot.exceptions import EventHandleError, StopPropagation
-from pepperbot.extensions.command.handle import (
+from pepperbot.extensions.command.handle import run_class_command
+from pepperbot.extensions.command.utils import (
     find_first_available_command,
     has_running_command,
-    run_class_command,
 )
 from pepperbot.extensions.log import debug_log, logger
 from pepperbot.store.event import (
@@ -51,16 +51,16 @@ from pepperbot.store.event import (
 )
 from pepperbot.store.meta import (
     LAST_ONEBOT_HEARTBEAT_TIME,
+    bot_instances,
+    class_command_config_mapping,
+    class_command_mapping,
+    class_handler_mapping,
     get_bot_id,
     get_onebot_caller,
     initial_bot_info,
     onebot_event_meta,
     route_mapping,
-    class_command_config_mapping,
-    class_handler_mapping,
     route_validator_mapping,
-    bot_instances,
-    class_command_mapping,
 )
 from pepperbot.store.orm import get_metadata, set_metadata
 from pepperbot.types import (
@@ -138,7 +138,7 @@ async def handle_event(protocol: T_BotProtocol, raw_event: Dict):
 
     if has_running:
         # 这个是全局的，不管有多少个propagation group，只要有一个指令在运行，就不会再执行其他指令
-        logger.info(f"存在运行中的指令 <lc>{disordered_class_command_handler[3]}</lc>，继续执行该指令")
+        logger.info(f"存在运行中的指令 <lc>{disordered_class_command_handler[4]}</lc>，继续执行该指令")
         disordered_handlers.add(disordered_class_command_handler)
         event_dispatch_metadata.command_dispatch_handler = (
             disordered_class_command_handler
@@ -412,7 +412,7 @@ async def get_relevant_class_handlers(
 
     if not class_handler_names:
         logger.info(
-            f"<lc>{event_meta.conversation_type}</lc> 模式的 <lc>{event_meta.source_id}</lc> 尚未注册class_handler"
+            f"<lc>{event_meta.conversation_type}</lc> 模式的 <lc>{event_meta.source_id}</lc> 尚未注册 <lc>class_handler</lc>"
         )
         return set()
 

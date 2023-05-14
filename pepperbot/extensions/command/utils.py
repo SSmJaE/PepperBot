@@ -3,11 +3,19 @@ from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, Tuple
 
 from devtools import debug, pformat
 
+from pepperbot.adapters.onebot.event import construct_chain
 from pepperbot.core.message.chain import MessageChain
 from pepperbot.core.message.segment import At, T_SegmentInstance, Text
+from pepperbot.core.route.available import check_available
 from pepperbot.extensions.log import debug_log, logger
 from pepperbot.store.command import CommandConfig
-from pepperbot.store.meta import get_bot_id
+from pepperbot.store.event import EventMetadata
+from pepperbot.store.meta import (
+    class_command_config_mapping,
+    class_command_mapping,
+    get_bot_id,
+)
+from pepperbot.types import T_DispatchHandler
 
 
 def merge_text_by_space(*texts: Text) -> Text:
@@ -235,3 +243,113 @@ def meet_command_exit(chain: MessageChain, command_config: CommandConfig):
             return True
 
     return False
+
+
+# running_command_mapping: Dict[T_BotProtocol, config_id] = {}
+
+
+async def has_running_command(
+    event_meta: EventMetadata, class_command_config_ids: Set[str]
+) -> tuple[bool, T_DispatchHandler]:
+    # TODO 直接设置正在running的指令，不需要再去数据库中查询
+    # 针对per 消息来源
+
+    from pepperbot.extensions.command.handle import get_command_status
+
+    for class_command_config_id in class_command_config_ids:
+        class_command_config_cache = class_command_config_mapping[
+            class_command_config_id
+        ]
+        command_name = class_command_config_cache.class_command_name
+        command_config = class_command_config_cache.command_config
+
+        # 判断时，获取/新建一次status，之后run时又一次，可能导致出现两个status，一个running，一个false
+        status, created = await get_command_status(
+            event_meta, command_name, command_config
+        )
+        # if not created:
+
+        # pointer = status.pointer
+        if status.running:
+            return True, (
+                class_command_config_cache.command_config.propagation_group,
+                class_command_config_cache.command_config.priority,
+                class_command_config_cache.command_config.concurrency,
+                "class_commands",
+                class_command_config_id,
+            )
+        # if pointer != "initial":
+
+    return False, ("", 0, False, "class_commands", "")
+
+
+async def find_first_available_command(
+    ordered_command_handlers: List[T_DispatchHandler],
+    event_metadata: EventMetadata,
+) -> Tuple[bool, T_DispatchHandler]:
+    """只有没有running的指令时，才会执行这个函数"""
+
+    from pepperbot.extensions.command.handle import construct_command_kwargs
+
+    for (
+        propagation_group,
+        priority,
+        concurrency,
+        handler_type,
+        class_command_config_id,
+    ) in ordered_command_handlers:
+        class_command_config_cache = class_command_config_mapping[
+            class_command_config_id
+        ]
+        command_name = class_command_config_cache.class_command_name
+        command_config = class_command_config_cache.command_config
+
+        meet_prefix, prefix_with_alias, prefix, alias = meet_command_prefix(
+            await construct_chain(event_metadata),
+            command_name,
+            command_config,
+        )
+
+        class_command_cache = class_command_mapping[command_name]
+        command_method_mapping = class_command_cache.command_method_mapping
+        command_method_cache = command_method_mapping["initial"]
+
+        # 先判断是否满足前缀，在判断available，
+        # 1.因为判断前缀性能开销比较小，失败的话，直接就不用判断available了
+        # 2.checker的参数中，需要有prefix_with_alias，所以需要先判断前缀
+
+        if not meet_prefix:
+            logger.info(f"该事件不满足指令 {command_name} {class_command_config_id} 的执行条件")
+            # logger.info(f"<y>{chain.pure_text}</y> 不满足指令 <lc>{command_name}</lc> 的执行条件")
+            continue
+
+        else:
+            # TODO 优化一下这里的性能，不要重复构造这么多次chain、sender之类
+            # 可以直接在handle_event够构造，全局使用
+            # class_handle也是，现在是每个event_handler中，如果用到了chain，都会重新构造一次
+            command_kwargs = await construct_command_kwargs(
+                event_metadata, class_command_config_id, lambda: None, False
+            )
+
+            # TODO 现在的实现，initial会触发两次available检查
+            available = await check_available(
+                command_method_cache.method, command_kwargs, is_class=False
+            )
+            if not available:
+                logger.info(
+                    f"该事件不满足指令 {command_name} {class_command_config_id} 的available校验"
+                )
+                continue
+
+            # TODO 应该不存在重复的config_id的可能性
+            # 哪怕class相同、priority相同，只要调用了多次as_command，则config_id一定不同
+            # 如果只调用了一次as_command，那只会出现一次config_id
+            return True, (
+                propagation_group,
+                priority,
+                concurrency,
+                handler_type,
+                class_command_config_id,
+            )
+
+    return False, ("", 0, False, "class_commands", "__does_not_exist__")

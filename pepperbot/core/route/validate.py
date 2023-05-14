@@ -1,32 +1,27 @@
-from ast import Call
 import ast
 import inspect
-import keyword
 import re
 import textwrap
 from typing import Any, Callable, Dict, List, Sequence, Set, Union, get_args, get_origin
 
 from devtools import debug
+
 from pepperbot.adapters.keaimao import KeaimaoAdapter
-from pepperbot.adapters.keaimao.event import KeaimaoEvent
 from pepperbot.adapters.onebot import OnebotV11Adapter
-from pepperbot.adapters.onebot.event import OnebotV11Event
 from pepperbot.adapters.telegram import TelegramAdapter
-from pepperbot.adapters.telegram.event import TelegramEvent
 from pepperbot.adapters.universal import UniversalAdapter
-from pepperbot.adapters.universal.event import UniversalEvent
 from pepperbot.core.event.universal import ALL_PROTOCOL_EVENT_NAMES
 from pepperbot.exceptions import InitializationError
-from pepperbot.extensions.command.handle import (
-    COMMAND_DEFAULT_KWARGS,
-    LIFECYCLE_WITHOUT_PATTERNS,
+from pepperbot.extensions.command.constant import (
     COMMAND_COMMON_KWARGS,
+    COMMAND_DEFAULT_KWARGS,
 )
+from pepperbot.extensions.command.handle import LIFECYCLE_WITHOUT_PATTERNS
 from pepperbot.store.command import PATTERN_ARG_TYPES, TemporaryPatternArg
 from pepperbot.store.event import EventHandlerKwarg
+from pepperbot.store.meta import command_relations_cache
 from pepperbot.types import COMMAND_CONFIG
 from pepperbot.utils.common import get_own_methods
-from pepperbot.store.meta import command_relations_cache
 
 
 def is_valid_class_handler(class_handler: object):

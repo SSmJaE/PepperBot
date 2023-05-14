@@ -12,6 +12,7 @@ from pepperbot.utils.common import get_class_name_from_method
 
 __all__ = (
     "as_command",
+    "sub_command",
     "CLIArgument",
     "CLIOption",
 )
