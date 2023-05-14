@@ -24,6 +24,7 @@ from typing import (
 from uuid import uuid4
 
 import ormar
+from apscheduler.job import Job
 from pydantic import BaseModel, Field
 from typing_extensions import get_args
 
@@ -283,7 +284,7 @@ class ClassCommandStatus(ormar.Model):
 
     id: int = cast(int, ormar.Integer(primary_key=True))
 
-    command_name = cast(str, ormar.String(max_length=50))
+    command_name: str = cast(str, ormar.String(max_length=50))
     config_id: str = cast(str, ormar.String(max_length=50))
     protocol: T_BotProtocol = cast(T_BotProtocol, ormar.String(max_length=50))
     conversation_type: str = cast(str, ormar.String(max_length=50))
@@ -303,3 +304,10 @@ class ClassCommandStatus(ormar.Model):
     last_updated_time: float = cast(float, ormar.Float(default=time.time))
     """ 用来判断timeout """
     timeout: int = cast(int, ormar.Integer())
+
+
+command_timeout_jobs: Dict[int, Job] = {}
+""" 
+
+{ command_status_id : job }
+ """
