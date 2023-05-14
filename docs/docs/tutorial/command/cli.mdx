@@ -2,12 +2,6 @@
 title: 命令行式指令
 ---
 
-:::warning
-
-本文档正在编写中
-
-:::
-
 基于`argparse`，`PepperBot`将经典的命令行指令，移植到了机器人的世界中，使得机器人的指令更加灵活、易用
 
 而且，`PepperBot`支持将任意的`消息片段`作为参数，而不仅仅局限于`纯文本`
@@ -41,64 +35,435 @@ async def initial(self, sender: CommandSender, image_result: Image = CLIArgument
 
 ## 参数定义
 
-```python
-from pepperbot.extensions.command import CLIArgument, CLIOption
+### Positional(位置) 参数、Optional 参数
 
+什么是`Positional(位置) 参数`？
+
+比如`git clone <repo>`，`repo`就是`Positional(位置) 参数`
+
+什么是`Optional 参数`？
+
+比如`git clone <repo> --branch <branch>`，`branch`就是`Optional 参数`
+
+### 定义参数
+
+在`PepperBot`中，我们通过`CLIArgument`和`CLIOption`来定义`Positional(位置) 参数`和`Optional 参数`
+
+```python
+from pepperbot.store.command import CLIArgument, CLIOption
+
+class GitCommand:
+    async def initial(self, sender: CommandSender, repo:str= CLIArgument()):
+        pass
+
+    @sub_command()
+    async def clone(self, sender: CommandSender, repo:str= CLIArgument(), branch:str= CLIOption()):
+        pass
 ```
 
-### Positional 参数、Optional 参数
+### 参数的类型
 
---long -S
+在开头，我们展示了用图片(Image)作为类型的例子
 
-### 类型注解
+事实上，定义类型就是这么简单，只要提供一个类型注解即可
 
-Optional
+```python
+class GitCommand:
+    async def initial(self, sender: CommandSender, repo:str= CLIArgument()):
+        pass
+```
 
-List
+具体有哪些可用的类型？可以参考[消息片段](../event/message_segment.md)
+
+除此之外，还可以设置`bool`、`int`、`float`等类型
+
+```python
+repo:bool= CLIArgument()
+repo:int= CLIArgument()
+repo:float= CLIArgument()
+```
+
+当为这三种类型时，`PepperBot`会自动将用户输入的参数转换为对应的类型
+
+也可以设置`Any`类型，这样，用户输入的参数就会原样返回
+
+```python
+class TestCommand:
+    async def initial(self, sender: CommandSender, any_type:Any= CLIArgument()):
+        if type(any_type) in (str, int, float,bool):
+            await sender.send_message(Text(f"你输入的参数为 {any_type}"))
+        else:
+            await sender.send_message(
+                Text(f"你输入的参数为 "),
+                any_type, # 此时是消息片段，可以直接发送
+            )
+
+        return self.initial
+```
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test 123",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "你输入的参数为 123",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test 123.456",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "你输入的参数为 123.456",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test true",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "你输入的参数为 True",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test [图片]",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "你输入的参数为 [图片]",
+        },
+    ]}
+/>
+
+### 参数的数量
+
+可以通过提供`List`类型，来标注该参数可以接受多个参数(至少 1 个，如果是必选参数)
+
+```python
+class TestCommand:
+    async def initial(self, sender: CommandSender, list_arguments:List[str]= CLIArgument()):
+        result = "_".join(list_arguments)
+        await sender.send_message(Text(f"你输入的参数为 {list_arguments}"))
+
+        return self.initial
+```
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test 123",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "你输入的参数为 123",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test 123 456 789",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "你输入的参数为 123_456_789",
+        },
+    ]}
+/>
+
+### 可选、必选、默认值
+
+对于一个命令行指令，一般来说，`Positional(位置) 参数`都是必选的，而`Optional 参数`都是可选的
+
+在`PepperBot`中，你可以实现可选的`Positional(位置) 参数`，也可以实现必选的`Optional 参数`
+
+但是一般还是建议按照惯例来
+
+那么，具体如何实现呢？
+
+通过`Optional`类型注解
+
+```py
+# 必选的Positional(位置) 参数
+repo:str= CLIArgument()
+
+# 可选的Positional(位置) 参数
+repo:Optional[str]= CLIArgument()
+
+# 必选的Optional 参数
+branch:str= CLIOption()
+
+# 可选的Optional 参数
+branch:Optional[str]= CLIOption()
+```
+
+这个可以和 List 结合使用
+
+```py
+repo :Optional[List[str]]= CLIArgument()
+```
+
+如果设置了`Optional`，那么就可以顺便为参数设置默认值
+
+```py
+class GitCommand:
+    async def clone(self, branch:Optional[str]= CLIOption(default="master")):
+        pass
+```
+
+默认值可以是一个函数，可以返回动态的默认值
+
+```py
+def random_branch():
+    return random.choice(["master", "dev", "test"])
+
+class GitCommand:
+    async def clone(self, branch:Optional[str]= CLIOption(default=random_branch)):
+        pass
+```
+
+### Optional 参数的缩写
+
+命令行指令中，经常可以看到这样的缩写
+
+```bash
+git clone -b master
+```
+
+这里的`-b`就是`branch`的缩写
+
+那么，如何实现这样的缩写呢？
+
+```py
+class GitCommand:
+    async def clone(self, branch:Optional[str]= CLIOption(short_name="b")):
+        pass
+```
+
+### 用户输入参数的格式
 
 参数格式有两点要求
 
--   参数数量要和定义了的`PatternArg`数量一致
--   参数类型要和对应位置的`PatternArg`一致
+-   参数数量要和定义了的命令行参数的数量一致，所以必选的参数必须要有，可选的参数可以没有
+-   参数类型要和对应参数一致
 
 比如这样的定义
 
 ```py
-async def choose_game(self, game: str = PatternArg(), sender: CommandSender, npc : int = PatternArg()):
-    sender.send_message(Text(f"你选择的是 {game} 的 {npc}，需要查询他的什么装备呢？稀有度为何？"))
+class TestCommand:
+    async def choose_game(self, game: str = CLIArgument(), sender: CommandSender, npc : int = CLIArgument()):
+        sender.send_message(Text(f"你选择的是 {game} 的 {npc}，需要查询他的什么装备呢？稀有度为何？"))
 ```
 
 我们定义了两个参数，第一个参数为 game，字符串类型，第二个参数为 npc，是 int 类型
 
-可以看到，我们在统计参数的时候，跳过了`sender`这样的保留参数，只统计了默认值为`PatternArg()`的参数
+可以看到，我们在统计参数的时候，跳过了`sender`这样的保留参数，只统计了默认值为`CLIArgument()`(或者`CLIOption`)的参数
 
 用户输入参数时的顺序，应该和定义的顺序一致，比如，第一个参数因为`game`，第二个参数为`npc`
 
 如果用户输入的参数的类型，与我们定义的不一致，比如
 
-```py
-"某游戏 某人物"
-```
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test 某游戏 某人物",
+        },
+    ]}
+/>
 
 这里，npc 应该为 int 类型，而我们提供的是字符串"某人物"，那么，当 PepperBot 试图将字符串"某人物"转换为 int 类型时，自然会失败
 
 在 PepperBot 中，当用户的输入不符合要求时，会自动发送格式提示，比如
 
-```py
-" <str : xxx>
-```
-
-### 可选、必选、默认值
+<Conversation
+    messages={[
+        {
+            position: "left",
+            sender: "bot",
+            message: "Usage: ",
+        },
+    ]}
+/>
 
 ## 子指令
 
+什么是子指令(命令)？
+
+比如最常见的 `git`，直接`git`，此时，`git`就是根指令(root command，或者理解为，最上层/最顶层的指令)
+
+而`git commit`、`git clone`中的`commit`、`clone`就是子指令(sub command)
+
+这是 2 层嵌套的情况，如果 3 层、4 层又会是什么样的情况呢？
+
+```sh
+git commit level3
+git commit level3 level4
+```
+
+### 如何实现子指令
+
+通过`sub_command`装饰器
+
+```py
+from pepperbot.extensions.command import sub_command
+
+@as_command()
+class GitCommand:
+    async def initial(self, sender: CommandSender):
+        pass
+
+    @sub_command() # 或者 @sub_command(initial)
+    async def commit(self):
+        pass
+
+    @sub_command(commit)
+    async def level3(self):
+        pass
+```
+
+通过这样的定义，我们实现了 3 层嵌套的子指令
+
+```
+- git
+    - commit
+        - level3
+```
+
 ### 子指令的别名
+
+有时候，我们希望实际解析时，使用的指令名和定义的 method 不一致，可以这样实现
+
+```py
+class GitCommand:
+    async def initial(self, sender: CommandSender):
+        pass
+
+    @sub_command(name="commit")
+    async def another_name(self):
+        pass
+```
 
 ### 子指令的调度逻辑
 
+对于嵌套指令，`PepperBot`只会执行最底层的指令，比如
+
+```py
+@as_command()
+class GitCommand:
+    async def initial(self, sender: CommandSender):
+        await sender.send_message(Text("git"))
+
+        return self.initial
+
+    @sub_command() # 或者 @sub_command(initial)
+    async def commit(self, sender: CommandSender):
+        await sender.send_message(Text("commit"))
+
+        return self.initial
+
+
+    @sub_command(commit)
+    async def level3(self, sender: CommandSender):
+        await sender.send_message(Text("level3"))
+
+        return self.initial
+```
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/git",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "git",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "/git commit",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "commit",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "/git commit level3",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "level3",
+        },
+    ]}
+/>
+
+### 不能返回子指令
+
+在[指令的状态](./state.md)，我们提到，可以返回一个`method`，作为下次用户交互时被调用的方法
+
+`PepperBot`不允许返回子指令，只允许返回最顶层的指令(root command)
+
+比如上方的例子，`commit`和`level3`都是子指令，不允许返回，只允许返回`initial`
+
 ### 在子指令中，获取父指令的参数
 
-### 不要太“聪明”
+一般来说，对于每一级指令，都可以实现可选参数，[一般不实现位置参数](#不要太聪明)
+
+```sh
+git --x xxx commit --y yyy any --z zzz
+```
+
+比如现在有三级指令，`git`、`commit`、`any`，各自都有自己的位置参数`--x`、`--y`、`--z`
+
+假设我这样定义了指令
+
+```py
+@as_command()
+class GitCommand:
+    async def initial(self, sender: CommandSender, x: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command()
+    async def commit(self, sender: CommandSender, y: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command(commit)
+    async def any(self, sender: CommandSender, z: Optional[str] = CLIOption(), context: Dict):
+        pass
+```
+
+`PepperBot`会将父指令的参数，都注入到`context`中的`cli_arguments`中，比如
+
+```py
+{
+    "cli_arguments": {
+        "x": "xxx",
+        "y": "yyy",
+    }
+}
+```
 
 ## 帮助信息
 
@@ -106,7 +471,183 @@ async def choose_game(self, game: str = PatternArg(), sender: CommandSender, npc
 
 ### 针对“子指令”的帮助信息
 
-<!--
-如果没能满足要求，也就是没有通过参数校验这一关，那么，指令并没有开始会话，该指令并不视为执行状态，自然，`history`中，也就没有该次，用户发送的消息
+## 不要太“聪明”
 
-再次强调，只有成功通过参数校验的`handler`，用户发送的消息才会被注入`history`，这样实现，是为了降低心智负担，即，出现在`history`中的消息，都是满足要求的，和我们自己定义的，不出错时，逻辑的执行顺序是一致的 -->
+### 不要同时实现`可选的位置参数`和`子指令`
+
+为什么？因为`argparse`中，`子指令`的本质，就是`可选的位置参数`
+
+假设我们实现了一个`可选的位置参数`，同时实现了一个`子指令`，也就是说，我们现在有两个`可选的位置参数`了
+
+```py
+class GitCommand:
+    async def initial(self, x: Optional[str] = CLIArgument()):
+        pass
+
+    @sub_command()
+    async def commit(self):
+        pass
+
+```
+
+这种情况，`argparse`无法处理，因为它无法判断，用户输入的参数，是属于哪个`可选的位置参数`的
+
+如果我们非要实现这样的效果呢？可以用`Option参数`来模拟，`argparse`可以正常处理可选的`Option参数`
+
+```py
+class GitCommand:
+    async def initial(self, sender: CommandSender, x: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command()
+    async def commit(self, sender: CommandSender, y: Optional[str] = CLIOption()):
+        pass
+
+```
+
+此时，我们既可以
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/git commit",
+        },
+    ]}
+/>
+
+也可以
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/git --x xxx commit",
+        },
+    ]}
+/>
+
+事实上，常见的命令行指令，比如`git`，`docker`，都没有在父指令中，实现`可选的位置参数`，有实现，也是在最底层的指令中
+
+主流的选择，就是只在父指令中，实现可选的`Option参数`
+
+### 不建议在一个指令中，实现多个 root command
+
+```py
+class MultiTopLevel:
+    async def initial(self, initial_optional: Optional[str] = CLIOption()):
+
+        return self.another
+
+    @sub_command(initial)
+    async def a(self, sender: CommandSender, context: Dict):
+        parent_argument = context["cli_arguments"]["initial_optional"]
+        await sender.send_message(Text(f"a {parent_argument}"))
+
+        return self.another
+
+
+    @sub_command(initial)
+    async def b(self):
+        return self.another
+
+
+    async def another(self, another_optional: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command(another)
+    async def c(self, sender: CommandSender, context: Dict):
+        parent_argument = context["cli_arguments"]["another_optional"]
+        await sender.send_message(Text(f"c {parent_argument}"))
+
+    @sub_command(another)
+    async def d(self):
+        pass
+```
+
+<Conversation
+    messages={[
+        {
+            position: "right",
+            sender: "用户",
+            message: "/test --initial_optional abcde a",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "a abcde",
+        },
+        {
+            position: "right",
+            sender: "用户",
+            message: "--another_optional 12345 c",
+        },
+        {
+            position: "left",
+            sender: "bot",
+            message: "c 12345",
+        },
+    ]}
+/>
+
+在上方的例子中，我们实现了两个`root command`，`initial`和`another`
+
+并且，`initial`返回`another`
+
+从模拟调用中，我们可以看到，第一次执行时，此时的`root command`是`initial`，所以我们可以调用`a`和`b`
+
+第二次执行时，此时的`root command`是`another`，所以我们可以调用`c`和`d`
+
+虽然确实可能有这样的使用场景，但是不建议在一个指令中，实现多个`root command`，因为这样会导致代码的可读性变差，而且有点烧脑
+
+那么建议怎么用呢？
+
+只实现一个有子指令的`root command`，其他 root command，不实现子指令，只利用命令行的参数解析能力，来自动解析参数
+
+```py
+class MultiTopLevel:
+    async def initial(self, sender: CommandSender, x: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command(initial)
+    async def a(self, sender: CommandSender):
+        await sender.send_message(Text("a"))
+
+    @sub_command(initial)
+    async def b(self):
+        pass
+
+    async def another(self, sender: CommandSender, y: Optional[str] = CLIOption()):
+        pass
+
+```
+
+如果想实现多个`root command`，可以拆分成多个指令
+
+```py
+class Command1:
+    async def initial(self, sender: CommandSender, x: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command(initial)
+    async def a(self, sender: CommandSender):
+        await sender.send_message(Text("a"))
+
+    @sub_command(initial)
+    async def b(self):
+        pass
+
+class Command2:
+    async def initial(self, sender: CommandSender, y: Optional[str] = CLIOption()):
+        pass
+
+    @sub_command(initial)
+    async def c(self, sender: CommandSender):
+        await sender.send_message(Text("c"))
+
+    @sub_command(initial)
+    async def d(self):
+        pass
+```
