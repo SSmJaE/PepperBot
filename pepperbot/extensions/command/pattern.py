@@ -659,7 +659,9 @@ async def parse_pattern(
     splitted_args = without_prefix.split()
 
     try:
-        args = parser.parse_args(splitted_args)
+        # args = parser.parse_args(splitted_args)
+        args, unknown_args = parser.parse_known_args(splitted_args)
+
         args_dict = vars(args)
 
         # debug(args_dict)
