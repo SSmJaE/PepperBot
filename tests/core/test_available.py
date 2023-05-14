@@ -1,8 +1,4 @@
 class TestAvailable:
-    async def test_root_validator(self):
-        """测试根验证器"""
-        pass
-
     async def test_class_handler(self):
         """测试类处理器"""
         pass

@@ -2,22 +2,13 @@ import asyncio
 import contextlib
 import pytest
 
-from typing import Any
-from devtools import debug
+from typing import Any, Optional, cast
 import pytest
-from pytest_mock import MockerFixture
-from capabilities.pepperbot_gpt_example.src.config import GPTExampleConfig
-from capabilities.pepperbot_gpt_example.src.main import GPTExample, GPTManage
-from pepperbot.core.api.api_caller import ApiCaller
-from pepperbot.core.event.handle import handle_event
-from pepperbot.core.message.segment import Image
-from pepperbot.extensions.command import as_command
-from pepperbot.initial import PepperBot
-from pepperbot.store.meta import BotRoute, get_onebot_caller, onebot_event_meta
-from pepperbot.store.orm import engine, metadata, set_metadata
+from pepperbot.store.meta import onebot_event_meta
+from pepperbot.store.orm import engine, metadata, database
 from pepperbot.config import global_config
 import os
-import sys
+
 
 from unittest.mock import patch
 
@@ -37,20 +28,33 @@ def event_loop():
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_environment():
-    global_config.logger.level = 10
     # debug(global_config)
+
+    global_config.logger.level = 10
 
     onebot_event_meta.has_skip_buffered_event = True
 
-    db_path = global_config.database.url.split("///")[1]
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    db_path: Optional[str] = None
+
+    if "sqlite" in global_config.database.url:
+        db_path = global_config.database.url.split("///")[1]
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+    else:
+        if not database.is_connected:
+            await database.connect()
 
     metadata.create_all(engine)
 
     yield
 
-    os.remove(db_path)
+    if "sqlite" in global_config.database.url:
+        os.remove(cast(str, db_path))
+
+    else:
+        if database.is_connected:
+            await database.disconnect()
 
 
 @pytest.fixture(scope="function")
@@ -67,7 +71,7 @@ async def reset_database():
     # metadata.drop_all(engine)
 
 
-results = []
+api_results = []
 
 
 def new_caller(self, action: str, kwargs: dict[str, Any]):
@@ -75,7 +79,7 @@ def new_caller(self, action: str, kwargs: dict[str, Any]):
         return {"user_id": "123456789", "nickname": "测试机器人"}
 
     else:
-        results.append((action, kwargs))
+        api_results.append((action, kwargs))
 
 
 @pytest.fixture(scope="class")
@@ -92,4 +96,4 @@ def patch_api_caller():
 def reset_api_results():
     yield
 
-    results.clear()
+    api_results.clear()

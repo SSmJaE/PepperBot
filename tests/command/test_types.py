@@ -18,11 +18,12 @@ types = [
 ]
 
 
-def test_type():
-    for type_ in types:
-        container_type = get_origin(type_)  # None，如果没有
-        element_types = get_args(type_)  # 如果没有容器，则为空tuple
+class TestTypeParse:
+    def test_type(self):
+        for type_ in types:
+            container_type = get_origin(type_)  # None，如果没有
+            element_types = get_args(type_)  # 如果没有容器，则为空tuple
 
-        debug(type_, container_type, element_types)
+            debug(type_, container_type, element_types)
 
-    assert False == True
+    # assert False == True

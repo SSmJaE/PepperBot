@@ -11,7 +11,7 @@ from pepperbot.extensions.command.sender import CommandSender
 from pepperbot.initial import PepperBot
 from pepperbot.store.command import ClassCommandStatus, CLIArgument, CLIOption
 from pepperbot.store.meta import BotRoute
-from tests.conftest import results
+from tests.conftest import api_results
 from tests.utils import fake_group_event
 
 
@@ -371,6 +371,7 @@ async def setup_routes():
         backend_protocol="http",
         backend_host="127.0.0.1",
         backend_port=5700,
+        receive_uri="test_sub_command",
     )
 
     bot.apply_routes(
@@ -440,12 +441,12 @@ class TestSubCommand:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == "initial"
 
-        results.clear()
+        api_results.clear()
 
         for command in given_relations.keys():
             await handle_event(
@@ -460,8 +461,8 @@ class TestSubCommand:
                 ),
             )
 
-            action = results[0][0]
-            content = results[0][1]["message"][0]["data"]["text"]
+            action = api_results[0][0]
+            content = api_results[0][1]["message"][0]["data"]["text"]
 
             assert action == "send_group_msg"
             assert content == (
@@ -470,7 +471,7 @@ class TestSubCommand:
                 else command.replace("_command", "")
             )
 
-            results.clear()
+            api_results.clear()
 
             for sub_command in given_relations[command]:
                 await handle_event(
@@ -485,8 +486,8 @@ class TestSubCommand:
                     ),
                 )
 
-                action = results[0][0]
-                content = results[0][1]["message"][0]["data"]["text"]
+                action = api_results[0][0]
+                content = api_results[0][1]["message"][0]["data"]["text"]
 
                 assert action == "send_group_msg"
                 assert content == (
@@ -495,7 +496,7 @@ class TestSubCommand:
                     else sub_command.replace("_command", "")
                 )
 
-                results.clear()
+                api_results.clear()
 
     async def test_multi_top_level_dispatch(self):
         """测试多个顶层command的情况
@@ -522,14 +523,14 @@ class TestSubCommand:
 
             # assert True == False
 
-            debug(results)
+            debug(api_results)
 
-            action = results[0][0]
-            content = results[0][1]["message"][0]["data"]["text"]
+            action = api_results[0][0]
+            content = api_results[0][1]["message"][0]["data"]["text"]
 
             assert action == "send_group_msg" and content == root_command
 
-            results.clear()
+            api_results.clear()
 
             for level2_command_name, level3_commands in level2_commands.items():
                 await handle_event(
@@ -544,13 +545,13 @@ class TestSubCommand:
                     ),
                 )
 
-                action = results[0][0]
-                content = results[0][1]["message"][0]["data"]["text"]
+                action = api_results[0][0]
+                content = api_results[0][1]["message"][0]["data"]["text"]
 
                 assert action == "send_group_msg"
                 assert content == level2_command_name
 
-                results.clear()
+                api_results.clear()
 
                 for level3_command in level3_commands:
                     # 此时会触发调度，因为return了下一步的method name
@@ -566,13 +567,13 @@ class TestSubCommand:
                         ),
                     )
 
-                    action = results[0][0]
-                    content = results[0][1]["message"][0]["data"]["text"]
+                    action = api_results[0][0]
+                    content = api_results[0][1]["message"][0]["data"]["text"]
 
                     assert action == "send_group_msg"
                     assert content == level3_command
 
-                    results.clear()
+                    api_results.clear()
 
     @pytest.mark.parametrize("help_command", ["-h", "--help"])
     async def test_help_trigger(self, help_command):
@@ -612,8 +613,8 @@ class TestSubCommand:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and "Usage: NestCommand" in content
 
@@ -634,12 +635,12 @@ class TestSubCommand:
                 ),
             )
 
-            action = results[0][0]
-            content = results[0][1]["message"][0]["data"]["text"]
+            action = api_results[0][0]
+            content = api_results[0][1]["message"][0]["data"]["text"]
 
             assert action == "send_group_msg" and f"Usage: {command}" in content
 
-            results.clear()
+            api_results.clear()
 
             for sub_command in relations[command]:
                 await handle_event(
@@ -654,12 +655,12 @@ class TestSubCommand:
                     ),
                 )
 
-                action = results[0][0]
-                content = results[0][1]["message"][0]["data"]["text"]
+                action = api_results[0][0]
+                content = api_results[0][1]["message"][0]["data"]["text"]
 
                 assert action == "send_group_msg" and f"Usage: {sub_command}" in content
 
-                results.clear()
+                api_results.clear()
 
     async def test_multi_top_level_help_message(self):
         """对于非initial的根command，可以正常显示帮助信息"""
@@ -766,8 +767,8 @@ class TestSubCommand:
 
             # debug(results)
 
-            action = results[0][0]
-            content = results[0][1]["message"][0]["data"]["text"]
+            action = api_results[0][0]
+            content = api_results[0][1]["message"][0]["data"]["text"]
 
             assert action == "send_group_msg" and content == root_command
 
@@ -775,7 +776,7 @@ class TestSubCommand:
                 f"{root_command}_optional": f"{root_command}_optional_result",
             }.items() <= global_context["injected"].items()
 
-            results.clear()
+            api_results.clear()
             global_context.clear()
 
             for level2_command_name, level3_commands in level2_commands.items():
@@ -792,8 +793,8 @@ class TestSubCommand:
                     ),
                 )
 
-                action = results[0][0]
-                content = results[0][1]["message"][0]["data"]["text"]
+                action = api_results[0][0]
+                content = api_results[0][1]["message"][0]["data"]["text"]
 
                 assert action == "send_group_msg"
                 assert content == level2_command_name
@@ -805,7 +806,7 @@ class TestSubCommand:
                     f"{level2_command_name}_optional": f"{level2_command_name}_optional_result",
                 }.items() <= global_context["injected"].items()
 
-                results.clear()
+                api_results.clear()
                 global_context.clear()
 
                 for level3_command in level3_commands:
@@ -824,8 +825,8 @@ class TestSubCommand:
                         ),
                     )
 
-                    action = results[0][0]
-                    content = results[0][1]["message"][0]["data"]["text"]
+                    action = api_results[0][0]
+                    content = api_results[0][1]["message"][0]["data"]["text"]
 
                     assert action == "send_group_msg"
                     assert content == level3_command
@@ -838,5 +839,5 @@ class TestSubCommand:
                         f"{level3_command}_optional": f"{level3_command}_optional_result",
                     }.items() <= global_context["injected"].items()
 
-                    results.clear()
+                    api_results.clear()
                     global_context.clear()

@@ -9,7 +9,7 @@ from pepperbot.extensions.command.sender import CommandSender
 from pepperbot.initial import PepperBot
 from pepperbot.store.command import CLIArgument
 from pepperbot.store.meta import BotRoute
-from tests.conftest import results
+from tests.conftest import api_results
 from tests.utils import fake_group_event
 
 
@@ -121,6 +121,7 @@ async def setup_routes():
         backend_protocol="http",
         backend_host="127.0.0.1",
         backend_port=5700,
+        receive_uri=f"/test_cli_argument/",
     )
 
     bot.apply_routes(
@@ -169,8 +170,8 @@ class TestCommandArgument:
 
         # debug(results)
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == "test"
 
@@ -192,8 +193,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == file_path
 
@@ -214,8 +215,8 @@ class TestCommandArgument:
 
         # debug(results)
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == "str"
 
@@ -235,8 +236,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == "Image"
 
@@ -256,8 +257,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and "参数解析失败" in content
 
@@ -277,8 +278,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == space_joined
 
@@ -305,8 +306,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == space_joined
 
@@ -324,8 +325,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert (
             action == "send_group_msg" and content == "None"
@@ -353,8 +354,8 @@ class TestCommandArgument:
 
         # debug(results)
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert (
             action == "send_group_msg" and content == "None"
@@ -380,8 +381,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert (
             action == "send_group_msg" and content == default
@@ -409,8 +410,8 @@ class TestCommandArgument:
             ),
         )
 
-        action = results[0][0]
-        content = results[0][1]["message"][0]["data"]["text"]
+        action = api_results[0][0]
+        content = api_results[0][1]["message"][0]["data"]["text"]
 
         assert action == "send_group_msg" and content == space_joined
 
