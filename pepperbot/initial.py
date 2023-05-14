@@ -14,18 +14,18 @@ from pepperbot.core.route.utils import (
     websocket_receiver,
 )
 from pepperbot.exceptions import InitializationError
-from pepperbot.extensions.command.handle import check_command_timeout
+from pepperbot.extensions.command.timeout import check_command_timeout
 from pepperbot.extensions.log import debug_log, logger
 from pepperbot.extensions.scheduler import async_scheduler
-from pepperbot.store.orm import engine, metadata, set_metadata
 from pepperbot.store.meta import (
     DEFAULT_URI,
     BotRoute,
+    api_callers,
     clean_bot_instances,
     output_config,
-    api_callers,
     register_routes,
 )
+from pepperbot.store.orm import database, engine, metadata, set_metadata
 from pepperbot.types import BOT_PROTOCOLS, T_BotProtocol, T_WebProtocol
 
 # from dotenv import load_dotenv
@@ -79,18 +79,23 @@ class PepperBot:
             uri = receive_uri
         else:
             if receive_protocol == "http":
-                # TODO lambda重名问题，动态创建
-                request_handler = lambda request: http_receiver(request, bot_protocol)
                 uri = DEFAULT_URI[bot_protocol] + "/http"
 
             elif receive_protocol == "websocket":
-                request_handler = lambda request, ws: websocket_receiver(
-                    request, ws, bot_protocol
-                )
                 uri = DEFAULT_URI[bot_protocol] + "/ws"
 
             else:
                 raise InitializationError(f"未知通信协议 {receive_protocol}")
+
+        if receive_protocol == "http":
+            # TODO lambda重名问题，动态创建
+            # 这个此时是receive_uri重复，可以在文档中说明
+            request_handler = lambda request: http_receiver(request, bot_protocol)
+
+        elif receive_protocol == "websocket":
+            request_handler = lambda request, ws: websocket_receiver(
+                request, ws, bot_protocol
+            )
 
         create_web_routes(
             sanic_app,
@@ -184,6 +189,11 @@ class PepperBot:
         logger.success(f"PepperBot successfully create bot routes")
         # output_config()
         # debug(per_worker)
+
+        # https://collerek.github.io/ormar/fastapi/#database-connection
+        if "sqlite" not in global_config.database.url:
+            if not database.is_connected:
+                await database.connect()
 
         # 必须放到最后，等model都定义好了再执行
         # note that this has to be the same metadata that is used in ormar Models definition
