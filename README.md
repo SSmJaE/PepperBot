@@ -12,6 +12,10 @@
 
 <p align="center">
 <img src="./archive/coverage-badge.svg" />
+<img src="https://badge.fury.io/py/pepperbot.svg" />
+<img src="https://img.shields.io/badge/python-3.8+-blue.svg" />
+<img src="https://static.pepy.tech/badge/pepperbot/month" />
+
 </p>
 
 ## 生而跨平台
@@ -52,7 +56,8 @@
 
 ## 测试文档全
 
-- 通过元编程(AST 之类)手段，对编写的各种代码进行规则检查，并输出易于理解的错误信息，将问题消灭在框架启动之前
+- 自带linter
+  - 通过元编程(AST 之类)手段，对编写的各种代码进行规则检查，并输出易于理解的错误信息，将问题消灭在框架启动之前
 - 文档比较全
 - 测试覆盖比较全面
 - 大量官方示例/指令
@@ -60,7 +65,7 @@
 
 ## 安装
 
-目前只能3.10及以上，因为用了点新特性，之后会恢复对3.8的支持
+TODO 目前只能3.10及以上，因为用了点新特性，之后会恢复对3.8的支持
 
 ```bash
 pip install pepperbot
@@ -116,8 +121,10 @@ class WhateverNameYouWant:
 
 ## 生态
 
+[插件市场](https://ssmjae.github.io/PepperBot/market/)
+
 ### 可以记忆上下文的GPT群聊机器人
 
-[PepperBot-GPT]( )
+[pepperbot-ai-query](https://github.com/SSmJaE/PepperBot/tree/master/capabilities/pepperbot_gpt_example )
 
 ### 通过GPT，自动检测群聊中的广告信息
