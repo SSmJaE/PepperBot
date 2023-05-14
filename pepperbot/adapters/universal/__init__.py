@@ -1,3 +1,4 @@
+from typing import cast
 from pepperbot.adapters.onebot.event import OnebotV11Event
 from pepperbot.adapters.universal.event import UniversalEvent
 from pepperbot.core.event.base_adapter import BaseAdapter
@@ -10,6 +11,11 @@ events: list[ProtocolEvent] = [getattr(UniversalEvent, attr) for attr in own_att
 
 
 class UniversalAdapter(BaseAdapter):
+    kwargs_mapping = {
+        cast(str, event.protocol_event_name): event.keyword_arguments
+        for event in events
+    }
+
     all_events = events
     meta_events = filter_event_by_type(events, ("meta",))
     notice_events = filter_event_by_type(events, ("notice",))
