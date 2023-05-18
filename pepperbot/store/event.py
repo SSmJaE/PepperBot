@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional, Sequence, Set
+from typing import Any, List, Literal, Optional, Sequence, Set
 from pydantic import BaseModel
 
 from pepperbot.types import T_BotProtocol, T_ConversationType, T_DispatchHandler
@@ -40,7 +40,7 @@ class ProtocolEvent(BaseModel):
 
 def filter_event_by_type(
     events: Sequence[ProtocolEvent], target_event_types: Sequence[T_EventType]
-) -> list[ProtocolEvent]:
+) -> List[ProtocolEvent]:
     results: Set[ProtocolEvent] = set()
 
     for event in events:

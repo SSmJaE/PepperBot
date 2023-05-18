@@ -5,19 +5,19 @@ from pepperbot.types import T_ConversationType
 
 
 class BaseAdapter:
-    kwargs_mapping: dict[str, Sequence[EventHandlerKwarg]]
+    kwargs_mapping: Dict[str, Sequence[EventHandlerKwarg]]
 
     all_events: List[ProtocolEvent]
-    all_event_names: list[str]
+    all_event_names: List[str]
 
     meta_events: List[ProtocolEvent]
-    meta_event_names: list[str]
+    meta_event_names: List[str]
     notice_events: List[ProtocolEvent]
-    notice_event_names: list[str]
+    notice_event_names: List[str]
     request_events: List[ProtocolEvent]
-    request_event_names: list[str]
+    request_event_names: List[str]
     message_events: List[ProtocolEvent]
-    message_event_names: list[str]
+    message_event_names: List[str]
 
     private_events: List[ProtocolEvent]
     group_events: List[ProtocolEvent]

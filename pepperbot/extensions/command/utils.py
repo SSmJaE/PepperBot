@@ -250,7 +250,7 @@ def meet_command_exit(chain: MessageChain, command_config: CommandConfig):
 
 async def has_running_command(
     event_meta: EventMetadata, class_command_config_ids: Set[str]
-) -> tuple[bool, T_DispatchHandler]:
+) -> Tuple[bool, T_DispatchHandler]:
     # TODO 直接设置正在running的指令，不需要再去数据库中查询
     # 针对per 消息来源
 

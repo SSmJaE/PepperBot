@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from devtools import debug
 from pepperbot.adapters.telegram.event import TelegramEvent
@@ -24,7 +24,7 @@ from pyrogram.types import CallbackQuery, ChatEventFilter, Message
 
 own_attributes = get_own_attributes(TelegramEvent)
 
-events: list[ProtocolEvent] = [getattr(TelegramEvent, attr) for attr in own_attributes]
+events: List[ProtocolEvent] = [getattr(TelegramEvent, attr) for attr in own_attributes]
 
 
 class TelegramAdapter(BaseAdapter):
@@ -106,7 +106,7 @@ class TelegramAdapter(BaseAdapter):
 
         # debug_log(callback_object)
 
-        user_id: Optional[int | str] = None
+        user_id: Optional[Union[int, str]] = None
 
         if isinstance(callback_object, CallbackQuery):
             user_id = callback_object.from_user.id
@@ -224,7 +224,7 @@ def with_handle_event(handle_event: Callable, handler: Callable):
 
     async def wrapper(client, callback_object, *args):
         try:
-            debug(*args)
+            # debug(*args)
             return await handler(client, callback_object, handle_event, *args)
 
         except ContinuePropagation:

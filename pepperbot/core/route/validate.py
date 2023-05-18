@@ -368,7 +368,7 @@ def get_return_identifiers(f: Callable):
     return return_statements
 
 
-def get_all_returned_identifiers(f_list: list[Callable]):
+def get_all_returned_identifiers(f_list: List[Callable]):
     identifiers: Set[str] = set()
 
     for f in f_list:

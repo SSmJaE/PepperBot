@@ -1,4 +1,6 @@
 import asyncio
+import contextvars
+import functools
 import inspect
 from inspect import iscoroutine
 from types import FunctionType
@@ -44,6 +46,13 @@ def get_class_name_from_method(method: Callable) -> str:
     return method.__qualname__.split(".")[0]
 
 
+async def to_thread(func, /, *args, **kwargs):
+    loop = asyncio.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await loop.run_in_executor(None, func_call)
+
+
 async def await_or_sync(obj: Union[Any, FunctionType], *args, **kwargs) -> Any:
     """
     针对bound method，iscoroutine和isawaitable对bound method无效
@@ -66,7 +75,7 @@ async def await_or_sync(obj: Union[Any, FunctionType], *args, **kwargs) -> Any:
     else:
         if callable(obj):
             # debug("sync")
-            result = await asyncio.to_thread(obj, *args, **kwargs)
+            result = await to_thread(obj, *args, **kwargs)
             # loop = asyncio.get_event_loop()
             # with_kwargs = functools.partial(functionOrCoroutine, *args, **kwargs)
 

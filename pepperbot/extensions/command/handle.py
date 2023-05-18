@@ -288,41 +288,44 @@ async def get_command_status(
         protocol=event_metadata.protocol,
     )
 
-    match command_config.interactive_strategy:
-        case "same_source_same_user":  # 群/channel/私聊中，仅对应的用户(自己)可以触发
-            filter_kwargs.update(
-                conversation_type=cast(
-                    T_ConversationType, event_metadata.conversation_type
-                ),
-                conversation_id=event_metadata.source_id,
-                user_id=event_metadata.user_id,
-            )
+    # 群/channel/私聊中，仅对应的用户(自己)可以触发
+    if command_config.interactive_strategy == "same_source_same_user":
+        filter_kwargs.update(
+            conversation_type=cast(
+                T_ConversationType, event_metadata.conversation_type
+            ),
+            conversation_id=event_metadata.source_id,
+            user_id=event_metadata.user_id,
+        )
 
-        case "same_source_any_user":  # 群/channel/私聊中，任意用户(私聊只有一个用户)都可以触发
-            filter_kwargs.update(
-                conversation_type=cast(
-                    T_ConversationType, event_metadata.conversation_type
-                ),
-                conversation_id=event_metadata.source_id,
-                user_id="any",
-            )
+    # 群/channel/私聊中，任意用户(私聊只有一个用户)都可以触发
+    elif command_config.interactive_strategy == "same_source_any_user":
+        filter_kwargs.update(
+            conversation_type=cast(
+                T_ConversationType, event_metadata.conversation_type
+            ),
+            conversation_id=event_metadata.source_id,
+            user_id="any",
+        )
 
-        case "any_source_same_user":  # 跨source锁定用户，不管他是通过群/channel/私聊和bot交互的
-            filter_kwargs.update(
-                conversation_type="any",
-                conversation_id="any",
-                user_id=event_metadata.user_id,
-            )
+    # 跨source锁定用户，不管他是通过群/channel/私聊和bot交互的
+    elif command_config.interactive_strategy == "any_source_same_user":
+        filter_kwargs.update(
+            conversation_type="any",
+            conversation_id="any",
+            user_id=event_metadata.user_id,
+        )
 
-        case "any_source_any_user":  # 所有消息渠道的所有用户都可以触发
-            filter_kwargs.update(
-                conversation_type="any",
-                conversation_id="any",
-                user_id="any",
-            )
+    # 所有消息渠道的所有用户都可以触发
+    elif command_config.interactive_strategy == "any_source_any_user":
+        filter_kwargs.update(
+            conversation_type="any",
+            conversation_id="any",
+            user_id="any",
+        )
 
-        case _:
-            raise ValueError(f"不支持的交互策略 <lc>{command_config.interactive_strategy}</lc>")
+    else:
+        raise ValueError(f"不支持的交互策略 <lc>{command_config.interactive_strategy}</lc>")
 
     debug_log(filter_kwargs, title="获取指令状态的过滤条件")
 

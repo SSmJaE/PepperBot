@@ -3,6 +3,7 @@ from __future__ import annotations
 import pickle
 import re
 import time
+import typing
 from argparse import ArgumentParser
 from collections import OrderedDict, deque
 from typing import (
@@ -203,7 +204,9 @@ class ClassCommandMethodCache(BaseModel):
         arbitrary_types_allowed = True
 
     method: Callable
-    pattern_args: OrderedDict[str, _PatternArg] = OrderedDict()
+    pattern_args: typing.OrderedDict[str, _PatternArg] = Field(
+        default_factory=OrderedDict
+    )
     help_message: Optional[str] = None
     """ command的help message """
     command_stack: List[str] = []

@@ -1,15 +1,16 @@
 # https://www.kancloud.cn/yangtaott/dsaw/1179271
 
-from typing import Dict
+from typing import Dict, Union
 
 from pydantic import root_validator
+
 from pepperbot.adapters.keaimao.api import KeaimaoGroupBot, KeaimaoPrivateBot
 from pepperbot.core.message.chain import MessageChain, chain_factory
 from pepperbot.store.event import EventHandlerKwarg, ProtocolEvent
 
 raw_event = EventHandlerKwarg(
     name="raw_event",
-    type_=Dict | dict,
+    type_=Union[Dict, dict],
     value=lambda raw_event: raw_event,
 )
 

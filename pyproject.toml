@@ -40,8 +40,8 @@ keywords = [
 license = { text = "MIT" }
 name = "pepperbot"
 readme = "README.md"
-requires-python = ">=3.10"
-version = "0.3.5"
+requires-python = ">=3.8"
+version = "0.3.6"
 
 # TODO 之后再优化这个问题，现在和逻辑嵌套过深
 # [project.optional-dependencies]
@@ -77,9 +77,8 @@ asyncio_mode = "auto"
 
 [tool.pdm.scripts]
 badge = """\
-pytest --cov-report xml --cov-branch --cov=pepperbot ./tests/command/test_parse.py \
-&& deactive \
-&& genbadge coverage -i ./coverage.xml \
+pytest --cov-report xml --cov-branch --cov=pepperbot ./tests -l -v \
+&& genbadge coverage -i ./coverage.xml -o ./archive/coverage-badge.svg \
 """
 run = "python private/run.py"
-test = "pytest --cov-report html --cov-branch --cov=pepperbot ./tests"
+test = "pytest --cov-report html --cov-branch --cov=pepperbot ./tests -l -v" # 人类可读，xml没法看

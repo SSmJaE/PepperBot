@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import pytest
 
-from typing import Any, Optional, cast
+from typing import Any, Dict, Optional, cast
 import pytest
 from pepperbot.store.meta import onebot_event_meta
 from pepperbot.store.orm import engine, metadata, database
@@ -74,7 +74,7 @@ async def reset_database():
 api_results = []
 
 
-def new_caller(self, action: str, kwargs: dict[str, Any]):
+def new_caller(self, action: str, kwargs: Dict[str, Any]):
     if action == "get_login_info":
         return {"user_id": "123456789", "nickname": "测试机器人"}
 

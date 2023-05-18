@@ -137,7 +137,7 @@ register_routes: List[BotRoute] = []
 """ 通过register装饰器注册的class_handler """
 
 route_mapping: Dict[
-    tuple[
+    Tuple[
         Union[T_BotProtocol, Literal["validator"]],
         T_ConversationType,
         str,

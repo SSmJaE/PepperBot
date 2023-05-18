@@ -1,4 +1,4 @@
-from typing import Dict, Optional, cast
+from typing import Dict, List, Optional, cast
 
 import arrow
 from pepperbot.adapters.onebot.event import OnebotV11Event
@@ -14,7 +14,7 @@ from pepperbot.utils.common import get_own_attributes
 
 own_attributes = get_own_attributes(OnebotV11Event)
 
-events: list[ProtocolEvent] = [getattr(OnebotV11Event, attr) for attr in own_attributes]
+events: List[ProtocolEvent] = [getattr(OnebotV11Event, attr) for attr in own_attributes]
 
 
 class OnebotV11Adapter(BaseAdapter):

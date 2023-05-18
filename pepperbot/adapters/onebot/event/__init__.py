@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 from pydantic import root_validator
 
@@ -26,7 +26,7 @@ def construct_chain(event_meta: EventMetadata):
 
 raw_event = EventHandlerKwarg(
     name="raw_event",
-    type_=Dict | dict,
+    type_=Union[Dict, dict],
     value=lambda raw_event: raw_event,
 )
 group_bot = EventHandlerKwarg(

@@ -1,4 +1,4 @@
-from typing import Type
+from typing import List, Type
 from pepperbot.adapters.keaimao import KeaimaoAdapter
 from pepperbot.adapters.keaimao.event import KeaimaoEvent
 from pepperbot.adapters.onebot import OnebotV11Adapter
@@ -10,7 +10,7 @@ from pepperbot.adapters.universal.event import UniversalEvent
 from pepperbot.core.event.base_adapter import BaseAdapter
 
 
-available_adapters: list[Type[BaseAdapter]] = [
+available_adapters: List[Type[BaseAdapter]] = [
     UniversalAdapter,
     OnebotV11Adapter,
     KeaimaoAdapter,

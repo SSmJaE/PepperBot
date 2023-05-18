@@ -1,4 +1,4 @@
-from typing import cast
+from typing import List, cast
 from pepperbot.adapters.onebot.event import OnebotV11Event
 from pepperbot.adapters.universal.event import UniversalEvent
 from pepperbot.core.event.base_adapter import BaseAdapter
@@ -7,7 +7,7 @@ from pepperbot.utils.common import get_own_attributes
 
 own_attributes = get_own_attributes(UniversalEvent)
 
-events: list[ProtocolEvent] = [getattr(UniversalEvent, attr) for attr in own_attributes]
+events: List[ProtocolEvent] = [getattr(UniversalEvent, attr) for attr in own_attributes]
 
 
 class UniversalAdapter(BaseAdapter):

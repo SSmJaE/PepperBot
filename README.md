@@ -65,8 +65,6 @@
 
 ## 安装
 
-TODO 目前只能3.10及以上，因为用了点新特性，之后会恢复对3.8的支持
-
 ```bash
 pip install pepperbot
 ```

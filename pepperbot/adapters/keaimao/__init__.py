@@ -1,4 +1,4 @@
-from typing import Dict, Optional, cast
+from typing import Dict, List, Optional, cast
 
 from pepperbot.adapters.keaimao.event import KeaimaoEvent
 from pepperbot.core.event.base_adapter import BaseAdapter
@@ -9,7 +9,7 @@ from pepperbot.utils.common import get_own_attributes
 
 own_attributes = get_own_attributes(KeaimaoEvent)
 
-events: list[ProtocolEvent] = [getattr(KeaimaoEvent, attr) for attr in own_attributes]
+events: List[ProtocolEvent] = [getattr(KeaimaoEvent, attr) for attr in own_attributes]
 
 
 class KeaimaoAdapter(BaseAdapter):

@@ -182,7 +182,7 @@ class OnebotV11API:
         )
 
     @staticmethod
-    async def get_forward_msg(message_id: str) -> list[dict[str, Any]]:
+    async def get_forward_msg(message_id: str) -> List[Dict[str, Any]]:
         """
         获取合并转发内容
 
@@ -209,7 +209,7 @@ class OnebotV11API:
         return messages
 
     @staticmethod
-    async def send_group_forward_msg(group_id: int, messages: list[dict]) -> dict:
+    async def send_group_forward_msg(group_id: int, messages: List[dict]) -> dict:
         """
         发送合并转发 ( 群聊 )
 
@@ -233,7 +233,7 @@ class OnebotV11API:
         )
 
     @staticmethod
-    async def send_private_forward_msg(user_id: int, messages: list[dict]) -> dict:
+    async def send_private_forward_msg(user_id: int, messages: List[dict]) -> dict:
         """
         发送合并转发 ( 好友 )
 
