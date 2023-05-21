@@ -1,133 +1,187 @@
-## inline_query
-
-|参数名称|类型|
-|:---:|:---:|
-|raw_event|`from typing import Dict`|
-|client|`from pyrogram.client import Client`|
-|inline_query|`from pyrogram.types.inline_mode.inline_query import InlineQuery`|
-
-```py
-from typing import Dict
-from pyrogram.client import Client
-from pyrogram.types.inline_mode.inline_query import InlineQuery
-
-
-class MyHandler:
-    async def inline_query(
-        raw_event: Dict,
-        client: Client,
-        inline_query: InlineQuery,
-    ):
-        pass
-```
-
 ## callback_query
 
 |参数名称|类型|
 |:---:|:---:|
-|raw_event|`from typing import Dict`|
-|client|`from pyrogram.client import Client`|
-|callback_query|`from pyrogram.types.bots_and_keyboards.callback_query import CallbackQuery`|
+|callback_query|from pyrogram.types.bots_and_keyboards.callback_query import CallbackQuery|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
 
-```py
+```python
+from pyrogram.types.bots_and_keyboards.callback_query import CallbackQuery
 from typing import Dict
 from pyrogram.client import Client
-from pyrogram.types.bots_and_keyboards.callback_query import CallbackQuery
 
 
 class MyHandler:
     async def callback_query(
+        self,
+        callback_query: CallbackQuery,
         raw_event: Dict,
         client: Client,
-        callback_query: CallbackQuery,
     ):
         pass
+
+```
+
+## chosen_inline_result
+
+|参数名称|类型|
+|:---:|:---:|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
+
+```python
+from typing import Dict
+from pyrogram.client import Client
+
+
+class MyHandler:
+    async def chosen_inline_result(
+        self,
+        raw_event: Dict,
+        client: Client,
+    ):
+        pass
+
 ```
 
 ## edited_message
 
 |参数名称|类型|
 |:---:|:---:|
-|raw_event|`from typing import Dict`|
-|client|`from pyrogram.client import Client`|
-|message|`from pyrogram.types.messages_and_media.message import Message`|
-|bot|`from pepperbot.adapters.telegram.api import TelegramPrivateBot`|
-|chain|`from pepperbot.core.message.chain import MessageChain`|
+|message|from pyrogram.types.messages_and_media.message import Message|
+|bot|from pepperbot.adapters.telegram.api import TelegramPrivateBot|
+|chain|from pepperbot.core.message.chain import MessageChain|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
 
-```py
-from typing import Dict
-from pyrogram.client import Client
+```python
 from pyrogram.types.messages_and_media.message import Message
 from pepperbot.adapters.telegram.api import TelegramPrivateBot
 from pepperbot.core.message.chain import MessageChain
+from typing import Dict
+from pyrogram.client import Client
 
 
 class MyHandler:
     async def edited_message(
-        raw_event: Dict,
-        client: Client,
+        self,
         message: Message,
         bot: TelegramPrivateBot,
         chain: MessageChain,
-    ):
-        pass
-```
-
-## private_message
-
-|参数名称|类型|
-|:---:|:---:|
-|raw_event|`from typing import Dict`|
-|client|`from pyrogram.client import Client`|
-|message|`from pyrogram.types.messages_and_media.message import Message`|
-|bot|`from pepperbot.adapters.telegram.api import TelegramPrivateBot`|
-|chain|`from pepperbot.core.message.chain import MessageChain`|
-
-```py
-from typing import Dict
-from pyrogram.client import Client
-from pyrogram.types.messages_and_media.message import Message
-from pepperbot.adapters.telegram.api import TelegramPrivateBot
-from pepperbot.core.message.chain import MessageChain
-
-
-class MyHandler:
-    async def private_message(
         raw_event: Dict,
         client: Client,
-        message: Message,
-        bot: TelegramPrivateBot,
-        chain: MessageChain,
     ):
         pass
+
 ```
 
 ## group_message
 
 |参数名称|类型|
 |:---:|:---:|
-|raw_event|`from typing import Dict`|
-|client|`from pyrogram.client import Client`|
-|message|`from pyrogram.types.messages_and_media.message import Message`|
-|bot|`from pepperbot.adapters.telegram.api import TelegramGroupBot`|
-|chain|`from pepperbot.core.message.chain import MessageChain`|
+|message|from pyrogram.types.messages_and_media.message import Message|
+|bot|from pepperbot.adapters.telegram.api import TelegramGroupBot|
+|chain|from pepperbot.core.message.chain import MessageChain|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
 
-```py
-from typing import Dict
-from pyrogram.client import Client
+```python
 from pyrogram.types.messages_and_media.message import Message
 from pepperbot.adapters.telegram.api import TelegramGroupBot
 from pepperbot.core.message.chain import MessageChain
+from typing import Dict
+from pyrogram.client import Client
 
 
 class MyHandler:
     async def group_message(
-        raw_event: Dict,
-        client: Client,
+        self,
         message: Message,
         bot: TelegramGroupBot,
         chain: MessageChain,
+        raw_event: Dict,
+        client: Client,
     ):
         pass
+
+```
+
+## inline_query
+
+|参数名称|类型|
+|:---:|:---:|
+|inline_query|from pyrogram.types.inline_mode.inline_query import InlineQuery|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
+
+```python
+from pyrogram.types.inline_mode.inline_query import InlineQuery
+from typing import Dict
+from pyrogram.client import Client
+
+
+class MyHandler:
+    async def inline_query(
+        self,
+        inline_query: InlineQuery,
+        raw_event: Dict,
+        client: Client,
+    ):
+        pass
+
+```
+
+## private_message
+
+|参数名称|类型|
+|:---:|:---:|
+|message|from pyrogram.types.messages_and_media.message import Message|
+|bot|from pepperbot.adapters.telegram.api import TelegramPrivateBot|
+|chain|from pepperbot.core.message.chain import MessageChain|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
+
+```python
+from pyrogram.types.messages_and_media.message import Message
+from pepperbot.adapters.telegram.api import TelegramPrivateBot
+from pepperbot.core.message.chain import MessageChain
+from typing import Dict
+from pyrogram.client import Client
+
+
+class MyHandler:
+    async def private_message(
+        self,
+        message: Message,
+        bot: TelegramPrivateBot,
+        chain: MessageChain,
+        raw_event: Dict,
+        client: Client,
+    ):
+        pass
+
+```
+
+## raw_update
+
+|参数名称|类型|
+|:---:|:---:|
+|raw_event|from typing import Dict|
+|client|from pyrogram.client import Client|
+
+```python
+from typing import Dict
+from pyrogram.client import Client
+
+
+class MyHandler:
+    async def raw_update(
+        self,
+        raw_event: Dict,
+        client: Client,
+    ):
+        pass
+
 ```
 

@@ -70,16 +70,6 @@ class UniversalEvent:
         raw_event_name="been_group_invited",
         description="被邀请入群",
     )
-    member_increased = UniversalProtocolEvent(
-        event_type=("notice",),
-        raw_event_name="member_increased",
-        description="成员增加",
-    )
-    member_declined = UniversalProtocolEvent(
-        event_type=("notice",),
-        raw_event_name="member_declined",
-        description="成员减少",
-    )
     group_member_increased = UniversalProtocolEvent(
         event_type=(
             "group",

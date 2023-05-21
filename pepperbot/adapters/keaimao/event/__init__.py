@@ -67,32 +67,35 @@ class KeaimaoEvent:
         description="",
     )
 
-    EventAcceptAccounts = KeaimaoProtocolEvent(
-        event_type=("meta",),
-        raw_event_name="EventAcceptAccounts",
-        description="",
-    )
+    # EventAcceptAccounts = KeaimaoProtocolEvent(
+    #     event_type=("meta",),
+    #     raw_event_name="EventAcceptAccounts",
+    #     description="",
+    # )
 
-    EventSysMsg = KeaimaoProtocolEvent(
-        event_type=("meta",),
-        raw_event_name="EventSysMsg",
-        description="",
-    )
+    # EventSysMsg = KeaimaoProtocolEvent(
+    #     event_type=("meta",),
+    #     raw_event_name="EventSysMsg",
+    #     description="",
+    # )
 
-    EventAddGroupMember = KeaimaoProtocolEvent(
+    # EventAddGroupMember
+    group_member_increased = KeaimaoProtocolEvent(
         event_type=("group",),
-        raw_event_name="EventAddGroupMember",
+        raw_event_name="group_member_increased",
         description="",
     )
 
-    EventDecreaseGroupMember = KeaimaoProtocolEvent(
+    # EventDecreaseGroupMember
+    group_member_declined = KeaimaoProtocolEvent(
         event_type=("group",),
-        raw_event_name="EventDecreaseGroupMember",
+        raw_event_name="group_member_declined",
         description="",
     )
 
-    FriendVerify = KeaimaoProtocolEvent(
+    # FriendVerify
+    been_friend_added = KeaimaoProtocolEvent(
         event_type=("private",),
-        raw_event_name="FriendVerify",
+        raw_event_name="been_friend_added",
         description="",
     )
