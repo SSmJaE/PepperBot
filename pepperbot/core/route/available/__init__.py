@@ -137,9 +137,9 @@ async def check_available(obj: object, kwargs: Dict, is_class=True) -> bool:
 
     available, checker_name = await concurrently_run_checkers(checkers, **kwargs)
     if not available:
-        logger.info(f"available权限校验失败: {checker_name}")
+        logger.info(f"权限校验失败: {checker_name}")
     else:
-        logger.info(f"available权限校验成功")
+        logger.info(f"权限校验成功")
 
     return available
 

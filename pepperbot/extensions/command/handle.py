@@ -203,6 +203,16 @@ async def run_class_command(
             try:
                 await status.delete()  # 存在本身，会影响has_running_command的判断
 
+                # 虽然在run_timeout中，判断了status是否存在——对应上方的status.delete()
+                # 但是这样的效果，只是不运行run_timeout(status不存在，立即return)，job还是一直存在的，需要手动remove
+
+                job = command_timeout_jobs[status.id]
+                if async_scheduler.get_job(job.id):
+                    job.remove()
+
+                if status.id in command_timeout_jobs:
+                    command_timeout_jobs.pop(status.id)
+
             except Exception as another_exception:
                 logger.error(f"无法重置指令 <lc>{command_name}</lc> 的状态")
 

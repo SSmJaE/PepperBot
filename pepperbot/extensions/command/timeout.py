@@ -1,5 +1,4 @@
 import asyncio
-from math import e
 import pickle
 import time
 from collections import deque
@@ -16,20 +15,20 @@ from pepperbot.exceptions import (
     ClassCommandOnExit,
     PatternFormatError,
 )
-
 from pepperbot.extensions.command.pattern import parse_pattern
 from pepperbot.extensions.command.sender import CommandSender
 from pepperbot.extensions.command.utils import meet_command_exit, meet_command_prefix
 from pepperbot.extensions.log import debug_log, logger
+from pepperbot.extensions.scheduler import async_scheduler
 from pepperbot.store.command import (
     ClassCommandMethodCache,
     ClassCommandStatus,
     CommandConfig,
     HistoryItem,
+    command_timeout_jobs,
 )
 from pepperbot.store.event import EventHandlerKwarg, EventMetadata
 from pepperbot.store.meta import class_command_config_mapping, class_command_mapping
-from pepperbot.store.command import command_timeout_jobs
 from pepperbot.types import (
     T_BotProtocol,
     T_ConversationType,
@@ -45,16 +44,20 @@ async def run_timeout(status: ClassCommandStatus):
     from pepperbot.core.event.handle import construct_event_metadata
     from pepperbot.extensions.command.handle import (
         construct_command_kwargs,
-        run_class_command_method,
         get_and_run_lifecycle,
+        run_class_command_method,
     )
 
     common_prefix = (
-        f"<lc>{status.protocol}</lc> <lc>{status.conversation_type}</lc> 模式中"
+        f"<lc>{status.protocol}</lc> <lc>{status.conversation_type}</lc> 模式中 "
         + f"<lc>{status.conversation_id}</lc> 的指令 <lc>{status.command_name}</lc> "
     )
 
     if status.id not in command_timeout_jobs:
+        # 或是该指令从未被匹配过，也就是通过check_command_timeout()判断出来的超时
+        # 从未匹配过=》该指令从未running过，所以也就没有command_timeout_jobs[status.id]，所以不需要处理
+        await status.delete()
+
         logger.info(common_prefix + "的生命周期 <lc>timeout</lc> 已被处理")
         return
 
@@ -127,11 +130,20 @@ async def run_timeout(status: ClassCommandStatus):
 
     finally:
         try:
+            # 这里和run_class_command中的finally是对应的
+            # 因为生命周期，要么走timeout，要么就是exit、catch、finish那些，只有这两个地方处理
             await status.delete()
-            command_timeout_jobs.pop(status.id)
+
+            # 虽然对于仅运行一次的任务，apscheduler可能会自动删除，但是还是手动删除一下吧
+            job = command_timeout_jobs[status.id]
+            if async_scheduler.get_job(job.id):
+                job.remove()
+
+            if status.id in command_timeout_jobs:
+                command_timeout_jobs.pop(status.id)
 
         except Exception as exception:
-            logger.error(f"无法重置指令 <lc>{command_name}</lc> 的状态")
+            logger.error(f"无法重置指令 <lc>{command_name}</lc> 的状态: {exception}")
 
         await get_and_run_lifecycle("cleanup", **lifecycle_kwargs)
 
@@ -154,12 +166,24 @@ async def check_command_timeout():
             useless_status_ids.append(status.id)
             continue
 
+        # 考虑到重启后，指令cache会丢失，而数据库中还存在的情况
+        class_command_config_cache = class_command_config_mapping.get(status.config_id)
+        if not class_command_config_cache:
+            logger.error(
+                f"指令 <lc>{status.command_name}</lc> {status.config_id} 的cache已被删除，可能是重启worker导致的"
+            )
+            useless_status_ids.append(status.id)
+            continue
+
         last_updated_time = status.last_updated_time
         timeout = status.timeout
         current_time = time.time()
 
         # 超时判断，与上一条消息的createTime判断
-        if current_time > last_updated_time + timeout:
+        # +5 ，是为了给apscheduler一点调度的时间，防止刚好同时触发
+        # 同时，因为这个函数的间隔是10,5 < 10，所以不会导致相邻两次调用都认为超时——每10秒调用一次这个主动超时判断函数
+        if current_time > last_updated_time + timeout + 5:
+            # run_timeout中会主动删除status.id，这里没必要append到useless_status_ids里了
             task = asyncio.create_task(run_timeout(status))
             timeout_tasks.append(task)
             continue
@@ -172,6 +196,3 @@ async def check_command_timeout():
             logger.error(f"无法删除指令状态 {status_id}")
 
     await asyncio.gather(*timeout_tasks)
-
-
-# async def run_command_method_with_lifecycle():

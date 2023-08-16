@@ -319,7 +319,7 @@ async def find_first_available_command(
         # 2.checker的参数中，需要有prefix_with_alias，所以需要先判断前缀
 
         if not meet_prefix:
-            logger.info(f"该事件不满足指令 {command_name} {class_command_config_id} 的执行条件")
+            logger.info(f"该事件不满足指令 {command_name} {class_command_config_id} 的 执行条件")
             # logger.info(f"<y>{chain.pure_text}</y> 不满足指令 <lc>{command_name}</lc> 的执行条件")
             continue
 
@@ -337,7 +337,7 @@ async def find_first_available_command(
             )
             if not available:
                 logger.info(
-                    f"该事件不满足指令 {command_name} {class_command_config_id} 的available校验"
+                    f"该事件不满足指令 {command_name} {class_command_config_id} 的 权限校验"
                 )
                 continue
 

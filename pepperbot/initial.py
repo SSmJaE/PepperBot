@@ -1,4 +1,14 @@
-from typing import Any, Callable, Coroutine, Iterable, Literal, Optional, Type, cast
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Iterable,
+    Literal,
+    Optional,
+    Type,
+    cast,
+)
 
 from apscheduler.triggers.interval import IntervalTrigger
 from devtools import debug, pformat
@@ -233,7 +243,7 @@ class PepperBot:
         otherwise, it will not work(because it only run on Sanic's main worker process, NOT any of its worker processes)
         """
 
-        final_kwargs = dict(
+        final_kwargs: Dict = dict(
             host=self.host,
             port=self.port,
             debug=self.debug,
