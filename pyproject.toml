@@ -41,7 +41,7 @@ license = { text = "MIT" }
 name = "pepperbot"
 readme = "README.md"
 requires-python = ">=3.8"
-version = "0.3.6"
+version = "0.3.7"
 
 # TODO 之后再优化这个问题，现在和逻辑嵌套过深
 # [project.optional-dependencies]
