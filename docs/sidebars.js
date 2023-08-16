@@ -102,6 +102,7 @@ module.exports = {
                 "tutorial/advance/log",
                 "tutorial/advance/deploy",
                 "tutorial/advance/test",
+                "tutorial/advance/utils",
             ],
         },
         {

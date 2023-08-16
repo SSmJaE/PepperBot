@@ -201,10 +201,26 @@ class Image(BaseMessageSegment):
         save_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         extension: str = "jpg",
+        client_kwargs: Optional[Dict] = None,
+        stream_kwargs: Optional[Dict] = None,
+        chunk_size: int = 8192,
     ) -> str:
-        """返回下载后的绝对(完整)路径
+        """
+        使用httpx，异步流式下载
 
-        如果提供了full_path(需要提供文件的扩展类型)，则直接下载到该路径，其他参数无效
+        httpx默认timeout仅为5s，如果下载大文件，需要设置timeout
+        可以通过client_kwargs、stream_kwargs传入参数，分别对应client和stream的参数
+
+        Args:
+            full_path : 如果提供了full_path(需要提供文件的扩展类型)，则直接下载到该路径，其他参数无效
+            client_kwargs : https://www.python-httpx.org/api/#asyncclient
+            stream_kwargs : https://www.python-httpx.org/api/#request
+
+        Raises:
+            EventHandleError: _description_
+
+        Returns:
+            返回图片下载后的绝对(完整)路径
         """
 
         if full_path:
@@ -218,9 +234,21 @@ class Image(BaseMessageSegment):
             save_path = os.path.abspath(save_path)
 
         if self.temporary_file_path.startswith("http"):
-            await download_file(self.file_path, save_path)
+            await download_file(
+                url=self.file_path,
+                save_path=save_path,
+                client_kwargs=client_kwargs,
+                stream_kwargs=stream_kwargs,
+                chunk_size=chunk_size,
+            )
             return save_path
 
+        # 这里只处理了host为空的情况(3个斜杠)
+        # https://en.wikipedia.org/wiki/File_URI_scheme
+        elif self.temporary_file_path.startswith("file:///"):
+            return self.file_path[8:]
+
+        # TODO 不太确定带host的情况下，path是否正确
         elif self.temporary_file_path.startswith("file://"):
             return self.file_path[7:]
 
@@ -263,8 +291,23 @@ def hash_string(string: str):
     return h.hexdigest()
 
 
-async def download_file(url: str, save_path: str):
-    """使用httpx，流式下载"""
+async def download_file(
+    url: str,
+    save_path: str,
+    client_kwargs: Optional[Dict] = None,
+    stream_kwargs: Optional[Dict] = None,
+    chunk_size: int = 8192,
+):
+    """使用httpx，流式下载
+
+    默认使用GET，可以通过stream_kwargs传入method参数，来指定请求方法
+
+    最好别在stream_kwargs手动覆写URL，可能会导致函数参数的URL和stream_kwargs中的URL不一致
+
+    Args:
+        client_kwargs : https://www.python-httpx.org/api/#asyncclient
+        stream_kwargs : https://www.python-httpx.org/api/#request
+    """
 
     # 以防万一，还是再调用一次，保证绝对是绝对路径
     absolute_path = os.path.abspath(save_path)
@@ -273,10 +316,32 @@ async def download_file(url: str, save_path: str):
     if not os.path.exists(directory):  # 如果文件夹不存在
         os.makedirs(directory)  # 创建文件夹
 
-    async with httpx.AsyncClient() as client:
-        async with client.stream("GET", url) as response:
+    # 设置默认参数
+    default_client_kwargs: Dict = dict(
+        timeout=60,
+    )
+
+    default_stream_kwargs: Dict = dict(
+        method="GET",
+        url=url,
+        timeout=60,
+    )
+
+    # 确保kwargs不为None
+    if client_kwargs:
+        client_kwargs = {**default_client_kwargs, **client_kwargs}
+    else:
+        client_kwargs = default_client_kwargs
+
+    if stream_kwargs:
+        stream_kwargs = {**default_stream_kwargs, **stream_kwargs}
+    else:
+        stream_kwargs = default_stream_kwargs
+
+    async with httpx.AsyncClient(**client_kwargs) as client:
+        async with client.stream(**stream_kwargs) as response:
             async with aiofiles.open(absolute_path, "wb") as f:
-                async for chunk in response.aiter_bytes(chunk_size=8192):
+                async for chunk in response.aiter_bytes(chunk_size=chunk_size):
                     await f.write(chunk)
 
 
